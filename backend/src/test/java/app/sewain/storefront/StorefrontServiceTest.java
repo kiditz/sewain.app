@@ -72,16 +72,52 @@ class StorefrontServiceTest {
     }
 
     @Test
-    void menuStoresOnlyPageReferencesAndDeletionCleansReferences() {
+    void menuStoresPageReferencesAndCustomLabelsWhileDeletionCleansReferences() {
         pages(); menu();
         var items = service.getMenus().configuration().get(0).path("items");
-        assertEquals(json.readTree("{\"id\":\"one\",\"pageId\":\"home\"}"), items.get(0));
+        assertEquals(json.readTree("{\"id\":\"one\",\"pageId\":\"home\",\"label\":\"Old label\"}"), items.get(0));
         service.deletePage("about");
         assertEquals(1, service.getMenus().configuration().get(0).path("items").size());
         assertFalse(records.containsKey("PAGE:about"));
         save("NAVIGATION", "{\"headerMenuId\":\"main\"}");
         service.deleteMenu("main");
         assertTrue(service.getResource("NAVIGATION").configuration().path("headerMenuId").isNull());
+    }
+
+    @Test
+    void customMenuLabelsSurviveReloadAndBlankLabelsUsePageTitles() {
+        pages();
+        save("MENU:main", """
+                {"id":"main","name":"Main Menu","items":[{"id":"one","pageId":"home","label":"  Beranda  "},{"id":"two","pageId":"about","label":"  "}]}
+                """);
+        var items = service.getMenus().configuration().get(0).path("items");
+        assertEquals("Beranda", items.get(0).path("label").asString());
+        assertFalse(items.get(1).has("label"));
+        assertEquals("Beranda", service.getPublished().configuration().path("MenuItems").get(0).path("items").get(0).path("label").asString());
+    }
+
+    @Test
+    void catalogDestinationsSurviveSavingAlongsidePageLinksInOrder() {
+        pages();
+        save("MENU:main", """
+                {"id":"main","name":"Main","items":[
+                  {"id":"product","target":{"type":"PRODUCT","id":"p1","title":"Camera","slug":"camera","url":"javascript:bad"}},
+                  {"id":"home","pageId":"home"},
+                  {"id":"collection","label":"Pilihan","target":{"type":"COLLECTION","id":"c1","title":"Cameras","slug":"cameras"}}
+                ]}
+                """);
+        var items = service.getMenus().configuration().get(0).path("items");
+        assertEquals("product", items.get(0).path("id").asString());
+        assertEquals("home", items.get(1).path("pageId").asString());
+        assertEquals("cameras", items.get(2).path("target").path("slug").asString());
+        assertFalse(items.get(0).path("target").has("url"));
+        assertEquals(items, service.getPublished().configuration().path("MenuItems").get(0).path("items"));
+        assertThrows(ResponseStatusException.class, () -> save("MENU:bad", """
+                {"id":"bad","name":"Bad","items":[{"id":"one","target":{"type":"EXTERNAL","id":"x","title":"X","slug":"x"}}]}
+                """));
+        assertThrows(ResponseStatusException.class, () -> save("MENU:bad", """
+                {"id":"bad","name":"Bad","items":[{"id":"one","target":{"type":"PRODUCT","id":"x","title":"X","slug":"../checkout"}}]}
+                """));
     }
 
     @Test

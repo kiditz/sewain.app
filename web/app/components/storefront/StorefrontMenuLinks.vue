@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
-import { resolveHeaderMenu } from "~/features/storefront-builder/utils/header-section";
+import { resolveNavigationMenu } from "~/features/storefront-builder/utils/navigation-section";
 import { resolveMenuItems } from "~/features/storefront-builder/utils/storefront-menu";
 const props = defineProps<{ menuId?: string | null; vertical?: boolean; preview?: boolean }>();
 const emit = defineEmits<{ navigate: [] }>();
 const { MenuItems, headerMenuId, pages } = useStorefront();
-const headerMenu = computed(() => resolveHeaderMenu(MenuItems.value, props.menuId, headerMenuId.value));
+const headerMenu = computed(() => resolveNavigationMenu(MenuItems.value, props.menuId, headerMenuId.value));
 function navigate(event: MouseEvent) {
   if (props.preview) event.preventDefault();
   emit("navigate");

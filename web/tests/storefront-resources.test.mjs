@@ -132,7 +132,7 @@ test('menu and navigation saves only write changed resources; empty menus remain
   assert.equal(store.headerMenuId.value, null);
 });
 
-test('page references follow current titles/URLs and hide drafts, deleted pages and product templates', () => {
+test('menu labels can be customized while page URLs and visibility stay current', () => {
   const pages = [
     { id: 'home', title: 'New Home', targetUrl: '/', kind: 'HOME', status: 'PUBLISHED' },
     { id: 'about', title: 'About', targetUrl: '/pages/new-about', kind: 'CUSTOM', status: 'PUBLISHED' },
@@ -147,7 +147,8 @@ test('page references follow current titles/URLs and hide drafts, deleted pages 
     { id: 'five', pageId: 'product' },
   ], pages);
   assert.equal(result.length, 2);
-  assert.equal(result[0].label, 'New Home');
+  assert.equal(result[0].label, 'Old label');
+  assert.equal(result[1].label, 'About');
   assert.equal(result[1].url, '/pages/new-about');
 });
 
@@ -196,26 +197,50 @@ test('SSR save after await uses captured state without async runWithContext', as
   assert.deepEqual(calls, [['/storefront/pages/home', 'PUT']]);
 });
 
-test('legacy pages receive exactly one header and hidden headers stay hidden', async () => {
-  const { ensureHeaderSection, headerDefaults, resolveHeaderMenu } = await loadModule('utils/header-section.ts');
+test('legacy pages receive exactly one navigation and hidden navigation stays hidden', async () => {
+  const { ensureNavigationSection, navigationDefaults, resolveNavigationMenu } = await loadModule('utils/navigation-section.ts');
   const page = { id: 'home', sections: [{ id: 'content', type: 'HERO', enabled: true, settings: {}, blocks: [] }] };
-  assert.equal(ensureHeaderSection(page), true);
-  assert.equal(page.sections[0].type, 'HEADER');
+  assert.equal(ensureNavigationSection(page), true);
+  assert.equal(page.sections[0].type, 'NAVIGATION');
   assert.equal(page.sections[1].id, 'content');
   const id = page.sections[0].id;
   page.sections[0].enabled = false;
-  assert.equal(ensureHeaderSection(page), false);
+  assert.equal(ensureNavigationSection(page), false);
   assert.equal(page.sections[0].id, id);
   assert.equal(page.sections[0].enabled, false);
   assert.equal(page.sections.length, 2);
-  const first = headerDefaults();
+  const first = navigationDefaults();
   first.padding.top = 99;
-  assert.equal(headerDefaults().padding.top, 20);
+  assert.equal(navigationDefaults().padding.top, 20);
   const menus = [{ id: 'main' }, { id: 'secondary' }];
-  assert.equal(resolveHeaderMenu(menus, null, 'main').id, 'main');
-  assert.equal(resolveHeaderMenu(menus, 'secondary', 'main').id, 'secondary');
-  assert.equal(resolveHeaderMenu(menus, '__none__', 'main'), undefined);
-  assert.equal(resolveHeaderMenu(menus, 'deleted', 'main'), undefined);
+  assert.equal(resolveNavigationMenu(menus, null, 'main').id, 'main');
+  assert.equal(resolveNavigationMenu(menus, 'secondary', 'main').id, 'secondary');
+  assert.equal(resolveNavigationMenu(menus, '__none__', 'main'), undefined);
+  assert.equal(resolveNavigationMenu(menus, 'deleted', 'main'), undefined);
+});
+
+test('legacy header becomes navigation with independent blocks and retains hidden state and selected menu', async () => {
+  const { ensureNavigationSection } = await loadModule('utils/navigation-section.ts');
+  const padding = { top: 8, right: 16, bottom: 8, left: 16 };
+  const page = { id: 'home', sections: [{ id: 'existing-header', type: 'HEADER', enabled: false, settings: { menuId: 'secondary', padding }, blocks: [] }] };
+  assert.equal(ensureNavigationSection(page), true);
+  const navigation = page.sections[0];
+  assert.equal(navigation.type, 'NAVIGATION');
+  assert.equal(navigation.id, 'existing-header');
+  assert.equal(navigation.enabled, false);
+  assert.deepEqual(navigation.settings.padding, padding);
+  assert.equal('menuId' in navigation.settings, false);
+  assert.deepEqual(navigation.blocks.map(block => block.type), ['LOGO', 'HEADING', 'MENU']);
+  assert.equal(navigation.blocks[2].settings.menuId, 'secondary');
+  navigation.blocks[0].enabled = false;
+  navigation.blocks[1].enabled = false;
+  navigation.blocks[2].enabled = false;
+  const snapshot = JSON.stringify(page);
+  assert.equal(ensureNavigationSection(page), false);
+  assert.equal(JSON.stringify(page), snapshot, 'reloading does not recreate or reveal hidden blocks');
+  navigation.blocks = [];
+  assert.equal(ensureNavigationSection(page), false);
+  assert.deepEqual(navigation.blocks, [], 'removing all navigation blocks remains intentional');
 });
 
 const { useStorefrontCatalog } = await loadModule('composables/useStorefrontCatalog.ts');
@@ -269,4 +294,52 @@ test('targeted collection queries retain pagination, IDs and active/availability
   const catalog = useStorefrontCatalog();
   await catalog.fetchCollectionProducts('selected-collection', { page: 3, size: 8, id: 'selected-product', available: true });
   assert.deepEqual(calls, [['/collections/selected-collection/products', { status: 'ACTIVE', page: 3, size: 8, id: 'selected-product', available: true }]]);
+});
+
+
+test('blank menu labels use the current page title and custom labels are trimmed', () => {
+  const pages = [{ id: 'home', title: 'Home', targetUrl: '/', kind: 'HOME', status: 'PUBLISHED' }];
+  const items = [{ id: 'default', pageId: 'home' }, { id: 'blank', pageId: 'home', label: '  ' }, { id: 'custom', pageId: 'home', label: '  Beranda  ' }];
+  assert.deepEqual(menuHelpers.resolveMenuItems(items, pages).map(item => item.label), ['Home', 'Home', 'Beranda']);
+  pages[0].title = 'Updated home';
+  assert.deepEqual(menuHelpers.resolveMenuItems(items, pages).map(item => item.label), ['Updated home', 'Updated home', 'Beranda']);
+});
+
+test('reordered menu items and custom labels survive saving and reloading', async () => {
+  let stored = { id: 'main', name: 'Main menu', items: [
+    { id: 'home-link', pageId: 'home', label: 'Beranda' },
+    { id: 'catalog-link', pageId: 'catalog' },
+    { id: 'about-link', pageId: 'about', label: 'Tentang kami' },
+  ] };
+  const writes = [];
+  context(async (url, options) => {
+    if (!options) return { configuration: structuredClone(url.endsWith('/menus') ? [stored] : { headerMenuId: 'main' }) };
+    writes.push(url);
+    stored = structuredClone(options.body.configuration);
+  });
+  const store = useStorefrontMenus();
+  await store.load();
+  const items = store.MenuItems.value[0].items;
+  items.unshift(items.splice(2, 1)[0]);
+  await store.saveMenus();
+  assert.deepEqual(writes, ['/storefront/menus/main']);
+  store.initialized.value = false;
+  await store.load();
+  assert.deepEqual(store.MenuItems.value[0].items.map(item => item.id), ['about-link', 'home-link', 'catalog-link']);
+  const pages = ['home', 'catalog', 'about'].map(id => ({ id, title: id, targetUrl: `/${id}`, status: 'PUBLISHED', kind: 'CUSTOM' }));
+  assert.deepEqual(menuHelpers.resolveMenuItems(store.MenuItems.value[0].items, pages).map(item => item.label), ['Tentang kami', 'Beranda', 'catalog']);
+});
+
+test('catalog menu destinations resolve without exposing a URL editor or requiring a page record', () => {
+  const items = [
+    { id: 'product', target: { type: 'PRODUCT', id: 'p1', title: 'Camera', slug: 'camera' } },
+    { id: 'collection', label: 'Pilihan', target: { type: 'COLLECTION', id: 'c1', title: 'Cameras', slug: 'cameras' } },
+    { id: 'invalid', target: { type: 'PRODUCT', id: 'p2', title: 'Missing slug', slug: '' } },
+  ];
+  assert.deepEqual(menuHelpers.resolveMenuItems(items, []).map(({ label, url }) => ({ label, url })), [
+    { label: 'Camera', url: '/products/camera' }, { label: 'Pilihan', url: '/collections/cameras' },
+  ]);
+  assert.equal(menuHelpers.hasMenuDestination(items[0], []), true);
+  assert.equal(menuHelpers.hasMenuDestination(items[2], []), false);
+  assert.equal(menuHelpers.menuItemTitle(items[1], []), 'Cameras');
 });

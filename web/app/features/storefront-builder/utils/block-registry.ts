@@ -1,6 +1,7 @@
 import {
   allPaddingZero,
   defaultTextLayout,
+  menuLayout,
   type BlockType,
   type SectionLayout,
   type StorefrontBlock,
@@ -18,6 +19,14 @@ export interface BlockDefinition {
 }
 
 export const blockRegistry: Record<BlockType, BlockDefinition> = {
+  LOGO: {
+    type: "LOGO", label: "Logo", description: "Store logo displayed in full without cropping.",
+    defaults: { src: "", alt: "", url: "/", width: 140, height: 48, padding: allPaddingZero },
+  },
+  MENU: {
+    type: "MENU", label: "Menu", description: "Navigation menu links and mobile drawer.",
+    defaults: { menuId: null, padding: allPaddingZero, layout: menuLayout },
+  },
   HEADER: {
     type: "HEADER",
     label: "Header",

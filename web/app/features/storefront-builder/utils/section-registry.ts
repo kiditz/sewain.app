@@ -1,6 +1,6 @@
 import type { Component } from "vue";
-import HeaderSection from "../components/sections/HeaderSection.vue";
-import { headerDefaults } from "./header-section";
+import NavigationSection from "../components/sections/NavigationSection.vue";
+import { navigationDefaults } from "./navigation-section";
 import HeroSection from "~/features/storefront-builder/components/sections/HeroSection.vue";
 import RichTextSection from "~/features/storefront-builder/components/sections/RichTextSection.vue";
 import ImageBannerSection from "~/features/storefront-builder/components/sections/ImageBannerSection.vue";
@@ -33,14 +33,14 @@ export interface SectionDefinition {
 }
 
 export const sectionRegistry: Record<SectionType, SectionDefinition> = {
-  HEADER: {
-    type: "HEADER",
-    label: "Header",
+  NAVIGATION: {
+    type: "NAVIGATION",
+    label: "Navigation",
     description: "Store branding, navigation menu and mobile drawer.",
-    component: HeaderSection,
-    defaults: headerDefaults(),
-    allowedBlocks: [],
-    defaultBlocks: [],
+    component: NavigationSection,
+    defaults: navigationDefaults(),
+    allowedBlocks: ["LOGO", "HEADER", "MENU"],
+    defaultBlocks: ["LOGO", "HEADER", "MENU"],
   },
   HERO: {
     type: "HERO",

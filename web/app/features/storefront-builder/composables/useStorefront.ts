@@ -1,4 +1,4 @@
-import { ensureHeaderSection } from "../utils/header-section";
+import { ensureNavigationSection } from "../utils/navigation-section";
 import { useStorefrontPages } from "./useStorefrontPages";
 import { useStorefrontTheme } from "./useStorefrontTheme";
 import { useStorefrontMenus } from "./useStorefrontMenus";
@@ -32,7 +32,7 @@ export function useStorefront() {
     menuStore.initialized.value = false;
     const document = response.configuration;
     pageStore.pages.value = document?.pages ?? [];
-    pageStore.pages.value.forEach(ensureHeaderSection);
+    pageStore.pages.value.forEach(ensureNavigationSection);
     themeStore.theme.value = document?.theme?.colors ? document.theme : structuredClone(initialTheme);
     menuStore.MenuItems.value = document?.MenuItems ?? [];
     menuStore.headerMenuId.value = document?.headerMenuId ?? null;

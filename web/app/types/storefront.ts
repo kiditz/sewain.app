@@ -5,6 +5,7 @@ export interface StorefrontMenuItem {
   pageId?: string;
   label?: string;
   url?: string;
+  target?: { type: "PRODUCT" | "COLLECTION"; id: string; title: string; slug: string };
 }
 
 export interface StorefrontMenu {
@@ -23,7 +24,7 @@ export type PageKind =
   | "CART"
   | "CHECKOUT";
 export type SectionType =
-  | "HEADER"
+  | "NAVIGATION"
   | "HERO"
   | "RICH_TEXT"
   | "IMAGE_BANNER"
@@ -37,6 +38,8 @@ export type SectionType =
   | "CHECKOUT";
 
 export type BlockType =
+  | "LOGO"
+  | "MENU"
   | "EYEBROW"
   | "HEADING"
   | "TEXT"
@@ -184,6 +187,17 @@ export const heroLayout: SectionLayout = {
   alignment: "center",
   position: "center",
   gap: 16,
+  width: "page",
+  height: "medium",
+  customHeight: 0,
+};
+
+export const menuLayout: SectionLayout = {
+  direction: "horizontal",
+  alignTextBaseline: false,
+  alignment: "center",
+  gap: 16,
+  position: "center",
   width: "page",
   height: "medium",
   customHeight: 0,

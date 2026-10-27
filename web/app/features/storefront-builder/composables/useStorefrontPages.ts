@@ -1,4 +1,4 @@
-import { createHeaderSection, ensureHeaderSection } from "../utils/header-section";
+import { createNavigationSection, ensureNavigationSection } from "../utils/navigation-section";
 import { useStorefrontState as useState } from "./useStorefrontState";
 import { computed } from "vue";
 import { useStorefrontResourceFactory } from "./useStorefrontResource";
@@ -15,6 +15,7 @@ function cloneBlockWithNewIds(block: StorefrontBlock): StorefrontBlock {
 }
 
 function createSection(type: SectionType): StorefrontSection {
+  if (type === "NAVIGATION") return createNavigationSection();
   const definition = sectionRegistry[type];
   const blocks = definition.defaultBlocks.map(createDefaultBlock);
   const copyText: Partial<
@@ -196,7 +197,7 @@ function samplePages(): StorefrontPage[] {
       updatedAt: new Date().toISOString(),
     },
   ];
-  pages.forEach(ensureHeaderSection);
+  pages.forEach(ensureNavigationSection);
   return pages;
 }
 
@@ -356,7 +357,7 @@ export function useStorefrontPages() {
         };
       });
       for (const page of pages.value) {
-        ensureHeaderSection(page);
+        ensureNavigationSection(page);
         for (const section of page.sections) {
           if (migrateFeaturedProductsSettings(section)) {
             migratedFeaturedSettings = true;
@@ -411,7 +412,7 @@ export function useStorefrontPages() {
       kind: "CUSTOM",
       icon: "FileTextOutlined",
       status: "DRAFT",
-      sections: [createHeaderSection()],
+      sections: [createNavigationSection()],
       updatedAt: new Date().toISOString(),
     };
     pages.value.push(page);
@@ -457,12 +458,12 @@ export function useStorefrontPages() {
     schedulePage(page);
   }
   function addSection(page: StorefrontPage, type: SectionType) {
-    if (type === "HEADER" && page.sections.some(section => section.type === "HEADER")) return;
+    if (type === "NAVIGATION" && page.sections.some(section => section.type === "NAVIGATION")) return;
     page.sections.push(createSection(type));
     touch(page);
   }
   function removeSection(page: StorefrontPage, id: string) {
-    const header = page.sections.find(section => section.id === id && section.type === "HEADER");
+    const header = page.sections.find(section => section.id === id && section.type === "NAVIGATION");
     if (header) { header.enabled = false; touch(page); return; }
     page.sections = page.sections.filter((section) => section.id !== id);
     touch(page);

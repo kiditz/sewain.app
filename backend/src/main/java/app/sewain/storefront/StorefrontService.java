@@ -141,14 +141,32 @@ class StorefrontService {
         normalized.put("name", menu.path("name").asString().trim());
         var items = json.createArrayNode();
         menu.path("items").asArray().elements().forEach(item -> {
-            var pageId = item.path("pageId").asString("");
-            var page = repository.findByKey(resourceKey("PAGE:", pageId))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Menu page does not exist"));
-            require(!"PRODUCT".equals(json.readTree(page.getConfiguration()).path("kind").asString()));
             require(!item.path("id").asString("").isBlank());
             var reference = json.createObjectNode();
             reference.put("id", item.path("id").asString());
-            reference.put("pageId", pageId);
+            if (item.hasNonNull("target")) {
+                var target = item.path("target");
+                require(target.isObject());
+                require(Set.of("PRODUCT", "COLLECTION").contains(target.path("type").asString("")));
+                for (var field : Set.of("id", "title", "slug")) {
+                    require(target.path(field).isString() && !target.path(field).asString().isBlank());
+                }
+                require(target.path("slug").asString().matches("[a-zA-Z0-9_-]+"));
+                var destination = json.createObjectNode();
+                for (var field : Set.of("type", "id", "title", "slug")) destination.put(field, target.path(field).asString());
+                reference.set("target", destination);
+            } else {
+                var pageId = item.path("pageId").asString("");
+                var page = repository.findByKey(resourceKey("PAGE:", pageId))
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Menu page does not exist"));
+                require(!"PRODUCT".equals(json.readTree(page.getConfiguration()).path("kind").asString()));
+                reference.put("pageId", pageId);
+            }
+            var label = item.get("label");
+            if (label != null && !label.isNull()) {
+                require(label.isString());
+                if (!label.asString().isBlank()) reference.put("label", label.asString().trim());
+            }
             items.add(reference);
         });
         normalized.set("items", items);

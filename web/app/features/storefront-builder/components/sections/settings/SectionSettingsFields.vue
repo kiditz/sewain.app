@@ -101,23 +101,8 @@ function labelOf(key: string) {
 <template>
   <div class="settings-fields">
     <template v-for="(value, key) in section.settings" :key="key">
-      <EditorFieldRow v-if="section.type === 'HEADER' && key === 'menuId'" label="Menu">
-        <v-select
-          :model-value="value ?? null"
-          :items="[
-            { title: 'Default header menu', value: null },
-            { title: 'No menu', value: '__none__' },
-            ...storefront.MenuItems.value.map(menu => ({ title: menu.name, value: menu.id })),
-          ]"
-          variant="outlined"
-          density="compact"
-          hide-details
-          aria-label="Header menu"
-          @update:model-value="update('menuId', $event)"
-        />
-      </EditorFieldRow>
       <EditorFieldRow
-        v-else-if="section.type === 'COLLECTION_LIST' && key === 'collectionIds'"
+        v-if="section.type === 'COLLECTION_LIST' && key === 'collectionIds'"
         :label="labelOf(String(key))"
       >
         <v-autocomplete

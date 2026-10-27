@@ -22,10 +22,25 @@ export function menuItemPage(item: StorefrontMenuItem, pages: StorefrontPage[]) 
 
 export function resolveMenuItems(items: StorefrontMenuItem[], pages: StorefrontPage[]) {
   return items.flatMap(item => {
+    if (item.target) {
+      const { type, title, slug } = item.target;
+      if (!["PRODUCT", "COLLECTION"].includes(type) || !slug || !title) return [];
+      return [{ ...item, label: item.label?.trim() || title, url: `/${type === "PRODUCT" ? "products" : "collections"}/${encodeURIComponent(slug)}` }];
+    }
     const page = menuItemPage(item, pages);
     if (!page || page.status !== "PUBLISHED") return [];
-    return [{ ...item, label: page.title, url: page.targetUrl }];
+    return [{ ...item, label: item.label?.trim() || page.title, url: page.targetUrl }];
   });
+}
+
+export function menuItemTitle(item: StorefrontMenuItem, pages: StorefrontPage[]) {
+  return item.target?.title || menuItemPage(item, pages)?.title || "";
+}
+
+export function hasMenuDestination(item: StorefrontMenuItem, pages: StorefrontPage[]) {
+  return item.target
+    ? ["PRODUCT", "COLLECTION"].includes(item.target.type) && !!item.target.id && !!item.target.slug && !!item.target.title
+    : !!menuItemPage(item, pages);
 }
 
 export function isMenuUrl(value: string): boolean {

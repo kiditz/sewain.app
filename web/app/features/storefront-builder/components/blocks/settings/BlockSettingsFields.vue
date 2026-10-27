@@ -8,6 +8,7 @@ import TextField from "./TextField.vue";
 import TextLayoutField from "./TextLayoutField.vue";
 import ProductCardStyleField from "./ProductCardStyleField.vue";
 import ImageField from "./ImageField.vue";
+import LogoField from "./LogoField.vue";
 import BorderRadiusField from "../../BorderRadiusField.vue";
 import { useStorefront } from "../../../composables/useStorefront";
 
@@ -143,6 +144,14 @@ function update(key: string, value: unknown) {
         />
       </EditorFieldRow>
 
+      <EditorFieldRow v-else-if="block.type === 'MENU' && key === 'menuId'" label="Menu">
+        <v-select :model-value="value ?? null" :items="[
+          { title: 'Default navigation menu', value: null },
+          { title: 'No menu', value: '__none__' },
+          ...storefront.MenuItems.value.map(menu => ({ title: menu.name, value: menu.id })),
+        ]" variant="outlined" density="compact" hide-details aria-label="Navigation menu" @update:model-value="update('menuId', $event)" />
+      </EditorFieldRow>
+
       <EditorFieldRow v-else-if="key === 'aspectRatio'" :label="labelOf(String(key))">
         <v-select
           :model-value="selectedAspectRatio(value)"
@@ -154,6 +163,8 @@ function update(key: string, value: unknown) {
           @update:model-value="update(String(key), String($event ?? 'auto'))"
         />
       </EditorFieldRow>
+
+      <LogoField v-else-if="key === 'src' && block.type === 'LOGO'" :settings="block.settings" @update="update" />
 
       <template v-else-if="key === 'src' && block.type === 'IMAGE'">
         <ImageField
@@ -228,7 +239,7 @@ function update(key: string, value: unknown) {
         @update="update"
       />
       <LayoutField
-        v-else-if="key === 'layout' && block.type === 'HEADER'"
+        v-else-if="key === 'layout' && ['HEADER', 'MENU'].includes(block.type)"
         :settings="block.settings"
         @update="update"
       />

@@ -1,3 +1,5 @@
+import LogoBlock from "../components/blocks/LogoBlock.vue";
+import MenuBlock from "../components/blocks/MenuBlock.vue";
 import EyebrowBlock from "../components/blocks/EyebrowBlock.vue";
 import HeadingBlock from "../components/blocks/HeadingBlock.vue";
 import TextBlock from "../components/blocks/TextBlock.vue";
@@ -20,6 +22,8 @@ import RentalDateRangeBlock from "../components/blocks/RentalDateRangeBlock.vue"
 import PriceSummaryBlock from "../components/blocks/PriceSummaryBlock.vue";
 
 export const blockComponentRegistry = {
+  LOGO: LogoBlock,
+  MENU: MenuBlock,
   EYEBROW: EyebrowBlock,
   HEADING: HeadingBlock,
   TEXT: TextBlock,

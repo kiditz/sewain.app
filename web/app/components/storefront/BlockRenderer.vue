@@ -38,7 +38,7 @@ const layoutStyle = computed(() => ({
 }));
 
 function blockStyle(block: StorefrontBlock) {
-  if (block.type.includes("HEADER")) {
+  if (["HEADER", "MENU"].includes(block.type)) {
     return {
       width: "100%",
       flex: "0 1 100%",
@@ -75,7 +75,7 @@ const dragBlocks = computed<StorefrontBlock[]>({
 function isFillTextBlock(block: StorefrontBlock) {
   const layout = block.settings.layout;
   return (
-    ["TEXT", "HEADING", "EYEBROW", "PRODUCT_TITLE", "PRODUCT_PRICE"].includes(block.type) &&
+    ["TEXT", "HEADING", "EYEBROW", "PRODUCT_TITLE", "PRODUCT_PRICE", 'MENU'].includes(block.type) &&
     layout !== null &&
     typeof layout === "object" &&
     !Array.isArray(layout) &&
@@ -107,6 +107,7 @@ function isFillTextBlock(block: StorefrontBlock) {
       }"
       :style="blockStyle(block)"
       :data-block-id="block.id"
+      :data-block-type="block.type"
       :data-block-label="blockRegistry[block.type].label"
     >
       <div
