@@ -1,0 +1,3 @@
+package app.sewain.finance;
+
+enum FinanceCategory { RENTAL_PAYMENT, DEPOSIT_RECEIVED, RENTAL_REFUND, DEPOSIT_REFUND, OPERATING_EXPENSE }

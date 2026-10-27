@@ -1,0 +1,12 @@
+package app.sewain.orders;
+
+enum OrderStatus {
+	PENDING_PAYMENT,
+	CONFIRMED,
+	PROCESSING,
+	READY,
+	ACTIVE_RENTAL,
+	COMPLETED,
+	CANCELLED,
+	EXPIRED
+}

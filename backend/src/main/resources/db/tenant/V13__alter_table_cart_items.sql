@@ -1,0 +1,5 @@
+ALTER TABLE cart_items
+    ADD COLUMN rental_plans JSONB NOT NULL DEFAULT '[]'::JSONB,
+    ADD COLUMN rental_subtotal NUMERIC(19, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN deposit_subtotal NUMERIC(19, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN total_amount NUMERIC(19, 2) NOT NULL DEFAULT 0;

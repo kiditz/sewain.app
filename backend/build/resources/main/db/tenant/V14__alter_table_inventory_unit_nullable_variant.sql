@@ -1,0 +1,1 @@
+ALTER TABLE inventory_units ALTER COLUMN variant_id DROP NOT NULL;

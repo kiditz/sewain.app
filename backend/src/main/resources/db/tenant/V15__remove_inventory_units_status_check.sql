@@ -1,0 +1,1 @@
+ALTER TABLE inventory_units DROP CONSTRAINT IF EXISTS chk_inventory_units_status;

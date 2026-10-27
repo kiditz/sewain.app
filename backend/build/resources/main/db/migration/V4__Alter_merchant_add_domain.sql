@@ -1,0 +1,1 @@
+ALTER table merchants ADD COLUMN "schema" varchar(255) NOT NULL default '';

@@ -1,0 +1,3 @@
+package app.sewain.finance;
+
+enum ExpenseCategory { RENTAL_MAINTENANCE, INVENTORY_PURCHASE, UTILITIES, TRANSPORT, MARKETING, OTHER }

@@ -1,0 +1,14 @@
+package app.sewain;
+
+import org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication(exclude = PgVectorStoreAutoConfiguration.class)
+public class SewainApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(SewainApplication.class, args);
+	}
+
+}
