@@ -17,7 +17,6 @@ const props = defineProps<{
 }>();
 
 const storefront = useStorefront();
-const { findCollectionProducts } = useCollection();
 const sectionStyle = computed(() => ({
   ...getLayoutStyle(props.settings.layout as SectionLayout, storefront.theme.value),
   ...getPaddingStyle(props.settings.padding as StorefrontPadding, storefront.theme.value, true),
@@ -26,50 +25,29 @@ const collectionId = computed(() => {
   const source = props.settings.source;
   return typeof source === "string" && source !== "" ? source : null;
 });
-const collectionProductsKey = computed(
-  () => `storefront-featured-products:${collectionId.value ?? "all"}`,
-);
-const { data: collectionProducts } = await useAsyncData<Product[] | null>(
-  collectionProductsKey,
-  async () => {
-    if (!collectionId.value) return null;
-    try {
-      const response = await findCollectionProducts(collectionId.value, {
-        page: 0,
-        size: 100,
-      });
-      return response.items.filter((item) => item.status === "ACTIVE");
-    } catch {
-      return [];
-    }
-  },
-  { default: () => null },
-);
-
-const productCardTemplate = computed(() =>
-  props.blocks.find((block) => block.type === "PRODUCT_CARD"),
-);
-const contentBlocks = computed(() =>
-  props.blocks.filter((block) => block.type !== "PRODUCT_CARD"),
-);
-const visibleProducts = computed<Product[]>(() => {
-  const sourceProducts = collectionId.value
-    ? (collectionProducts.value ?? [])
-    : storefront.products.value;
-  const activeProducts = sourceProducts.filter(
-    (item) => item.status === "ACTIVE",
-  );
-  const selectedIds = String(props.settings.productIds ?? "")
-    .split(",")
-    .filter(Boolean);
-  const orderedProducts = selectedIds.length
-    ? selectedIds
-        .map((id) => activeProducts.find((item) => item.id === id))
-        .filter((item): item is Product => item !== undefined)
-    : activeProducts;
-  const count = Math.max(1, Math.min(100, Number(props.settings.count) || 3));
-  return orderedProducts.slice(0, count);
-});
+const count = computed(() => Math.max(1, Math.min(100, Number(props.settings.count) || 3)));
+const selectedIds = computed(() => [...new Set(String(props.settings.productIds ?? "").split(",").filter(Boolean))]);
+const productCardTemplate = computed(() => props.blocks.find(block => block.type === "PRODUCT_CARD"));
+const contentBlocks = computed(() => props.blocks.filter(block => block.type !== "PRODUCT_CARD"));
+const requestKey = computed(() => storefront.queryKey("featured", {
+  collection: collectionId.value, ids: selectedIds.value, count: count.value, enabled: productCardTemplate.value?.enabled ?? false,
+}));
+const { data: featuredProducts } = await useAsyncData<Product[]>(requestKey, async () => {
+  if (!productCardTemplate.value?.enabled) return [];
+  const fetchPage = (query: { page: number; size: number; id?: string }) => collectionId.value
+    ? storefront.fetchCollectionProducts(collectionId.value, query) : storefront.fetchProducts(query);
+  if (!selectedIds.value.length) return (await fetchPage({ page: 0, size: count.value })).items;
+  const ordered: Product[] = [];
+  // Fetch configured IDs in bounded batches, preserving the merchant's order.
+  for (let offset = 0; offset < selectedIds.value.length && ordered.length < count.value; offset += 100) {
+    const ids = selectedIds.value.slice(offset, offset + 100);
+    const result = await fetchPage({ page: 0, size: ids.length, id: ids.join(",") });
+    const byId = new Map(result.items.map(product => [product.id, product]));
+    ordered.push(...ids.flatMap(id => byId.has(id) ? [byId.get(id)!] : []));
+  }
+  return ordered.slice(0, count.value);
+}, { default: () => [] });
+const visibleProducts = computed(() => featuredProducts.value ?? []);
 const displayType = computed(() => {
   const value = String(props.settings.displayType ?? "grid");
   return ["carousel", "grid", "editorial"].includes(value) ? value : "grid";

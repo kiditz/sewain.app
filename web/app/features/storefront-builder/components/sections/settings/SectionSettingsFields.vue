@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { StorefrontSection } from "~/types/storefront";
+import ProductSelector from "../../ProductSelector.vue";
 import EditorFieldRow from "../../EditorFieldRow.vue";
 import LayoutField from "../../LayoutField.vue";
 import AppearanceField from "../../AppearanceField.vue";
@@ -21,11 +22,6 @@ const productSourceItems = computed(() => [
     value: collection.id,
   })),
 ]);
-const productItems = computed(() =>
-  storefront.products.value
-    .filter((product) => product.status === "ACTIVE")
-    .map((product) => ({ title: product.name, value: product.id })),
-);
 const collectionItems = computed(() =>
   storefront.collections.value.map((collection) => ({
     title: collection.name,
@@ -179,16 +175,9 @@ function labelOf(key: string) {
         v-else-if="section.type === 'FEATURED_PRODUCTS' && key === 'productIds'"
         :label="labelOf(String(key))"
       >
-        <v-autocomplete
+        <ProductSelector
           :model-value="selectedIds(value)"
-          :items="productItems"
-          variant="outlined"
-          density="compact"
-          chips
-          closable-chips
-          multiple
-          hide-details
-          :aria-label="labelOf(String(key))"
+          :label="labelOf(String(key))"
           @update:model-value="update('productIds', $event.join(','))"
         />
       </EditorFieldRow>

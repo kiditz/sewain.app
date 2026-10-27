@@ -19,8 +19,9 @@ const FETCH_SIZE = 24;
 /** Batas collection yang dimuat produknya dalam satu block. */
 const MAX_COLLECTIONS = 30;
 
-const { collections } = useStorefront();
-const { findCollectionProducts } = useCollection();
+const catalog = useStorefront();
+const { collections } = catalog;
+await catalog.loadCollections().catch(() => undefined);
 
 const clamp = (value: unknown, fallback: number, min: number, max: number) => {
   const number = Number(value);
@@ -60,46 +61,31 @@ const isAvailable = (product: Product) =>
   product.status === "ACTIVE" &&
   (product.variants ?? []).some((variant) => variant.active);
 
-// Key mengikuti daftar collection, jadi data dimuat ulang saat pilihan berubah
-// di builder. Pengaturan lain (jumlah, hide empty, dst.) hanya memengaruhi tampilan.
-const asyncKey = computed(
-  () =>
-    `storefront-collection-products:${candidates.value.map((collection) => collection.id).join(",")}`,
-);
-
-const { data: entries } = await useAsyncData<CollectionEntry[]>(
-  asyncKey,
-  async () => {
-    const names = new Map(
-      collections.value.map((collection) => [collection.id, collection.name]),
-    );
-
-    // Satu request per collection, paralel. Jika satu gagal, yang lain tetap tampil.
-    return Promise.all(
-      candidates.value.map(async (collection): Promise<CollectionEntry> => {
-        const parentName = collection.parentId
-          ? (names.get(collection.parentId) ?? null)
-          : null;
-
-        try {
-          const page = await findCollectionProducts(collection.id, {
-            page: 0,
-            size: FETCH_SIZE,
-          });
-
-          return {
-            collection,
-            parentName,
-            products: page.items.filter(isAvailable),
-          };
-        } catch {
-          return { collection, parentName, products: [] };
-        }
-      }),
-    );
-  },
-  { default: () => [] },
-);
+const asyncKey = computed(() => catalog.queryKey("collection-products", {
+  ids: candidates.value.map(collection => collection.id), ...settings.value,
+}));
+const { data: entries } = await useAsyncData<CollectionEntry[]>(asyncKey, async () => {
+  const names = new Map(collections.value.map(collection => [collection.id, collection.name]));
+  const result: CollectionEntry[] = [];
+  // Fetch small batches and stop once enough nonempty collections are visible.
+  for (let offset = 0; offset < candidates.value.length;) {
+    const batch = candidates.value.slice(offset, offset + Math.min(4, settings.value.collectionCount - result.length));
+    const loaded = await Promise.all(batch.map(async collection => {
+      let products: Product[] = [];
+      try {
+        const response = await catalog.fetchCollectionProducts(collection.id, {
+          page: 0, size: settings.value.productsPerCollection, available: true,
+        });
+        products = response.items.filter(isAvailable);
+      } catch { /* A failed collection does not hide the rest of the section. */ }
+      return { collection, parentName: collection.parentId ? names.get(collection.parentId) ?? null : null, products };
+    }));
+    offset += batch.length;
+    result.push(...loaded.filter(entry => !settings.value.hideEmpty || entry.products.length));
+    if (result.length >= settings.value.collectionCount) break;
+  }
+  return result;
+}, { default: () => [] });
 
 const visibleEntries = computed(() =>
   (entries.value ?? [])

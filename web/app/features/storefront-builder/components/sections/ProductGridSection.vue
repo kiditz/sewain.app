@@ -13,8 +13,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { products } = useStorefront();
-const { findProducts } = useProduct();
+const catalog = useStorefront();
 const { regional, loadRegionalSettings } = useSettings();
 await loadRegionalSettings().catch(() => undefined);
 
@@ -23,10 +22,6 @@ const selectedTypes = ref<string[]>([]);
 const minimumPrice = ref<number | null>(null);
 const maximumPrice = ref<number | null>(null);
 const sortBy = ref("title-ascending");
-const visibleProducts = ref<Product[]>([]);
-const totalItems = ref(0);
-const loading = ref(false);
-let requestSequence = 0;
 
 const columns = computed(() =>
   Math.max(1, Math.min(6, Number(props.settings.columns) || 3)),
@@ -40,19 +35,11 @@ const showProductCount = computed(
   () => props.settings.showProductCount !== false,
 );
 
-const productTypes = computed(() => {
-  const types = new Map<string, string>();
-  for (const product of products.value) {
-    if (product.type?.id && product.type.name) {
-      types.set(product.type.id, product.type.name);
-    }
-  }
-  return [...types.entries()]
-    .map(([value, title]) => ({ value, title }))
-    .sort((left, right) =>
-      left.title.localeCompare(right.title, regional.value.locale),
-    );
-});
+const productTypes = computed(() => catalog.productTypes.value
+  .map(type => ({ value: type.id, title: type.name }))
+  .sort((left, right) => left.title.localeCompare(right.title, regional.value.locale)));
+if (showFilters.value) await catalog.loadProductTypes().catch(() => undefined);
+watch(showFilters, visible => { if (visible) void catalog.loadProductTypes().catch(() => undefined); });
 
 const currencyPrefix = computed(() =>
   regional.value.currencyPosition === "before"
@@ -98,55 +85,26 @@ function clearFilters() {
   page.value = 1;
 }
 
-async function loadProducts() {
-  const sequence = ++requestSequence;
+watch([selectedTypes, minimumPrice, maximumPrice, sortBy], () => { page.value = 1; }, { deep: true });
+const productQuery = computed(() => {
   const [sortKey, sortOrder] = sortBy.value.split("-");
-  const direction = sortOrder === "descending" ? "desc" : "asc";
-  const sortField =
-    sortKey === "title"
-      ? "name"
-      : sortKey === "price"
-        ? "rentalPrice"
-        : "createdAt";
-  loading.value = true;
-  try {
-    const response = await findProducts({
-      page: page.value - 1,
-      size: pageSize.value,
-      status: "ACTIVE",
-      available: true,
-      "type.id": selectedTypes.value.length
-        ? selectedTypes.value.join(",")
-        : undefined,
-      minimumRentalPrice: minimumPrice.value ?? undefined,
-      maximumRentalPrice: maximumPrice.value ?? undefined,
-      sortBy: sortField,
-      direction,
-    });
-    if (sequence !== requestSequence) return;
-    visibleProducts.value = response.items;
-    totalItems.value = response.totalItems;
-  } catch (error) {
-    if (sequence === requestSequence) {
-      visibleProducts.value = [];
-      totalItems.value = 0;
-      console.error("Unable to load storefront products", error);
-    }
-  } finally {
-    if (sequence === requestSequence) loading.value = false;
-  }
-}
-
-watch(
-  [selectedTypes, minimumPrice, maximumPrice, sortBy],
-  () => {
-    if (page.value !== 1) page.value = 1;
-    else void loadProducts();
-  },
-  { deep: true },
+  return {
+    page: page.value - 1, size: pageSize.value, status: "ACTIVE" as const, available: true,
+    "type.id": selectedTypes.value.length ? selectedTypes.value.join(",") : undefined,
+    minimumRentalPrice: minimumPrice.value ?? undefined,
+    maximumRentalPrice: maximumPrice.value ?? undefined,
+    sortBy: sortKey === "title" ? "name" : sortKey === "price" ? "rentalPrice" : "createdAt",
+    direction: sortOrder === "descending" ? "desc" as const : "asc" as const,
+  };
+});
+const { data: productsPage, status: requestStatus } = await useAsyncData(
+  computed(() => catalog.queryKey("grid", productQuery.value)),
+  () => catalog.fetchProducts(productQuery.value),
+  { default: () => ({ items: [] as Product[], totalItems: 0 }) },
 );
-watch([page, pageSize], () => void loadProducts());
-await loadProducts();
+const visibleProducts = computed(() => productsPage.value.items);
+const totalItems = computed(() => productsPage.value.totalItems);
+const loading = computed(() => requestStatus.value === "pending");
 </script>
 
 <template>

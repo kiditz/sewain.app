@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { VueDraggable } from "vue-draggable-plus";
-import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 import { sectionRegistry } from "~/features/storefront-builder/utils/section-registry";
 import { builderDndKey } from "~/features/storefront-builder/utils/builder-dnd";
 import "@vueup/vue-quill/dist/vue-quill.snow.css";
@@ -14,8 +13,6 @@ const props = defineProps<{
   selectedBlockId?: string | null;
   product?: Product;
 }>();
-const storefront = useStorefront();
-await storefront.loadCatalog();
 const visibleSections = computed(() =>
   props.sections.filter(
     (section) => section.enabled && sectionRegistry[section.type],

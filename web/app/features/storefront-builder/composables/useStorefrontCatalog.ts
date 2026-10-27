@@ -1,48 +1,72 @@
 import { useStorefrontState as useState } from "./useStorefrontState";
 import type { Product } from "~/types/product";
+import type { ProductType } from "~/types/product-type";
 import type { CollectionSummary } from "~/types/collection";
 import type { PageResponse } from "~/types/pagination";
+import type { ProductSearchQuery } from "~/composables/useProduct";
+const inFlight = new WeakMap<object, Map<string, Promise<unknown>>>();
 
 export function useStorefrontCatalog() {
-  const products = useState<Product[]>("storefront-products", () => []);
-  const collections = useState<CollectionSummary[]>("storefront-collections", () => []);
-  const catalogLoaded = useState("storefront-catalog-loaded", () => false);
+  const app = useNuxtApp();
   const api = useApi();
-  const productStore = useStorefrontProductStore();
-  async function loadCatalog() {
-    if (catalogLoaded.value) return;
-    const loadAllActiveProducts = async () => {
-      const pageSize = 100;
-      const firstPage = await api<PageResponse<Product>>("/products", {
-        query: { page: 0, size: pageSize, status: "ACTIVE" },
-      });
-      const pageCount = Math.ceil(firstPage.totalItems / pageSize);
-      const remainingPages = await Promise.all(
-        Array.from({ length: Math.max(0, pageCount - 1) }, (_, index) =>
-          api<PageResponse<Product>>("/products", {
-            query: { page: index + 1, size: pageSize, status: "ACTIVE" },
-          }),
-        ),
-      );
-      return [firstPage, ...remainingPages].flatMap((page) => page.items);
-    };
-
-    const results = await Promise.allSettled([
-      loadAllActiveProducts(),
-      api<CollectionSummary[]>("/collections"),
-    ]);
-    const productsResult = results[0];
-    const collectionsResult = results[1];
-    if (productsResult?.status === "fulfilled") {
-      products.value = productsResult.value;
-      if (products.value.length > 0) {
-        productStore.setProduct(products.value[0]!);
-      }
-    }
-    if (collectionsResult?.status === "fulfilled") {
-      collections.value = collectionsResult.value;
-    }
-    catalogLoaded.value = true;
+  const scope = `${useRequestURL().host}:${useMerchantStore().current?.slug ?? "guest"}`;
+  const products = useState<Product[]>("storefront-products", () => []);
+  const totalProducts = useState("storefront-products-total", () => 0);
+  const collections = useState<CollectionSummary[]>("storefront-collections", () => []);
+  const collectionsLoaded = useState("storefront-collections-loaded", () => false);
+  const productTypes = useState<ProductType[]>("storefront-product-types", () => []);
+  const typesLoaded = useState("storefront-product-types-loaded", () => false);
+  const queryKey = (path: string, query: Record<string, unknown> = {}) =>
+    `storefront-catalog:${scope}:${path}:${JSON.stringify(Object.entries(query).filter(([, value]) => value != null).sort(([a], [b]) => a.localeCompare(b)))}`;
+  function dedupe<T>(key: string, request: () => Promise<T>): Promise<T> {
+    let pending = inFlight.get(app);
+    if (!pending) { pending = new Map(); inFlight.set(app, pending); }
+    const existing = pending.get(key);
+    if (existing) return existing as Promise<T>;
+    const task = Promise.resolve().then(request).finally(() => pending!.delete(key));
+    pending.set(key, task);
+    return task;
   }
-  return { products, collections, loadCatalog };
+  function pageQuery(query: ProductSearchQuery = {}) {
+    return { status: "ACTIVE" as const, ...query,
+      page: Math.max(0, Math.floor(Number(query.page) || 0)),
+      size: Math.max(1, Math.min(100, Math.floor(Number(query.size) || 20))),
+    };
+  }
+  function fetchProducts(query: ProductSearchQuery = {}) {
+    const normalized = pageQuery(query);
+    return dedupe(queryKey("products", normalized), () => api<PageResponse<Product>>("/products", { query: normalized }));
+  }
+  function fetchCollectionProducts(id: string, query: ProductSearchQuery = {}) {
+    const normalized = pageQuery(query);
+    return dedupe(queryKey(`collections/${id}/products`, normalized), () => api<PageResponse<Product>>(`/collections/${id}/products`, { query: normalized }));
+  }
+  async function loadProducts(query: ProductSearchQuery = {}) {
+    const result = await fetchProducts(query);
+    products.value = result.items;
+    totalProducts.value = result.totalItems;
+    return result;
+  }
+  async function loadCollections() {
+    if (collectionsLoaded.value) return collections.value;
+    return dedupe(queryKey("collections"), async () => {
+      collections.value = await api<CollectionSummary[]>("/collections");
+      collectionsLoaded.value = true;
+      return collections.value;
+    });
+  }
+  async function loadProductTypes() {
+    if (typesLoaded.value) return productTypes.value;
+    return dedupe(queryKey("product-types"), async () => {
+      productTypes.value = await api<ProductType[]>("/products/types");
+      typesLoaded.value = true;
+      return productTypes.value;
+    });
+  }
+  // Compatibility entry point: one requested page, never the entire catalog.
+  async function loadCatalog(query: ProductSearchQuery = {}) {
+    return Promise.all([loadProducts(query), loadCollections()]);
+  }
+  return { products, totalProducts, collections, productTypes, queryKey,
+    fetchProducts, fetchCollectionProducts, loadProducts, loadCollections, loadProductTypes, loadCatalog };
 }

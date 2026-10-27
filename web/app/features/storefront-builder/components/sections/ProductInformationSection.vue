@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useStorefrontCatalog } from "../../composables/useStorefrontCatalog";
 import type { StorefrontBlock } from "~/types/storefront";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 const store = useStorefrontProductStore();
@@ -13,12 +14,17 @@ const activeImageIndex = computed({
     if (image) selectedMedia.value = image;
   },
 });
-defineProps<{
+const props = defineProps<{
   settings: Record<string, string | number | boolean>;
   blocks: StorefrontBlock[];
   preview?: boolean;
   selectedBlockId?: string | null;
 }>();
+const catalog = useStorefrontCatalog();
+if (props.preview && !store.product) {
+  const { data: example } = await useAsyncData(catalog.queryKey("preview-product"), () => catalog.fetchProducts({ page: 0, size: 1, available: true }));
+  if (example.value?.items[0]) store.setProduct(example.value.items[0]);
+}
 function selectImage(index: number) {
   activeImageIndex.value = index;
 }

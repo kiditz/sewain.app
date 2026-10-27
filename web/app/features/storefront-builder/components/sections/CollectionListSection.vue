@@ -19,6 +19,7 @@ const props = defineProps<{
 }>();
 
 const storefront = useStorefront();
+await storefront.loadCollections().catch(() => undefined);
 const sectionStyle = computed(() => ({
   ...getLayoutStyle(props.settings.layout as SectionLayout, storefront.theme.value),
   ...getPaddingStyle(props.settings.padding as StorefrontPadding, storefront.theme.value, true),

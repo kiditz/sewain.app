@@ -217,3 +217,56 @@ test('legacy pages receive exactly one header and hidden headers stay hidden', a
   assert.equal(resolveHeaderMenu(menus, '__none__', 'main'), undefined);
   assert.equal(resolveHeaderMenu(menus, 'deleted', 'main'), undefined);
 });
+
+const { useStorefrontCatalog } = await loadModule('composables/useStorefrontCatalog.ts');
+
+test('catalog loads only the requested page even for a huge total', async () => {
+  const calls = [];
+  context(async (path, options) => { calls.push([path, options.query]); return { items: [{ id: 'page-item' }], totalItems: 50000 }; });
+  const catalog = useStorefrontCatalog();
+  assert.equal(calls.length, 0, 'constructing the catalog must not fetch anything');
+  const result = await catalog.loadProducts({ page: 2, size: 12 });
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0], ['/products', { status: 'ACTIVE', page: 2, size: 12 }]);
+  assert.equal(result.totalItems, 50000);
+  assert.equal(catalog.totalProducts.value, 50000);
+  assert.equal(catalog.products.value.length, 1);
+});
+
+test('catalog deduplicates matching in-flight requests but keeps different pages separate', async () => {
+  const calls = [];
+  context(async (path, options) => { calls.push([path, options.query]); return { items: [], totalItems: 1000 }; });
+  const first = useStorefrontCatalog();
+  const second = useStorefrontCatalog();
+  await Promise.all([first.fetchProducts({ page: 0, size: 3 }), second.fetchProducts({ size: 3, page: 0 }), first.fetchProducts({ page: 1, size: 3 })]);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map(([, query]) => query.page), [0, 1]);
+  assert.deepEqual(first.products.value, [], 'public section requests do not populate the builder product cache');
+});
+
+test('collections and product types load independently and metadata failures can retry', async () => {
+  const calls = [];
+  let fail = true;
+  context(async path => {
+    calls.push(path);
+    if (path === '/collections' && fail) throw new Error('temporary');
+    return path === '/collections' ? [{ id: 'collection' }] : [{ id: 'type', name: 'Type' }];
+  });
+  const catalog = useStorefrontCatalog();
+  await assert.rejects(catalog.loadCollections());
+  fail = false;
+  await Promise.all([catalog.loadCollections(), useStorefrontCatalog().loadCollections()]);
+  await catalog.loadCollections();
+  assert.deepEqual(calls, ['/collections', '/collections']);
+  await Promise.all([catalog.loadProductTypes(), useStorefrontCatalog().loadProductTypes()]);
+  await catalog.loadProductTypes();
+  assert.deepEqual(calls, ['/collections', '/collections', '/products/types']);
+});
+
+test('targeted collection queries retain pagination, IDs and active/availability filters', async () => {
+  const calls = [];
+  context(async (path, options) => { calls.push([path, options.query]); return { items: [], totalItems: 0 }; });
+  const catalog = useStorefrontCatalog();
+  await catalog.fetchCollectionProducts('selected-collection', { page: 3, size: 8, id: 'selected-product', available: true });
+  assert.deepEqual(calls, [['/collections/selected-collection/products', { status: 'ACTIVE', page: 3, size: 8, id: 'selected-product', available: true }]]);
+});

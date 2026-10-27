@@ -30,6 +30,7 @@ const emit = defineEmits<{
   saved: [];
 }>();
 const store = useStorefront();
+await store.loadCollections().catch(() => undefined);
 const pageSaveStatus = computed(() => store.pageStore.pageStatus(props.page.id).status.value);
 const saving = computed(() => pageSaveStatus.value.saving);
 const saveError = computed(() => pageSaveStatus.value.error);

@@ -1744,7 +1744,8 @@
     "primary": "Utama",
     "secondary": "Sekunder",
     "disabled": "Nonaktif",
-    "page_in_preparation": "Halaman ini sedang disiapkan."
+    "page_in_preparation": "Halaman ini sedang disiapkan.",
+    "load_more": "Muat lagi"
   },
   "landing": {
     "features": {
@@ -1975,7 +1976,8 @@
       "showFilters": "Tampilkan filter",
       "showSorting": "Tampilkan pengurutan",
       "showProductCount": "Tampilkan jumlah produk"
-    }
+    },
+    "loadFailed": "Produk gagal dimuat. Coba cari lagi."
   },
   "productList": {
     "settings": {

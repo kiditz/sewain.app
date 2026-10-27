@@ -22,13 +22,15 @@ if (slug !== "all" && !collection.value) {
   throw createError({ statusCode: 404, statusMessage: "Collection not found" });
 }
 
-const { data: productsPage } = await useAsyncData<PageResponse<Product> | null>(
-  `storefront-collection-products-${slug}`,
-  () =>
-    collection.value
-      ? findCollectionProducts(collection.value.id, { page: 0, size: 100 })
-      : Promise.resolve(null),
+const currentPage = ref(1);
+const pageSize = 12;
+const { data: productsPage, status: productsStatus } = await useAsyncData<PageResponse<Product> | null>(
+  computed(() => storefront.queryKey("collection-page", { slug, page: currentPage.value - 1, size: pageSize })),
+  () => collection.value
+    ? storefront.fetchCollectionProducts(collection.value.id, { page: currentPage.value - 1, size: pageSize })
+    : Promise.resolve(null),
 );
+const pageCount = computed(() => Math.max(1, Math.ceil((productsPage.value?.totalItems ?? 0) / pageSize)));
 const title = computed(
   () => collection.value?.name ?? allProductsPage.value?.title ?? "All products",
 );
@@ -54,6 +56,7 @@ useSeoMeta({ title: () => title.value });
           {{ collection.description }}
         </p>
       </div>
+      <v-progress-linear v-if="productsStatus === 'pending'" indeterminate color="primary" />
       <div v-if="visibleProducts.length" class="product-grid">
         <StorefrontProductCard
           v-for="product in visibleProducts"
@@ -64,6 +67,7 @@ useSeoMeta({ title: () => title.value });
       <p v-else class="empty-collection">
         {{ $t("ui.there_are_no_products_in_this_collection_yet") }}
       </p>
+      <v-pagination v-if="pageCount > 1" v-model="currentPage" :length="pageCount" :total-visible="5" class="mt-6" />
     </section>
   </StorefrontLayout>
 </template>

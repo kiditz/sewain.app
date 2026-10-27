@@ -2,6 +2,7 @@ import type { PageQuery, PageResponse } from "~/types/pagination";
 import type { Product, ProductCommand, ProductStatus } from "~/types/product";
 
 export interface ProductSearchQuery extends PageQuery {
+  id?: string;
   status?: ProductStatus;
   keyword?: string;
   "type.id"?: string;

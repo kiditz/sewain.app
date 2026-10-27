@@ -3,7 +3,8 @@ import type { StorefrontBlock } from "~/types/storefront";
 import { useStorefront } from "../../composables/useStorefront";
 
 const props = defineProps<{ block: StorefrontBlock }>();
-const { collections } = useStorefront();
+const { collections, loadCollections } = useStorefront();
+await loadCollections().catch(() => undefined);
 const visibleCollections = computed(() => {
   const limit = Math.max(1, Math.min(100, Number(props.block.settings.count) || 3));
   const selectedIds = String(props.block.settings.collectionIds || "")
