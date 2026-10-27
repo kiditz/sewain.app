@@ -28,7 +28,7 @@ class StorefrontPaginationTest {
         when(products.findTypesByStatus(ProductStatus.ACTIVE)).thenReturn(List.of(type));
         var service = new ProductQueryServiceImpl(products, mock(ProductMapper.class), Mappers.getMapper(ProductTypeMapper.class));
         service.search(PageQuery.from(Map.of("page", "4", "size", "12", "status", "ACTIVE")));
-        verify(products).findAll(any(Specification.class), argThat((Pageable page) -> page.getPageNumber() == 4 && page.getPageSize() == 12));
+        verify(products).findAll(any(Specification.class), argThat((Pageable page) -> page.getPageNumber() == 4 && page.getPageSize() == 12 && page.getSort().getOrderFor("id") != null));
         clearInvocations(products);
         MockMvcBuilders.standaloneSetup(new ProductQueryController(service)).build()
                 .perform(get("/api/products/types"))

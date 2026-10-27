@@ -62,7 +62,8 @@ const isAvailable = (product: Product) =>
   (product.variants ?? []).some((variant) => variant.active);
 
 const asyncKey = computed(() => catalog.queryKey("collection-products", {
-  ids: candidates.value.map(collection => collection.id), ...settings.value,
+  ids: candidates.value.map(collection => collection.id),
+  count: settings.value.collectionCount, size: settings.value.productsPerCollection, hideEmpty: settings.value.hideEmpty,
 }));
 const { data: entries } = await useAsyncData<CollectionEntry[]>(asyncKey, async () => {
   const names = new Map(collections.value.map(collection => [collection.id, collection.name]));

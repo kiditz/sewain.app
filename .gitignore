@@ -1,2 +1,65 @@
+# Operating system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE settings
+.idea/
+.fleet/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# Node dependencies and Nuxt/Vite build caches
+node_modules/
+.nuxt/
+.output/
+.nitro/
+.data/
+.cache/
+.vite/
+.turbo/
+.eslintcache
+*.tsbuildinfo
+dist/
+
+# Java/Gradle generated files (keep gradle/wrapper and lockfiles tracked)
+.gradle/
+.kotlin/
+build/
+out/
+target/
+*.class
+hs_err_pid*
+replay_pid*
+
+# Test and coverage outputs
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+
+# Runtime data, uploaded files, and locally generated JWT keys
+/backend/data/
 /backend/upload/
-/backend/build/
+/backend/uploads/
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# Local environment overrides; keep shareable templates tracked
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.template
+application-local.properties
+application-local.yml
+application-local.yaml

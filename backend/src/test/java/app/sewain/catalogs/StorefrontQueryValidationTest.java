@@ -36,6 +36,14 @@ class StorefrontQueryValidationTest {
                 session.createQuery(collectionQuery.countQuery(), Long.class);
                 var typeQuery = ProductRepository.class.getDeclaredMethod("findTypesByStatus", ProductStatus.class).getAnnotation(Query.class);
                 session.createQuery(typeQuery.value(), ProductType.class);
+                var cb = session.getCriteriaBuilder();
+                var criteria = cb.createQuery(Product.class);
+                var root = criteria.from(Product.class);
+                criteria.select(root).where(ProductSpecifications.search(java.util.Map.of(
+                        "id", java.util.UUID.randomUUID() + "," + java.util.UUID.randomUUID(),
+                        "status", "ACTIVE", "available", "true"
+                )).toPredicate(root, criteria, cb));
+                session.createQuery(criteria);
             }
         } finally { StandardServiceRegistryBuilder.destroy(registry); }
     }

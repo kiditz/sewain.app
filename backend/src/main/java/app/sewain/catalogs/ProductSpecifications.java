@@ -98,7 +98,7 @@ final class ProductSpecifications {
 			return Sort.unsorted();
 		}
 
-		return SearchUtils.toSort(Product.class, sortFields, RULES);
+		return SearchUtils.toSort(Product.class, sortFields, RULES).and(Sort.by("id"));
 	}
 
 	private static Specification<Product> availableProducts(String available) {
@@ -143,7 +143,7 @@ final class ProductSpecifications {
 				var direction = Direction.fromString(priceSort.getOrDefault("order", "asc"));
 				query.orderBy(direction.isAscending()
 						? cb.asc(minimumPrice)
-						: cb.desc(minimumPrice), cb.asc(root.get("name")));
+						: cb.desc(minimumPrice), cb.asc(root.get("name")), cb.asc(root.get("id")));
 			}
 			return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(Predicate[]::new));
 		};
