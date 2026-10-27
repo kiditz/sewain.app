@@ -82,7 +82,17 @@ class CollectionQueryServiceImpl implements CollectionQueryService {
 		var query = q == null ? PageQuery.defaultQuery() : q;
 		var collection = getCollection(id);
 		var keyword = query.getSearch().get("keyword");
-		var hasKeyword = keyword != null && !keyword.isBlank();
+        var statusValue = query.getSearch().get("status");
+        ProductStatus status;
+        java.util.List<UUID> ids;
+        try {
+            status = statusValue == null || statusValue.isBlank() ? null : ProductStatus.valueOf(statusValue);
+            var idValue = query.getSearch().get("id");
+            ids = idValue == null || idValue.isBlank() ? java.util.List.of() :
+                    java.util.Arrays.stream(idValue.split(",")).map(String::trim).map(UUID::fromString).toList();
+        } catch (IllegalArgumentException ex) {
+            throw new app.sewain.exception.ValidationException("Invalid collection product filter");
+        }
 
 		Page<Product> page;
 
@@ -90,15 +100,15 @@ class CollectionQueryServiceImpl implements CollectionQueryService {
 			page = collectionItemRepository.findProducts(
 					id,
 					toLikePattern(keyword),
+                    status, !ids.isEmpty(), ids.isEmpty() ? java.util.List.of(new UUID(0, 0)) : ids,
+                    Boolean.parseBoolean(query.getSearch().get("available")),
 					PageRequest.of(query.pageIndex(), query.getSize())
 			);
 		} else {
 			var specification = CollectionRuleSpecifications
 					.matching(collection)
 					.and(ProductSpecifications.search(
-							hasKeyword
-									? Map.of("keyword", keyword.trim())
-									: Map.of()
+							query.getSearch()
 					));
 
 			page = productRepository.findAll(

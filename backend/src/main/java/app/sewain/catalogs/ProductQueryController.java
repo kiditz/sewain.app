@@ -23,6 +23,9 @@ class ProductQueryController {
 		return productQueryService.search(PageQuery.from(params));
 	}
 
+    @GetMapping("/types")
+    java.util.List<ProductTypeResponse> findTypes() { return productQueryService.findTypes(); }
+
 	@GetMapping("/{id}")
 	ProductResponse findById(@PathVariable UUID id) {
 		return productQueryService.findById(id);

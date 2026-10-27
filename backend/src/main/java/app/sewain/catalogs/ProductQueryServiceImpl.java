@@ -18,7 +18,14 @@ class ProductQueryServiceImpl implements ProductQueryService {
 
 	private final ProductRepository productRepository;
 	private final ProductMapper mapper;
+    private final ProductTypeMapper typeMapper;
 
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<ProductTypeResponse> findTypes() {
+        return typeMapper.toResponses(productRepository.findTypesByStatus(ProductStatus.ACTIVE));
+    }
 
 	@Override
 	@Transactional(readOnly = true)
@@ -27,7 +34,7 @@ class ProductQueryServiceImpl implements ProductQueryService {
 		var sort = ProductSpecifications.toSort(query);
 
 		var pageable = PageRequest.of(
-				query.getPage(),
+				query.pageIndex(),
 				query.getSize(),
 				sort
 		);

@@ -27,6 +27,7 @@ final class ProductSpecifications {
 
 	private static final Map<String, SearchUtils.FieldRule> RULES = Map.of(
 			"name", of(true, CONTAINS),
+            "id", of(false, EQUAL, IN),
 			"slug", of(true, CONTAINS),
 			"status", of(false, EQUAL),
 			"type.id", of(false, EQUAL, IN),
@@ -63,7 +64,7 @@ final class ProductSpecifications {
 
 			if (rule != null && value != null && !value.isBlank()
 					&& !"createdAt".equals(field)) {
-				var operator = "type.id".equals(field) && value.contains(",") ? IN
+				var operator = ("type.id".equals(field) || "id".equals(field)) && value.contains(",") ? IN
 						: rule.operators().contains(EQUAL) ? EQUAL : rule.operators().iterator().next();
 				filters.add(new Condition(
 						field,
