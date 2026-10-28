@@ -4,7 +4,7 @@ import { defaultMenus } from "../utils/storefront-menu";
 import { useStorefrontResource, useStorefrontResourceFactory } from "./useStorefrontResource";
 
 export function useStorefrontMenus() {
-  const MenuItems = useState<StorefrontMenu[]>("storefront-menu-items", defaultMenus);
+  const menuItems = useState<StorefrontMenu[]>("storefront-menu-items", defaultMenus);
   const headerMenuId = useState<string | null>("storefront-header-menu", () => "main-menu");
   const initialized = useState("storefront-menus-initialized", () => false);
   const loading = useState("storefront-menus-loading", () => false);
@@ -25,7 +25,7 @@ export function useStorefrontMenus() {
         api<{ configuration: StorefrontMenu[] }>("/storefront/menus"),
         api<{ configuration: { headerMenuId?: string | null } }>("/storefront/navigation"),
       ]);
-      MenuItems.value = nav.configuration.headerMenuId === undefined && !menus.configuration.length ? defaultMenus() : menus.configuration;
+      menuItems.value = nav.configuration.headerMenuId === undefined && !menus.configuration.length ? defaultMenus() : menus.configuration;
       saved.value = Object.fromEntries(menus.configuration.map(menu => [menu.id, JSON.stringify(menu)]));
       headerMenuId.value = nav.configuration.headerMenuId === undefined ? "main-menu" : nav.configuration.headerMenuId;
       savedNavigation.value = nav.configuration.headerMenuId === undefined ? undefined : JSON.stringify({ headerMenuId: headerMenuId.value });
@@ -37,7 +37,7 @@ export function useStorefrontMenus() {
     saving.value = true;
     hasUnsavedChanges.value = true;
     saveError.value = false;
-    const menus = JSON.parse(JSON.stringify(MenuItems.value)) as StorefrontMenu[];
+    const menus = JSON.parse(JSON.stringify(menuItems.value)) as StorefrontMenu[];
     const nav = { headerMenuId: headerMenuId.value };
     try {
       // Save referenced menus first, navigation next, then remove old menus.
@@ -64,8 +64,8 @@ export function useStorefrontMenus() {
     } finally { saving.value = false; }
   }
   return {
-    MenuItems, headerMenuId, initialized, loading, saving, saveError, hasUnsavedChanges, navigation,
-    headerMenu: computed(() => MenuItems.value.find(menu => menu.id === headerMenuId.value)),
+    MenuItems: menuItems, headerMenuId, initialized, loading, saving, saveError, hasUnsavedChanges, navigation,
+    headerMenu: computed(() => menuItems.value.find(menu => menu.id === headerMenuId.value)),
     load, saveMenus,
     initializeDefaults: async () => { if (savedNavigation.value === undefined) await saveMenus(); },
   };
