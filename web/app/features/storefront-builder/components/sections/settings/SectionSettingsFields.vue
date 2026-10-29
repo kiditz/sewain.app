@@ -101,8 +101,11 @@ function labelOf(key: string) {
 <template>
   <div class="settings-fields">
     <template v-for="(value, key) in section.settings" :key="key">
+      <EditorFieldRow v-if="section.type === 'CART' && key === 'summaryPosition'" label="Posisi ringkasan">
+        <v-select :model-value="value" :items="[{ title: 'Kiri', value: 'left' }, { title: 'Kanan', value: 'right' }]" variant="outlined" density="compact" hide-details @update:model-value="update('summaryPosition', $event)" />
+      </EditorFieldRow>
       <EditorFieldRow
-        v-if="section.type === 'COLLECTION_LIST' && key === 'collectionIds'"
+        v-else-if="section.type === 'COLLECTION_LIST' && key === 'collectionIds'"
         :label="labelOf(String(key))"
       >
         <v-autocomplete

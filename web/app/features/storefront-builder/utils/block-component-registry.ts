@@ -1,3 +1,9 @@
+import CheckoutSubmitBlock from "../components/blocks/CheckoutSubmitBlock.vue";
+import CheckoutSummaryBlock from "../components/blocks/CheckoutSummaryBlock.vue";
+import CheckoutPaymentBlock from "../components/blocks/CheckoutPaymentBlock.vue";
+import CheckoutNotesBlock from "../components/blocks/CheckoutNotesBlock.vue";
+import CheckoutFulfillmentBlock from "../components/blocks/CheckoutFulfillmentBlock.vue";
+import CheckoutContactBlock from "../components/blocks/CheckoutContactBlock.vue";
 import LogoBlock from "../components/blocks/LogoBlock.vue";
 import MenuBlock from "../components/blocks/MenuBlock.vue";
 import EyebrowBlock from "../components/blocks/EyebrowBlock.vue";
@@ -22,6 +28,12 @@ import RentalDateRangeBlock from "../components/blocks/RentalDateRangeBlock.vue"
 import PriceSummaryBlock from "../components/blocks/PriceSummaryBlock.vue";
 
 export const blockComponentRegistry = {
+  CHECKOUT_SUBMIT: CheckoutSubmitBlock,
+  CHECKOUT_SUMMARY: CheckoutSummaryBlock,
+  CHECKOUT_PAYMENT: CheckoutPaymentBlock,
+  CHECKOUT_NOTES: CheckoutNotesBlock,
+  CHECKOUT_FULFILLMENT: CheckoutFulfillmentBlock,
+  CHECKOUT_CONTACT: CheckoutContactBlock,
   LOGO: LogoBlock,
   MENU: MenuBlock,
   EYEBROW: EyebrowBlock,

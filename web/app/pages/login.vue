@@ -78,6 +78,7 @@ const submit = handleSubmit(async (values) => {
       <v-text-field
         v-model="email"
         variant="outlined"
+        density="compact"
         hide-details="auto"
         :error-messages="errors.email"
       />
@@ -89,6 +90,7 @@ const submit = handleSubmit(async (values) => {
         hide-details="auto"
         type="password"
         variant="outlined"
+        density="compact"
         :error-messages="errors.password"
       />
     </div>

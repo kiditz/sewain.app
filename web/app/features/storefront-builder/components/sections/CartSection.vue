@@ -1,23 +1,44 @@
 <script setup lang="ts">
-import type { BlockType, StorefrontBlock } from "~/types/storefront";
+import type { BlockType, StorefrontBlock, SectionLayout, StorefrontPadding } from "~/types/storefront";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import { useCartView } from "../../composables/useCartView";
+import { useStorefront } from "../../composables/useStorefront";
+import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
+import { cartSectionDefaults } from "../../utils/cart-layout";
 
 /**
  * Section halaman cart. Block dibagi ke tiga area berdasarkan tipenya:
- *  - header : EYEBROW, HEADING, TEXT
+ *  - header : HEADER (EYEBROW, HEADING, TEXT)
  *  - main   : CART_ITEMS
  *  - side   : block lain (CART_SUMMARY, CART_CHECKOUT, BUTTON, ...)
  * Urutan di dalam tiap area mengikuti urutan block di builder.
  */
 const props = defineProps<{
-  settings: Record<string, string | number | boolean>;
+  settings: Record<string, unknown>;
   blocks: StorefrontBlock[];
   preview?: boolean;
   selectedBlockId?: string | null;
 }>();
 
-const HEADER_BLOCKS: BlockType[] = ["EYEBROW", "HEADING", "TEXT"];
+const { theme } = useStorefront();
+const defaults = cartSectionDefaults();
+const layout = computed(() => ({ ...defaults.layout, ...props.settings.layout as Partial<SectionLayout> }));
+const sectionStyle = computed(() => ({
+  ...getLayoutStyle(layout.value, theme.value),
+  flexDirection: "column" as const,
+  alignItems: "stretch",
+  justifyContent: "flex-start",
+  ...getPaddingStyle({ ...defaults.padding, ...props.settings.padding as StorefrontPadding }, theme.value),
+}));
+const contentStyle = computed(() => ({
+  ...getLayoutStyle(layout.value, theme.value),
+  width: "100%", maxWidth: undefined, margin: 0, height: "auto",
+}));
+const blockLayout = computed<SectionLayout>(() => ({
+  ...layout.value, direction: "vertical", width: "full", height: "auto",
+}));
+
+const HEADER_BLOCKS: BlockType[] = ["HEADER"];
 const MAIN_BLOCKS: BlockType[] = ["CART_ITEMS"];
 
 const headerBlocks = computed(() =>
@@ -47,10 +68,11 @@ const summaryOnLeft = computed(() => props.settings.summaryPosition === "left");
 </script>
 
 <template>
-  <section class="cart-section">
+  <section class="cart-section" :style="sectionStyle">
     <div v-if="hasHeader" class="cart-section__header">
       <BlockRenderer
         :blocks="headerBlocks"
+        :layout="blockLayout"
         :preview="preview"
         :selected-block-id="selectedBlockId"
       />
@@ -58,14 +80,16 @@ const summaryOnLeft = computed(() => props.settings.summaryPosition === "left");
 
     <div
       class="cart-section__layout"
+      :style="contentStyle"
       :class="{
-        'cart-section__layout--single': singleColumn,
+        'cart-section__layout--single': singleColumn || layout.direction === 'vertical',
         'cart-section__layout--summary-left': summaryOnLeft,
       }"
     >
       <div class="cart-section__main">
         <BlockRenderer
           :blocks="mainBlocks"
+          :layout="blockLayout"
           :preview="preview"
           :selected-block-id="selectedBlockId"
         />
@@ -74,6 +98,7 @@ const summaryOnLeft = computed(() => props.settings.summaryPosition === "left");
       <div v-if="hasSide" v-show="!singleColumn" class="cart-section__side">
         <BlockRenderer
           :blocks="sideBlocks"
+          :layout="blockLayout"
           :preview="preview"
           :selected-block-id="selectedBlockId"
         />
@@ -83,73 +108,22 @@ const summaryOnLeft = computed(() => props.settings.summaryPosition === "left");
 </template>
 
 <style scoped>
-.cart-section {
-  width: 100%;
-  max-width: var(--store-width, 1200px);
-  margin: 0 auto;
-  padding: var(--store-spacing) 24px;
-  color: var(--store-text);
-}
-
-.cart-section__header {
-  margin-bottom: 36px;
-}
-
-.cart-section__header :deep(.block-heading) {
-  font-size: clamp(30px, 4vw, 42px);
-}
-
-.cart-section__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 350px);
-  align-items: start;
-  gap: 28px;
-}
-
-.cart-section__layout--summary-left {
-  grid-template-columns: minmax(280px, 350px) minmax(0, 1fr);
-}
-
-.cart-section__layout--summary-left .cart-section__main {
-  order: 2;
-}
-
-.cart-section__layout--summary-left .cart-section__side {
-  order: 1;
-}
-
-.cart-section__layout--single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.cart-section__main,
-.cart-section__side {
-  min-width: 0;
-}
-
-.cart-section__side {
-  position: sticky;
-  top: 24px;
-}
-
-.cart-section__side :deep(.block-renderer) {
-  flex-direction: column;
-  gap: 18px;
-}
-
-@media (max-width: 960px) {
-  .cart-section__layout,
-  .cart-section__layout--summary-left {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .cart-section__layout--summary-left .cart-section__main,
-  .cart-section__layout--summary-left .cart-section__side {
-    order: 0;
-  }
-
-  .cart-section__side {
-    position: static;
-  }
+.cart-section { container: cart-section / inline-size; box-sizing: border-box; width: 100%; min-width: 0; color: var(--store-text); }
+.cart-section__header { min-width: 0; }
+.cart-section__header :deep(.block-heading) { font-size: clamp(30px, 4vw, 42px); }
+.cart-section__layout { min-width: 0; }
+.cart-section__main { flex: 1 1 0; min-width: 0; }
+.cart-section__side { flex: 0 1 350px; min-width: 0; }
+.cart-section__layout--summary-left .cart-section__main { order: 2; }
+.cart-section__layout--summary-left .cart-section__side { order: 1; }
+.cart-section__layout--single { flex-direction: column !important; }
+.cart-section__layout--single > div { flex: 0 1 auto; width: 100%; }
+.cart-section :deep(.builder-block) { min-width: 0; max-width: 100%; }
+.cart-section :deep([data-block-type="CART_ITEMS"]),
+.cart-section :deep([data-block-type="CART_SUMMARY"]),
+.cart-section :deep([data-block-type="CART_CHECKOUT"]) { width: 100%; }
+@container cart-section (max-width: 900px) {
+  .cart-section__layout { flex-direction: column !important; align-items: stretch !important; }
+  .cart-section__main, .cart-section__side { flex: 0 1 auto; width: 100%; order: 0 !important; }
 }
 </style>

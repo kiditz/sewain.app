@@ -5,6 +5,9 @@ import EditorFieldRow from "../../EditorFieldRow.vue";
 import PaddingField from "../../PaddingField.vue";
 import LayoutField from "../../LayoutField.vue";
 import TextField from "./TextField.vue";
+import BlockLinkField from "./BlockLinkField.vue";
+import { isBlockLinkField } from "../../../utils/block-link";
+import MenuField from "./MenuField.vue";
 import TextLayoutField from "./TextLayoutField.vue";
 import ProductCardStyleField from "./ProductCardStyleField.vue";
 import ImageField from "./ImageField.vue";
@@ -52,28 +55,34 @@ function asSettings(value: unknown): Record<string, unknown> {
     : {};
 }
 
+const editableSettings = computed(() => Object.fromEntries(Object.entries(props.block.settings).filter(([key]) => key !== "linkTargets")));
+
 const blockSettings = computed(() => {
   if (["PRODUCT_TITLE", "PRODUCT_PRICE"].includes(props.block.type)) {
     return {
-      ...props.block.settings,
-      padding: props.block.settings.padding ?? allPaddingZero,
+      ...editableSettings.value,
+      padding: editableSettings.value.padding ?? allPaddingZero,
       layout: {
         width: "match",
         maxWidth: "normal",
-        ...asSettings(props.block.settings.layout),
+        ...asSettings(editableSettings.value.layout),
       },
     };
   }
 
   if (!["TEXT", "HEADING", "EYEBROW"].includes(props.block.type))
-    return props.block.settings;
+    return editableSettings.value;
 
+  const { color, backgroundColor, ...textSettings } = editableSettings.value;
   return {
-    ...props.block.settings,
+    ...textSettings,
+    borderRadius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0, ...asSettings(textSettings.borderRadius) },
+    style: { color: "", backgroundColor: "#00000000", ...asSettings(textSettings.style) },
+    padding: editableSettings.value.padding ?? allPaddingZero,
     layout: {
       width: "match",
       maxWidth: "normal",
-      ...asSettings(props.block.settings.layout),
+      ...asSettings(editableSettings.value.layout),
     },
   };
 });
@@ -144,13 +153,16 @@ function update(key: string, value: unknown) {
         />
       </EditorFieldRow>
 
-      <EditorFieldRow v-else-if="block.type === 'MENU' && key === 'menuId'" label="Menu">
+      <EditorFieldRow v-else-if="isBlockLinkField(String(key), value)" :label="labelOf(String(key)).replace(/url|href/gi, 'Link')">
+        <BlockLinkField :settings="block.settings" :field-key="String(key)" :label="labelOf(String(key)).replace(/url|href/gi, 'Link')" @update="update" />
+      </EditorFieldRow>
+
+      <!-- <EditorFieldRow v-else-if="block.type === 'MENU' && key === 'menuId'" label="Menu">
         <v-select :model-value="value ?? null" :items="[
-          { title: 'Default navigation menu', value: null },
-          { title: 'No menu', value: '__none__' },
           ...storefront.MenuItems.value.map(menu => ({ title: menu.name, value: menu.id })),
         ]" variant="outlined" density="compact" hide-details aria-label="Navigation menu" @update:model-value="update('menuId', $event)" />
-      </EditorFieldRow>
+      </EditorFieldRow> -->
+      <MenuField v-else-if="block.type === 'MENU' && key === 'menuId'" :model-value="typeof value === 'string' ? value : null" @update="update" />
 
       <EditorFieldRow v-else-if="key === 'aspectRatio'" :label="labelOf(String(key))">
         <v-select
@@ -164,7 +176,7 @@ function update(key: string, value: unknown) {
         />
       </EditorFieldRow>
 
-      <LogoField v-else-if="key === 'src' && block.type === 'LOGO'" :settings="block.settings" @update="update" />
+      <!-- <LogoField v-else-if="key === 'src' && block.type === 'LOGO'" :settings="block.settings" @update="update" /> -->
 
       <template v-else-if="key === 'src' && block.type === 'IMAGE'">
         <ImageField
@@ -202,7 +214,26 @@ function update(key: string, value: unknown) {
         />
       </EditorFieldRow>
 
-      <TextField v-else-if="key === 'text'" :block="block" @update="update" />
+      <div class="d-flex flex-column" v-else-if="key === 'style' && ['EYEBROW', 'HEADING', 'TEXT'].includes(block.type)">
+        <div class="text-title-medium font-weight-bold px-4 py-2">Style</div>
+        <v-divider />
+        <div class="d-flex flex-column py-2 ga-2">
+        <EditorFieldRow v-for="styleKey in ['color', 'backgroundColor']" :key="styleKey" :label="styleKey === 'color' ? 'Warna teks' : t('ui.background_color')">
+          <v-color-input
+            :model-value="String(asSettings(value)[styleKey] || (styleKey === 'backgroundColor' ? '#00000000' : block.type === 'EYEBROW' ? storefront.theme.value.colors.primary : storefront.theme.value.colors.text))"
+            color-format="hexa"
+            variant="outlined"
+            density="compact"
+            hide-details
+            color-pip
+            :aria-label="styleKey === 'color' ? 'Warna teks' : t('ui.background_color')"
+            @update:model-value="update('style', { ...asSettings(value), [styleKey]: $event ?? '' })"
+          />
+        </EditorFieldRow>
+        </div>
+      </div>
+
+      <TextField v-else-if="key === 'text' || key === 'label'" :block="block" :field-key="key === 'label' ? 'label' : 'text'" @update="update" />
 
       <EditorFieldRow v-else-if="key === 'level'" :label="labelOf(String(key))">
         <v-select
@@ -239,7 +270,7 @@ function update(key: string, value: unknown) {
         @update="update"
       />
       <LayoutField
-        v-else-if="key === 'layout' && ['HEADER', 'MENU'].includes(block.type)"
+        v-else-if="key === 'layout' && (['HEADER', 'MENU'].includes(block.type) || block.type.startsWith('CHECKOUT_'))"
         :settings="block.settings"
         @update="update"
       />
@@ -249,9 +280,9 @@ function update(key: string, value: unknown) {
         @update="update"
       />
       <BorderRadiusField
-        v-else-if="key === 'borderRadius' && ['IMAGE', 'PRODUCT_CARD'].includes(block.type)"
+        v-else-if="key === 'borderRadius' && ['IMAGE', 'PRODUCT_CARD', 'EYEBROW', 'HEADING', 'TEXT'].includes(block.type)"
         :settings="block.settings"
-        :default-value="storefront.theme.value.layout.borderRadius"
+        :default-value="['EYEBROW', 'HEADING', 'TEXT'].includes(block.type) ? 0 : storefront.theme.value.layout.borderRadius"
         @update="update"
       />
       <EditorFieldRow v-else :label="labelOf(String(key))">

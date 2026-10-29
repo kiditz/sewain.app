@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BlockLabel from "./BlockLabel.vue";
 import { getBlockSettings } from "../../utils/block-settings";
 import type { StorefrontBlock } from "~/types/storefront";
 
@@ -19,11 +20,12 @@ const settings = computed(() =>
     variant="outlined"
     :class="`button-${settings.style || 'primary'}`"
     :href="String(settings.url || '#')"
-    >{{ settings.label }} <span aria-hidden="true">↗</span></v-btn
+    ><BlockLabel :value="settings.label" /> <span aria-hidden="true">↗</span></v-btn
   >
 </template>
 
 <style scoped>
+.block-button.v-btn { height: auto; min-height: 36px; white-space: normal; }
 .block-button {
   gap: 12px;
   align-items: center;

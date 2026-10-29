@@ -27,6 +27,7 @@ interface PaymentOptions {
 
 const props = defineProps<{
   options: PaymentOptions;
+  title?: string;
   fulfillmentType: FulfillmentType;
   rentalSubtotal: number;
   depositSubtotal: number;
@@ -80,7 +81,7 @@ const paymentLabel = (method: PaymentMethod) =>
         <v-icon icon="mdi-credit-card-outline" size="21" />
       </div>
       <div>
-        <h2>{{ t("checkout.paymentTitle") }}</h2>
+        <h2>{{ title || t("checkout.paymentTitle") }}</h2>
         <p>{{ t("checkout.paymentDescription") }}</p>
       </div>
     </div>

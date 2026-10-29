@@ -38,7 +38,7 @@ const storefrontUrl = computed(() => {
 </script>
 
 <template>
-  <v-container class="py-8" style="max-width: 1080px">
+  <v-container class="py-8" style="max-width: 1400px">
     <header class="mb-8">
       <div class="text-overline text-medium-emphasis">
         {{ $t("ui.storefront") }}
@@ -114,7 +114,7 @@ const storefrontUrl = computed(() => {
           </div>
         </div>
         <div class="d-flex flex-wrap ga-2">
-          <v-btn variant="outlined" prepend-icon="mdi-menu" to="/merchant/storefront/menus">Menu</v-btn>
+          <v-btn variant="outlined" prepend-icon="mdi-menu" to="/merchant/storefront/menus">{{$t('ui.menu')}}</v-btn>
           <v-btn
             variant="outlined"
             prepend-icon="mdi-tune-variant"

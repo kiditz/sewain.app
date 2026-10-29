@@ -1,3 +1,5 @@
+import { checkoutSectionDefaults, checkoutBlockTypes } from "./checkout-layout";
+import { cartSectionDefaults } from "./cart-layout";
 import type { Component } from "vue";
 import NavigationSection from "../components/sections/NavigationSection.vue";
 import { navigationDefaults } from "./navigation-section";
@@ -91,12 +93,12 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
       mobileColumns: 1,
       productIds: "",
       padding: {
-        top: 0,
-        bottom: 0,
+        top: 24,
+        bottom: 24,
       } as StorefrontPadding,
       layout: {
         gap: 0,
-        width: 'page'
+        width: "page",
       } as SectionLayout,
     },
     allowedBlocks: ["HEADER", "HEADING", "TEXT", "PRODUCT_CARD"],
@@ -131,7 +133,13 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     description: "Every collection with its available products.",
     component: CollectionProductsSection,
     defaults: {},
-    allowedBlocks: ["HEADER", "EYEBROW", "HEADING", "TEXT", "COLLECTION_PRODUCTS"],
+    allowedBlocks: [
+      "HEADER",
+      "EYEBROW",
+      "HEADING",
+      "TEXT",
+      "COLLECTION_PRODUCTS",
+    ],
     defaultBlocks: ["HEADING", "TEXT", "COLLECTION_PRODUCTS"],
   },
   PRODUCT_GRID: {
@@ -192,20 +200,16 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
       "Cart page content: heading, items, order summary and checkout.",
     component: CartSection,
     // summaryPosition: "left" | "right"
-    defaults: { summaryPosition: "right" },
+    defaults: cartSectionDefaults(),
     allowedBlocks: [
-      "EYEBROW",
-      "HEADING",
-      "TEXT",
+      "HEADER",
       "CART_ITEMS",
       "CART_SUMMARY",
       "CART_CHECKOUT",
       "BUTTON",
     ],
     defaultBlocks: [
-      "EYEBROW",
-      "HEADING",
-      "TEXT",
+      "HEADER",
       "CART_ITEMS",
       "CART_SUMMARY",
       "CART_CHECKOUT",
@@ -216,9 +220,9 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     label: "Checkout",
     description: "Customer details, fulfillment and payment form.",
     component: CheckoutSection,
-    defaults: {},
-    allowedBlocks: ["EYEBROW", "HEADING", "TEXT"],
-    defaultBlocks: ["EYEBROW", "HEADING", "TEXT"],
+    defaults: checkoutSectionDefaults(),
+    allowedBlocks: ["HEADER", ...checkoutBlockTypes],
+    defaultBlocks: ["HEADER", ...checkoutBlockTypes],
   },
 };
 

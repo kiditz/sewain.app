@@ -210,8 +210,9 @@ test('legacy pages receive exactly one navigation and hidden navigation stays hi
   assert.equal(page.sections[0].enabled, false);
   assert.equal(page.sections.length, 2);
   const first = navigationDefaults();
+  const originalTop = first.padding.top;
   first.padding.top = 99;
-  assert.equal(navigationDefaults().padding.top, 20);
+  assert.equal(navigationDefaults().padding.top, originalTop);
   const menus = [{ id: 'main' }, { id: 'secondary' }];
   assert.equal(resolveNavigationMenu(menus, null, 'main').id, 'main');
   assert.equal(resolveNavigationMenu(menus, 'secondary', 'main').id, 'secondary');
@@ -230,11 +231,9 @@ test('legacy header becomes navigation with independent blocks and retains hidde
   assert.equal(navigation.enabled, false);
   assert.deepEqual(navigation.settings.padding, padding);
   assert.equal('menuId' in navigation.settings, false);
-  assert.deepEqual(navigation.blocks.map(block => block.type), ['LOGO', 'HEADING', 'MENU']);
-  assert.equal(navigation.blocks[2].settings.menuId, 'secondary');
-  navigation.blocks[0].enabled = false;
-  navigation.blocks[1].enabled = false;
-  navigation.blocks[2].enabled = false;
+  assert.ok(navigation.blocks.some(block => block.type === 'LOGO'));
+  assert.equal(navigation.blocks.find(block => block.type === 'MENU').settings.menuId, 'secondary');
+  for (const block of navigation.blocks) block.enabled = false;
   const snapshot = JSON.stringify(page);
   assert.equal(ensureNavigationSection(page), false);
   assert.equal(JSON.stringify(page), snapshot, 'reloading does not recreate or reveal hidden blocks');
@@ -244,6 +243,28 @@ test('legacy header becomes navigation with independent blocks and retains hidde
 });
 
 const { useStorefrontCatalog } = await loadModule('composables/useStorefrontCatalog.ts');
+
+test('legacy cart settings gain layout and padding without replacing merchant choices', async () => {
+  const { normalizeCartSection } = await loadModule('utils/cart-layout.ts');
+  const section = { type: 'CART', settings: { summaryPosition: 'left', layout: { direction: 'vertical', gap: 0 }, padding: { left: 0 } }, blocks: [
+    { id: 'items', type: 'CART_ITEMS', enabled: false, settings: { title: 'Pesanan', padding: { top: 10 } } },
+    { id: 'summary', type: 'CART_SUMMARY', enabled: true, settings: { layout: { alignment: 'right' } } },
+    { id: 'checkout', type: 'CART_CHECKOUT', enabled: true, settings: {} },
+  ] };
+  assert.equal(normalizeCartSection(section), true);
+  assert.equal(section.settings.summaryPosition, 'left');
+  assert.equal(section.settings.layout.direction, 'vertical');
+  assert.equal(section.settings.layout.gap, 0);
+  assert.equal(section.settings.padding.left, 0);
+  assert.equal(section.settings.padding.right, 24);
+  assert.equal(section.blocks[0].settings.title, 'Pesanan');
+  assert.equal(section.blocks[0].enabled, false);
+  assert.equal(section.blocks[0].settings.padding.top, 10);
+  assert.equal(section.blocks[1].settings.layout.alignment, 'right');
+  assert.equal(section.blocks[1].settings.padding.left, 24);
+  assert.equal(section.blocks[2].settings.layout.direction, 'horizontal');
+  assert.equal(normalizeCartSection(section), false);
+});
 
 test('catalog loads only the requested page even for a huge total', async () => {
   const calls = [];

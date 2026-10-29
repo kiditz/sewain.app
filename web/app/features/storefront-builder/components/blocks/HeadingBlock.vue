@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useStorefront } from "../../composables/useStorefront";
-import { getBlockSettings, getPaddingStyle } from "../../utils/block-settings";
-import type { StorefrontBlock, StorefrontPadding } from "~/types/storefront";
+import { getBlockSettings, getPaddingStyle, getBorderRadiusStyle } from "../../utils/block-settings";
+import type { StorefrontBlock, StorefrontPadding, StorefrontBorderRadius } from "~/types/storefront";
 const storefront = useStorefront();
 
 const props = defineProps<{ block: StorefrontBlock }>();
@@ -21,16 +21,17 @@ const layout = computed(() => {
     : {};
 });
 const width = computed(() => layout.value.width ?? "match");
+const appearance = computed(() => props.block.settings.style as { color?: string; backgroundColor?: string } | undefined);
 const textStyle = computed(() => {
-  const narrowPadding = layout.value.maxWidth === "narrow" ? 24 : 0;
-
   return {
     ...paddingStyle.value,
+    ...getBorderRadiusStyle({ topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0, ...props.block.settings.borderRadius as StorefrontBorderRadius }, storefront.theme.value),
+    color: String(appearance.value?.color || "var(--store-text)"),
+    backgroundColor: String(appearance.value?.backgroundColor || "transparent"),
+    maxWidth: layout.value.maxWidth === "narrow" ? "min(100%, 65ch)" : undefined,
     textAlign:
       (layout.value.alignment as "left" | "center" | "right" | undefined) ??
       "left",
-    paddingLeft: `${(padding.value?.left ?? storefront.theme.value.layout.sectionSpacing) + narrowPadding}px`,
-    paddingRight: `${(padding.value?.right ?? storefront.theme.value.layout.sectionSpacing) + narrowPadding}px`,
   };
 });
 </script>

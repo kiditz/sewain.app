@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BlockLabel from "./BlockLabel.vue";
 import { storeToRefs } from "pinia";
 import { getBlockSettings } from "../../utils/block-settings";
 import type { StorefrontBlock } from "~/types/storefront";
@@ -28,7 +29,7 @@ const money = (amount: number) =>
 <template>
   <section class="price-summary">
     <h3 class="summary-title">
-      {{ settings.label || "Ringkasan pembayaran" }}
+      <BlockLabel :value="settings.label || 'Ringkasan pembayaran'" />
     </h3>
 
     <div class="summary-items">

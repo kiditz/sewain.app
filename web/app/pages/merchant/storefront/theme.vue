@@ -182,7 +182,7 @@ function applyPreset(preset: (typeof presets)[number]) {
             step="2"
             thumb-label
             class="mt-4"
-          /><v-btn block color="primary" prepend-icon="mdi-eye-outline" to="/"
+          /><v-btn block color="primary" prepend-icon="mdi-eye-outline" to="/merchant/storefront/pages/home"
             >{{ $t("ui.preview_storefront") }}</v-btn
           ></v-card
         ></v-col

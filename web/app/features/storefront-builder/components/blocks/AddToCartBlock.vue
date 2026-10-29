@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BlockLabel from "./BlockLabel.vue";
 import { getBlockSettings } from "../../utils/block-settings";
 import type { StorefrontBlock } from "~/types/storefront";
 import type { CartItemCommand } from "~/types/cart";
@@ -55,12 +56,13 @@ const handleAddToCart = async () => {
     class="block-button cart-button"
     :class="`button-${settings.style || 'primary'}`"
   >
-    {{ settings.label || "Sewa Sekarang" }}
+    <BlockLabel :value="settings.label || 'Sewa Sekarang'" />
     <span aria-hidden="true">↗</span>
   </v-btn>
 </template>
 
 <style scoped>
+.block-button.v-btn { height: auto; min-height: 36px; white-space: normal; }
 .block-button {
   align-self: flex-start;
   display: inline-flex;

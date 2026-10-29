@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BlockLabel from "./BlockLabel.vue";
 import { storeToRefs } from "pinia";
 import { getBlockSettings } from "../../utils/block-settings";
 import type { StorefrontBlock } from "~/types/storefront";
@@ -44,7 +45,7 @@ function updateQuantity(value: number) {
 <template>
   <div class="quantity-selector">
     <span class="quantity-label">
-      {{ settings.label || "Quantity" }}
+      <BlockLabel :value="settings.label || 'Quantity'" />
     </span>
 
     <div class="quantity-controls">

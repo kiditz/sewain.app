@@ -1,3 +1,5 @@
+import { normalizeCheckoutSection } from "../utils/checkout-layout";
+import { normalizeCartSection } from "../utils/cart-layout";
 import { ensureNavigationSection } from "../utils/navigation-section";
 import { useStorefrontPages } from "./useStorefrontPages";
 import { useStorefrontTheme } from "./useStorefrontTheme";
@@ -32,7 +34,7 @@ export function useStorefront() {
     menuStore.initialized.value = false;
     const document = response.configuration;
     pageStore.pages.value = document?.pages ?? [];
-    pageStore.pages.value.forEach(ensureNavigationSection);
+    pageStore.pages.value.forEach(page => { ensureNavigationSection(page); page.sections.forEach(section => { normalizeCartSection(section); normalizeCheckoutSection(section); }); });
     themeStore.theme.value = document?.theme?.colors ? document.theme : structuredClone(initialTheme);
     menuStore.MenuItems.value = document?.MenuItems ?? [];
     menuStore.headerMenuId.value = document?.headerMenuId ?? null;

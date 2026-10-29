@@ -38,6 +38,12 @@ export type SectionType =
   | "CHECKOUT";
 
 export type BlockType =
+  | "CHECKOUT_CONTACT"
+  | "CHECKOUT_FULFILLMENT"
+  | "CHECKOUT_NOTES"
+  | "CHECKOUT_PAYMENT"
+  | "CHECKOUT_SUMMARY"
+  | "CHECKOUT_SUBMIT"
   | "LOGO"
   | "MENU"
   | "EYEBROW"

@@ -10,6 +10,9 @@ const props = defineProps<{
   disabled?: boolean;
   error?: boolean;
   id: string;
+  label?: string;
+  placeholder?: string;
+  includeCart?: boolean;
 }>();
 const emit = defineEmits<{
   select: [
@@ -21,7 +24,7 @@ const open = ref(false);
 type PickerGroup = "Products" | "Collections" | "Pages";
 type MenuEntry =
   | { title: PickerGroup; icon: string; kind?: never }
-  | { title: "Home" | "Orders"; icon: string; kind: "HOME" | "CHECKOUT" };
+  | { title: "Home" | "Orders" | "Cart"; icon: string; kind: "HOME" | "CHECKOUT" | "CART" };
 const group = ref<PickerGroup | null>(null);
 const search = ref("");
 const products = ref<Product[]>([]);
@@ -31,13 +34,14 @@ const loading = ref(false);
 const failed = ref(false);
 let sequence = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
-const groups: MenuEntry[] = [
+const baseGroups: MenuEntry[] = [
   { title: "Home", icon: "mdi-home-outline", kind: "HOME" },
   { title: "Products", icon: "mdi-package-variant-closed" },
   { title: "Collections", icon: "mdi-folder-outline" },
   { title: "Pages", icon: "mdi-file-document-outline" },
   { title: "Orders", icon: "mdi-receipt-text-outline", kind: "CHECKOUT" },
 ];
+const groups = computed<MenuEntry[]>(() => props.includeCart ? [...baseGroups, { title: "Cart", icon: "mdi-cart-outline", kind: "CART" }] : baseGroups);
 const icon = computed(() =>
   props.item.target?.type === "PRODUCT"
     ? "mdi-package-variant-closed"
@@ -168,8 +172,8 @@ onBeforeUnmount(resetPending);
         :prepend-icon="icon"
         append-icon="mdi-chevron-down"
         :disabled="disabled"
-        aria-label="Pilih link menu"
-        >{{ menuItemTitle(item, pages) || "Pilih link" }}</v-btn
+        :aria-label="label || 'Pilih link menu'"
+        >{{ menuItemTitle(item, pages) || placeholder || "Pilih link" }}</v-btn
       >
     </template>
     <v-card class="menu-link-picker" rounded="lg" min-width="280">
@@ -321,7 +325,6 @@ onBeforeUnmount(resetPending);
   letter-spacing: normal;
   height: 40px;
   border-color: #bdbdbd;
-  border-radius: 12px;
 }
 .menu-link-picker__trigger :deep(.v-btn__content) {
   display: block;

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BlockLabel from "./BlockLabel.vue";
 import { storeToRefs } from "pinia";
 import { getBlockSettings } from "../../utils/block-settings";
 import type { StorefrontBlock } from "~/types/storefront";
@@ -22,7 +23,7 @@ const { depositSubtotal } = storeToRefs(store);
 
 <template>
   <div class="deposit-info">
-    <span>{{ settings.label || "Refundable deposit" }}</span>
+    <BlockLabel :value="settings.label || 'Refundable deposit'" />
     <strong>{{ money(depositSubtotal) }}</strong>
   </div>
 </template>

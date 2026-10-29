@@ -1,3 +1,5 @@
+import { checkoutBlockDefaults, normalizeCheckoutSection } from "../utils/checkout-layout";
+import { cartBlockDefaults, normalizeCartSection } from "../utils/cart-layout";
 import { createNavigationSection, ensureNavigationSection } from "../utils/navigation-section";
 import { useStorefrontState as useState } from "./useStorefrontState";
 import { computed } from "vue";
@@ -17,7 +19,14 @@ function cloneBlockWithNewIds(block: StorefrontBlock): StorefrontBlock {
 function createSection(type: SectionType): StorefrontSection {
   if (type === "NAVIGATION") return createNavigationSection();
   const definition = sectionRegistry[type];
-  const blocks = definition.defaultBlocks.map(createDefaultBlock);
+  const blocks = definition.defaultBlocks.map(blockType => {
+    const block = createDefaultBlock(blockType);
+    if (["CART", "CHECKOUT"].includes(type) && blockType === "HEADER") {
+      block.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
+      block.settings = type === "CHECKOUT" ? checkoutBlockDefaults("HEADER") : cartBlockDefaults("HEADER");
+    }
+    return block;
+  });
   const copyText: Partial<
     Record<SectionType, { heading?: string; text?: string; eyebrow?: string }>
   > = {
@@ -68,7 +77,8 @@ function createSection(type: SectionType): StorefrontSection {
     },
   };
   const defaults = copyText[type];
-  for (const block of blocks) {
+  const contentBlocks = ["CART", "CHECKOUT"].includes(type) ? blocks.flatMap(block => [block, ...(block.blocks ?? [])]) : blocks;
+  for (const block of contentBlocks) {
     if (block.type === "HEADING" && defaults?.heading)
       block.settings.text = defaults.heading;
     if (block.type === "TEXT" && defaults?.text)
@@ -115,7 +125,7 @@ function samplePages(): StorefrontPage[] {
       targetUrl: "/",
       kind: "HOME",
       icon: "HomeOutlined",
-      status: "DRAFT",
+      status: "PUBLISHED",
       sections: homeSections,
       updatedAt: new Date().toISOString(),
     },
@@ -359,6 +369,8 @@ export function useStorefrontPages() {
       for (const page of pages.value) {
         ensureNavigationSection(page);
         for (const section of page.sections) {
+          normalizeCartSection(section);
+          normalizeCheckoutSection(section);
           if (migrateFeaturedProductsSettings(section)) {
             migratedFeaturedSettings = true;
           }
@@ -488,6 +500,10 @@ export function useStorefrontPages() {
     if (parent && maxChildren && (parent.blocks?.length ?? 0) >= maxChildren)
       return;
     const block = createDefaultBlock(type);
+    if (["CART", "CHECKOUT"].includes(section.type) && type === "HEADER") {
+      block.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
+      block.settings = section.type === "CHECKOUT" ? checkoutBlockDefaults("HEADER") : cartBlockDefaults("HEADER");
+    }
     if (parent) {
       parent.blocks ??= [];
       parent.blocks.push(block);

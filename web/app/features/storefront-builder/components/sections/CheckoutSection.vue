@@ -1,106 +1,44 @@
 <script setup lang="ts">
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import CheckoutFlow from "~/features/storefront-checkout/components/CheckoutFlow.vue";
-import type { StorefrontBlock } from "~/types/storefront";
-
-const props = defineProps<{
-  settings: Record<string, unknown>;
-  blocks: StorefrontBlock[];
-  preview?: boolean;
-  selectedBlockId?: string | null;
-}>();
-
-const headerBlocks = computed(() =>
-  props.blocks.filter((block) => ["EYEBROW", "HEADING", "TEXT"].includes(block.type)),
-);
+import type { StorefrontBlock, SectionLayout, StorefrontPadding } from "~/types/storefront";
+import { useStorefront } from "../../composables/useStorefront";
+import { checkoutSectionDefaults } from "../../utils/checkout-layout";
+import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
+const props = defineProps<{ settings: Record<string, unknown>; blocks: StorefrontBlock[]; preview?: boolean; selectedBlockId?: string | null }>();
+const { theme } = useStorefront();
+const defaults = checkoutSectionDefaults();
+const layout = computed(() => ({ ...defaults.layout, ...props.settings.layout as Partial<SectionLayout> }));
+const sectionStyle = computed(() => ({ ...getLayoutStyle(layout.value, theme.value), flexDirection: "column" as const, alignItems: "stretch", ...getPaddingStyle({ ...defaults.padding, ...props.settings.padding as StorefrontPadding }, theme.value) }));
+const contentStyle = computed(() => ({ ...getLayoutStyle(layout.value, theme.value), width: "100%", maxWidth: undefined, height: "auto", margin: 0 }));
+const blockLayout = computed<SectionLayout>(() => ({ ...layout.value, direction: "vertical", alignment: "left", position: "top", width: "full", height: "auto" }));
+const headers = computed(() => props.blocks.filter(block => block.type === "HEADER"));
+const main = computed(() => props.blocks.filter(block => !["HEADER", "CHECKOUT_SUMMARY", "CHECKOUT_SUBMIT"].includes(block.type)));
+const side = computed(() => props.blocks.filter(block => ["CHECKOUT_SUMMARY", "CHECKOUT_SUBMIT"].includes(block.type)));
+const hasSide = computed(() => side.value.some(block => block.enabled));
 </script>
-
 <template>
-  <section class="checkout-template-section">
-    <div v-if="headerBlocks.length" class="checkout-template-section__header">
-      <BlockRenderer
-        :blocks="headerBlocks"
-        :preview="preview"
-        :selected-block-id="selectedBlockId"
-      />
-    </div>
-
-    <div v-if="preview" class="checkout-template-preview">
-      <div class="checkout-template-preview__form">
-        <div class="checkout-template-preview__field" />
-        <div class="checkout-template-preview__field" />
-        <div class="checkout-template-preview__field checkout-template-preview__field--large" />
-        <div class="checkout-template-preview__payment">
-          <v-icon icon="mdi-credit-card-outline" />
-          <span>{{ $t("ui.payment_options_and_order_total") }}</span>
-        </div>
+  <section class="checkout-template-section" :style="sectionStyle">
+    <BlockRenderer v-if="headers.some(block => block.enabled)" :blocks="headers" :layout="blockLayout" :preview="preview" :selected-block-id="selectedBlockId" />
+    <CheckoutFlow :show-header="false" :preview="preview" embedded :layout-style="contentStyle">
+      <div class="checkout-template-section__main" :class="{ 'checkout-template-section__main--full': !hasSide || layout.direction === 'vertical' }">
+        <BlockRenderer :blocks="main" :layout="blockLayout" :preview="preview" :selected-block-id="selectedBlockId" />
       </div>
-      <div class="checkout-template-preview__summary">
-        <strong>{{ $t("checkout.summaryTitle") }}</strong>
-        <div />
-        <div />
-        <div />
+      <div v-if="hasSide" class="checkout-template-section__side" :class="{ 'checkout-template-section__side--full': layout.direction === 'vertical' }">
+        <BlockRenderer :blocks="side" :layout="blockLayout" :preview="preview" :selected-block-id="selectedBlockId" />
       </div>
-    </div>
-    <CheckoutFlow v-else :show-header="false" />
+    </CheckoutFlow>
   </section>
 </template>
-
 <style scoped>
-.checkout-template-section {
-  width: 100%;
-  color: var(--store-text);
-}
-
-.checkout-template-section__header {
-  max-width: var(--store-width, 1200px);
-  margin: 0 auto 24px;
-  padding: 24px 24px 0;
-}
-
-.checkout-template-preview {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
-  max-width: var(--store-width, 1200px);
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.checkout-template-preview__form,
-.checkout-template-preview__summary {
-  display: grid;
-  align-content: start;
-  gap: 14px;
-  padding: 22px;
-  border: 1px solid color-mix(in srgb, var(--store-text) 14%, transparent);
-  border-radius: var(--store-radius);
-  background: var(--store-surface);
-}
-
-.checkout-template-preview__field,
-.checkout-template-preview__summary div {
-  height: 42px;
-  border: 1px solid color-mix(in srgb, var(--store-text) 13%, transparent);
-  border-radius: 8px;
-}
-
-.checkout-template-preview__field--large {
-  height: 88px;
-}
-
-.checkout-template-preview__payment {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--store-primary) 8%, transparent);
-}
-
-@media (max-width: 720px) {
-  .checkout-template-preview {
-    grid-template-columns: 1fr;
-  }
+.checkout-template-section { container: checkout-section / inline-size; width: 100%; min-width: 0; box-sizing: border-box; color: var(--store-text); }
+.checkout-template-section__main { flex: 1 1 0; min-width: 0; }
+.checkout-template-section__side { flex: 0 1 360px; min-width: 0; }
+.checkout-template-section__main--full, .checkout-template-section__side--full { flex: 0 1 auto; width: 100%; }
+@container checkout-section (max-width: 900px) {
+  .checkout-template-section :deep(.checkout-layout) { flex-direction: column !important; align-items: stretch !important; }
+  .checkout-template-section__main, .checkout-template-section__side { flex: 0 1 auto; width: 100%; }
+  .checkout-template-section :deep(.checkout-section-heading) { flex-wrap: wrap; }
+  .checkout-template-section :deep(.checkout-summary__row), .checkout-template-section :deep(.checkout-summary__total) { flex-wrap: wrap; }
 }
 </style>

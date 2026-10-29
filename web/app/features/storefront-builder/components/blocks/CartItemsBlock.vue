@@ -1,16 +1,32 @@
 <script setup lang="ts">
 import moment from "moment";
-import { getBlockSettings } from "../../utils/block-settings";
+import { getBlockSettings, getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
 import { useCartView } from "../../composables/useCartView";
 import RentalDateRangeBlock from "./RentalDateRangeBlock.vue";
 import QuantitySelectorBlock from "./QuantitySelectorBlock.vue";
 import type { CartItemResponse } from "~/types/cart";
-import type { StorefrontBlock } from "~/types/storefront";
+import type { SectionLayout, StorefrontPadding, StorefrontBlock } from "~/types/storefront";
 
+import { useStorefront } from "../../composables/useStorefront";
+import { cartBlockDefaults } from "../../utils/cart-layout";
 const props = defineProps<{
   block: StorefrontBlock;
   preview?: boolean;
 }>();
+
+const { theme } = useStorefront();
+const blockStyle = computed(() => {
+  const defaults = cartBlockDefaults(props.block.type);
+  return {
+    ...getLayoutStyle({ ...defaults.layout, ...props.block.settings.layout as Partial<SectionLayout> }, theme.value),
+    ...getPaddingStyle({ ...defaults.padding, ...props.block.settings.padding as StorefrontPadding }, theme.value),
+  };
+});
+
+const itemsLayoutStyle = computed(() => ({
+  ...getLayoutStyle({ ...cartBlockDefaults(props.block.type).layout, ...props.block.settings.layout as Partial<SectionLayout> }, theme.value),
+  width: "100%", maxWidth: undefined, margin: 0, height: "auto",
+}));
 
 const settings = computed(() =>
   getBlockSettings<{
@@ -164,7 +180,7 @@ async function clearCart() {
 </script>
 
 <template>
-  <div class="cart-items-block">
+  <div class="cart-items-block" :style="blockStyle">
     <v-dialog v-model="clearCartDialog" max-width="400">
       <v-card>
         <v-card-title>{{ $t("ui.clear_shopping_cart") }}</v-card-title>
@@ -300,7 +316,7 @@ async function clearCart() {
     </div>
 
     <!-- Items -->
-    <section v-else class="cart-items">
+    <section v-else class="cart-items" :class="{ 'cart-items--horizontal': block.settings.layout && (block.settings.layout as SectionLayout).direction === 'horizontal' }" :style="itemsLayoutStyle">
       <div class="cart-section-heading">
         <div class="cart-section-heading__title">
           <h2>{{ settings.title || "Rental items" }}</h2>
@@ -438,22 +454,30 @@ async function clearCart() {
 
 <style scoped>
 .cart-items-block {
+  container: cart-items / inline-size;
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   color: var(--store-text);
-  text-align: left;
 }
 
 .cart-items,
 .cart-empty,
 .cart-state {
+  width: 100%;
+  box-sizing: border-box;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--store-text) 14%, transparent);
   border-radius: var(--store-radius);
   background: var(--store-surface);
 }
 
+.cart-items { flex-wrap: wrap; }
+.cart-items--horizontal > .cart-item { width: auto; flex: 1 1 320px; }
+
 .cart-section-heading {
+  box-sizing: border-box;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -490,6 +514,9 @@ async function clearCart() {
 }
 
 .cart-item {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   display: grid;
   grid-template-columns: 136px minmax(0, 1fr);
   gap: 22px;
@@ -534,6 +561,7 @@ async function clearCart() {
 .cart-item__top {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 12px;
 }
@@ -657,6 +685,8 @@ async function clearCart() {
 }
 
 .cart-items__footer {
+  box-sizing: border-box;
+  width: 100%;
   padding: 20px 24px;
   border-top: 1px solid color-mix(in srgb, var(--store-text) 12%, transparent);
 }
@@ -790,7 +820,10 @@ async function clearCart() {
   color: var(--store-primary);
 }
 
-@media (max-width: 600px) {
+@container cart-items (max-width: 600px) {
+  .cart-items { flex-direction: column !important; align-items: stretch !important; }
+  .cart-items--horizontal > .cart-item { flex: 0 1 auto; width: 100%; }
+
   .cart-section-heading {
     align-items: flex-start;
     flex-wrap: wrap;
@@ -809,8 +842,10 @@ async function clearCart() {
   }
 
   .cart-item__selection {
-    grid-template-columns: 24px 96px;
+    max-width: 112px;
   }
+
+  .cart-item__period, .cart-item__period-info { flex-wrap: wrap; }
 
   .cart-item__top {
     flex-direction: column;

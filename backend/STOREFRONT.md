@@ -62,3 +62,23 @@ per merchant.
 
 - Frontend: `npm run test:storefront` and `npm run build` in `web/`.
 - Backend: `./gradlew test --tests app.sewain.storefront.StorefrontServiceTest`.
+
+Cart sections and their items, summary, and checkout blocks store independent
+`layout` and `padding` settings. Legacy cart documents receive missing defaults
+without replacing configured values. The section layout controls direction,
+spacing and content width; summary position remains selectable. Container
+queries stack the main/summary areas and simplify cart item cards in narrow
+storefronts and builder previews.
+
+Cart titles are grouped inside a `HEADER` block with `EYEBROW`, `HEADING`, and
+`TEXT` children. Older top-level title blocks are moved into that group while
+retaining their IDs, settings, order and individual visibility.
+
+Checkout now stores a `HEADER` group plus `CHECKOUT_CONTACT`,
+`CHECKOUT_FULFILLMENT`, `CHECKOUT_NOTES`, `CHECKOUT_PAYMENT`,
+`CHECKOUT_SUMMARY`, and `CHECKOUT_SUBMIT` blocks. Section and block layout,
+padding, labels, ordering and visibility are configured in the builder.
+All checkout blocks share the same form state and validation through
+`CheckoutFlow`; the builder preview uses sample cart/payment data and cannot
+submit an order or load checkout APIs. Legacy sections gain default blocks once,
+while preserving existing header content and visibility.

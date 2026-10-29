@@ -1,3 +1,5 @@
+import { checkoutBlockDefaults } from "./checkout-layout";
+import { cartBlockDefaults } from "./cart-layout";
 import {
   allPaddingZero,
   defaultTextLayout,
@@ -19,6 +21,12 @@ export interface BlockDefinition {
 }
 
 export const blockRegistry: Record<BlockType, BlockDefinition> = {
+  CHECKOUT_CONTACT: { type: "CHECKOUT_CONTACT", label: "Contact", description: "Checkout contact.", defaults: checkoutBlockDefaults("CHECKOUT_CONTACT") },
+  CHECKOUT_FULFILLMENT: { type: "CHECKOUT_FULFILLMENT", label: "Fulfillment", description: "Checkout fulfillment.", defaults: checkoutBlockDefaults("CHECKOUT_FULFILLMENT") },
+  CHECKOUT_NOTES: { type: "CHECKOUT_NOTES", label: "Order notes", description: "Checkout order notes.", defaults: checkoutBlockDefaults("CHECKOUT_NOTES") },
+  CHECKOUT_PAYMENT: { type: "CHECKOUT_PAYMENT", label: "Payment", description: "Checkout payment.", defaults: checkoutBlockDefaults("CHECKOUT_PAYMENT") },
+  CHECKOUT_SUMMARY: { type: "CHECKOUT_SUMMARY", label: "Order summary", description: "Checkout order summary.", defaults: checkoutBlockDefaults("CHECKOUT_SUMMARY") },
+  CHECKOUT_SUBMIT: { type: "CHECKOUT_SUBMIT", label: "Place order", description: "Checkout place order.", defaults: checkoutBlockDefaults("CHECKOUT_SUBMIT") },
   LOGO: {
     type: "LOGO", label: "Logo", description: "Store logo displayed in full without cropping.",
     defaults: { src: "", alt: "", url: "/", width: 140, height: 48, padding: allPaddingZero },
@@ -41,7 +49,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
       } as SectionLayout,
       padding: allPaddingZero,
     },
-    allowedChildren: ["HEADING", "TEXT", "BUTTON"],
+    allowedChildren: ["EYEBROW", "HEADING", "TEXT", "BUTTON"],
     defaultChildren: ["HEADING", "TEXT", "BUTTON"],
   },
   EYEBROW: {
@@ -49,7 +57,9 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     label: "Eyebrow",
     description: "Small text above a heading.",
     defaults: {
-      text: "NEW COLLECTION",
+      borderRadius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 },
+      style: { color: "", backgroundColor: "#00000000" },
+      text: "EYEBROW",
       padding: allPaddingZero,
       layout: defaultTextLayout,
     },
@@ -59,7 +69,9 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     label: "Heading",
     description: "A heading or title.",
     defaults: {
-      text: "Make room for more",
+      borderRadius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 },
+      style: { color: "", backgroundColor: "#00000000" },
+      text: "HEADING",
       padding: allPaddingZero,
       layout: defaultTextLayout,
     },
@@ -69,7 +81,9 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     label: "Text",
     description: "Supporting text or description.",
     defaults: {
-      text: "Tell customers what makes your store different.",
+      borderRadius: { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 },
+      style: { color: "", backgroundColor: "#00000000" },
+      text: "Text",
       layout: defaultTextLayout,
       padding: allPaddingZero,
     },
@@ -202,11 +216,12 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
       showClearCart: true,
       emptyTitle: "Your cart is empty",
       emptyText:
-        "You haven't added any rental items yet. Explore our collection to get started.",
+      "You haven't added any rental items yet. Explore our collection to get started.",
       emptyButtonLabel: "Explore products",
       emptyButtonUrl: "/collections",
       continueLabel: "Continue shopping",
       continueUrl: "/",
+      ...cartBlockDefaults("CART_ITEMS"),
     },
   },
   CART_SUMMARY: {
@@ -221,7 +236,8 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
       totalLabel: "Total",
       totalHint: "Rental + deposit",
       noteText:
-        "Deposits are subject to the store's rental and return policies.",
+      "Deposits are subject to the store's rental and return policies.",
+      ...cartBlockDefaults("CART_SUMMARY"),
     },
   },
   CART_CHECKOUT: {
@@ -232,6 +248,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
       label: "Proceed to checkout",
       url: "/checkout",
       style: "primary",
+      ...cartBlockDefaults("CART_CHECKOUT"),
     },
   },
 };

@@ -164,13 +164,7 @@ function isFillTextBlock(block: StorefrontBlock) {
 </style>
 
 <style scoped>
-.builder-block {
-  display: flex;
-  flex-direction: column;
-  align-items: inherit;
-  /* width: 100%;
-  min-width: 0; */
-}
+
 .builder-block.is-fill {
   width: 100%;
 }

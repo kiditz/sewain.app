@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { getBlockSettings } from "../../utils/block-settings";
+import BlockLabel from "./BlockLabel.vue";
+import { getBlockSettings, getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
 import { useCartView } from "../../composables/useCartView";
-import type { StorefrontBlock } from "~/types/storefront";
+import type { SectionLayout, StorefrontPadding, StorefrontBlock } from "~/types/storefront";
 
+import { useStorefront } from "../../composables/useStorefront";
+import { cartBlockDefaults } from "../../utils/cart-layout";
 const props = defineProps<{
   block: StorefrontBlock;
   preview?: boolean;
 }>();
+
+const { theme } = useStorefront();
+const blockStyle = computed(() => {
+  const defaults = cartBlockDefaults(props.block.type);
+  return {
+    ...getLayoutStyle({ ...defaults.layout, ...props.block.settings.layout as Partial<SectionLayout> }, theme.value),
+    ...getPaddingStyle({ ...defaults.padding, ...props.block.settings.padding as StorefrontPadding }, theme.value),
+  };
+});
 
 const settings = computed(() =>
   getBlockSettings<{
@@ -26,9 +38,11 @@ const visible = computed(() => !loading.value && !error.value && !isEmpty.value)
     v-if="visible"
     :to="settings.url || '/checkout'"
     class="cart-checkout"
+    :style="blockStyle"
+    @click="preview && $event.preventDefault()"
     :class="`cart-checkout--${settings.style || 'primary'}`"
   >
-    {{ settings.label || "Proceed to checkout" }}
+    <BlockLabel :value="settings.label || 'Proceed to checkout'" />
     <v-icon icon="mdi-arrow-right" size="18" />
   </NuxtLink>
 </template>
@@ -41,7 +55,8 @@ const visible = computed(() => !loading.value && !error.value && !isEmpty.value)
   align-items: center;
   justify-content: center;
   gap: 10px;
-  padding: 12px 18px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
   border: 1px solid var(--store-primary);
   border-radius: var(--store-radius);
   background: var(--store-primary);
