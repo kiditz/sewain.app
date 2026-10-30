@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { imageBannerDefaults } from "../../../utils/image-banner";
 import type { StorefrontSection } from "~/types/storefront";
 import ProductSelector from "../../ProductSelector.vue";
 import EditorFieldRow from "../../EditorFieldRow.vue";
 import LayoutField from "../../LayoutField.vue";
 import AppearanceField from "../../AppearanceField.vue";
 import MediaField from "../../MediaField.vue";
+import ImageField from "../../blocks/settings/ImageField.vue";
 import PaddingField from "../../PaddingField.vue";
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront.ts";
 
@@ -12,6 +14,17 @@ const props = defineProps<{
   section: StorefrontSection;
 }>();
 
+const sectionSettings = computed(() => {
+  if (props.section.type !== "IMAGE_BANNER") return props.section.settings;
+  const defaults = imageBannerDefaults();
+  return { ...defaults, ...props.section.settings,
+    layout: { ...defaults.layout, ...bannerImage(props.section.settings.layout) },
+    padding: { ...defaults.padding, ...bannerImage(props.section.settings.padding) },
+  };
+});
+function bannerImage(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
 const { t } = useI18n();
 const storefront = useStorefront();
 const allProductsSource = "__all_products__";
@@ -100,8 +113,14 @@ function labelOf(key: string) {
 
 <template>
   <div class="settings-fields">
-    <template v-for="(value, key) in section.settings" :key="key">
-      <EditorFieldRow v-if="section.type === 'CART' && key === 'summaryPosition'" label="Posisi ringkasan">
+    <template v-for="(value, key) in sectionSettings" :key="key">
+      <div v-if="section.type === 'IMAGE_BANNER' && key === 'image'">
+        <ImageField :settings="bannerImage(value)" @update="(field, selected) => update('image', { ...bannerImage(value), [field]: selected })" />
+        <EditorFieldRow :label="t('ui.alt_text')">
+          <v-text-field :model-value="String(bannerImage(value).alt || '')" variant="outlined" density="compact" hide-details :aria-label="t('ui.alt_text')" @update:model-value="update('image', { ...bannerImage(value), alt: $event })" />
+        </EditorFieldRow>
+      </div>
+      <EditorFieldRow v-else-if="section.type === 'CART' && key === 'summaryPosition'" label="Posisi ringkasan">
         <v-select :model-value="value" :items="[{ title: 'Kiri', value: 'left' }, { title: 'Kanan', value: 'right' }]" variant="outlined" density="compact" hide-details @update:model-value="update('summaryPosition', $event)" />
       </EditorFieldRow>
       <EditorFieldRow
@@ -288,17 +307,17 @@ function labelOf(key: string) {
       />
       <LayoutField
         v-else-if="key === 'layout' && value != null"
-        :settings="section.settings"
+        :settings="sectionSettings"
         @update="update"
       />
       <AppearanceField
         v-else-if="key === 'appearance'"
-        :settings="section.settings"
+        :settings="sectionSettings"
         @update="update"
       />
       <PaddingField
         v-else-if="key === 'padding'"
-        :settings="section.settings"
+        :settings="sectionSettings"
         @update="update"
       />
     </template>

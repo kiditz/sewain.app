@@ -65,7 +65,7 @@ export const useAuth = () => {
 
   const logout = () => {
     token.value = null;
-    useMerchantStore().$reset();
+    useMerchantStore().clear();
     useUserStore().user = null;
     clearCookies();
   };

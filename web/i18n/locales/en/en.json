@@ -1,5 +1,11 @@
 {
   "apiErrors": {
+    "product_tags_filter_invalid": "The product tag filter is invalid.",
+    "collection_notfound": "Collection was not found.",
+    "collection_inuse": "This collection is in use and cannot be deleted.",
+    "collection_reorder_invalid": "The collection order is invalid.",
+    "collection_slug_already_exists": "A collection with this slug already exists.",
+    "collection_conflict": "The collection conflicts with existing data or is still in use.",
     "attribute_notfound": "Attribute was not found.",
     "attribute_slug_already_exists": "An attribute with this URL already exists.",
     "attribute_value_notfound": "Attribute value was not found.",
@@ -296,6 +302,11 @@
     },
     "empty": "No collections found.",
     "errors": {
+      "connectionFailed": "Could not connect to the server. Please try again.",
+      "forbidden": "You do not have permission to manage this collection.",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "saveFailed": "Could not save the collection. Please try again.",
+      "loadOptionsFailed": "Could not load parent collection options.",
       "deleteFailed": "Could not delete collection.",
       "loadFailed": "Could not load collection.",
       "loadProductsFailed": "Could not load products."
@@ -350,9 +361,11 @@
       "manualDescription": "Select products to include manually."
     },
     "validation": {
+      "slugInvalid": "Use lowercase letters, numbers, and hyphens without spaces.",
       "atLeastOneCondition": "Add at least one condition.",
       "checkForm": "Complete the required collection fields.",
       "conditionValueRequired": "Enter at least one condition value.",
+      "slugRequired": "Collection slug is required.",
       "titleRequired": "Collection title is required."
     }
   },
@@ -1166,6 +1179,9 @@
       "variants": "Variants"
     },
     "filters": {
+      "tags": "Filter by tags",
+      "tagsPlaceholder": "Select product tags",
+      "tagsHint": "Show products matching any selected tag.",
       "allProducts": "All products",
       "rentalPlan": "Rental plan",
       "search": "Search",

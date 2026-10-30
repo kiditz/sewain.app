@@ -7,7 +7,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
-const { apiErrorMessage } = useApiError();
+const { notifyCollectionError, watchCollectionErrors } = useCollectionError();
 
 const { findCollections, deleteCollection: removeCollection } = useCollection();
 
@@ -29,7 +29,6 @@ const sortBy = ref<
   },
 ]);
 
-const deleteError = ref("");
 const deletingId = ref<string | null>(null);
 
 const {
@@ -44,6 +43,8 @@ const {
     default: () => [],
   },
 );
+
+watchCollectionErrors([{ error: () => loadError.value, fallback: "collections.errors.loadFailed" }]);
 
 const typeOptions = computed(() => [
   {
@@ -169,14 +170,13 @@ watch(totalItems, (total) => {
 const confirmDelete = async (collection: CollectionSummary) => {
   if (!confirm(t("collections.deleteConfirm"))) return;
 
-  deleteError.value = "";
   deletingId.value = collection.id;
 
   try {
     await removeCollection(collection.id);
     await refresh();
   } catch (error) {
-    deleteError.value = t(apiErrorMessage(error, "collections.errors.deleteFailed"));
+    notifyCollectionError(error, "collections.errors.deleteFailed");
   } finally {
     deletingId.value = null;
   }
@@ -204,21 +204,6 @@ const confirmDelete = async (collection: CollectionSummary) => {
         {{ t("collections.actions.create") }}
       </v-btn>
     </div>
-
-    <v-alert v-if="loadError" type="error" variant="tonal" class="mb-4">
-      {{ loadError.message || "Failed to load collections." }}
-    </v-alert>
-
-    <v-alert
-      v-if="deleteError"
-      type="error"
-      variant="tonal"
-      closable
-      class="mb-4"
-      @click:close="deleteError = ''"
-    >
-      {{ deleteError }}
-    </v-alert>
 
     <v-card rounded="lg" flat>
       <v-card-text>

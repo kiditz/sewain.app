@@ -1,6 +1,7 @@
 package app.sewain.exception;
 
 public class ErrorCode {
+    public static final String PRODUCT_TAG_FILTER_INVALID = "product.tags.filter.invalid";
     public static final String TAG_NOT_FOUND = "tag.notfound";
     public static final String TAG_NAME_INVALID = "tag.name.invalid";
 	public static final String USER_NOT_FOUND = "user.notfound";

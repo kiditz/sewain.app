@@ -22,7 +22,7 @@ useHead({
   <PageBuilder
     v-if="page"
     :page="page"
-    @back="router.push('/merchant/storefront')"
+    @back="router.push(page.kind === 'CUSTOM' ? '/merchant/pages' : '/merchant/storefront')"
     @saved="undefined"
   />
 </template>

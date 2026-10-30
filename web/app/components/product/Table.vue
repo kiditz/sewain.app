@@ -9,6 +9,8 @@ await loadRegionalSettings();
 const { findProducts } = useProduct();
 const { t } = useI18n();
 const store = useProductStore();
+const snackbar = useSnackbarStore();
+const { apiErrorMessage } = useApiError();
 
 const products = ref<Product[]>([]);
 const totalItems = ref(0);
@@ -91,10 +93,13 @@ const headers = computed<DataTableHeader[]>(() => [
 const filters = reactive({
   keyword: "",
   "type.id": "",
+  tagIds: [] as string[],
   status: null as ProductStatus | null,
 });
 
+let requestSequence = 0;
 const loadProducts = async () => {
+  const request = ++requestSequence;
   loading.value = true;
 
   try {
@@ -102,17 +107,24 @@ const loadProducts = async () => {
       page: page.value - 1,
       sort: sortBy.value,
       size: size.value,
-      keyword: filters.keyword.trim() || undefined,
+      keyword: filters.keyword?.trim() || undefined,
       status: filters.status || undefined,
       "type.id": filters["type.id"],
+      "tags.id": filters.tagIds.length ? filters.tagIds.join(",") : undefined,
     };
 
     const response = await findProducts(query);
 
+    if (request !== requestSequence) return;
     products.value = response.items;
     totalItems.value = response.totalItems;
+  } catch (error) {
+    if (request !== requestSequence) return;
+    products.value = [];
+    totalItems.value = 0;
+    snackbar.openSnackbar({ type: "error", message: apiErrorMessage(error) });
   } finally {
-    loading.value = false;
+    if (request === requestSequence) loading.value = false;
   }
 };
 
@@ -202,7 +214,7 @@ await loadProducts();
   <v-card rounded="lg" variant="outlined">
     <v-card-text>
       <v-row align="center">
-        <v-col cols="12" md="5">
+        <v-col cols="12" md="4">
           <v-text-field
             v-model="filters.keyword"
             :label="t('product.filters.search')"
@@ -214,12 +226,14 @@ await loadProducts();
             clearable
           />
         </v-col>
-        <v-spacer> </v-spacer>
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="2">
           <product-status v-model="filters.status" show-all />
         </v-col>
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="2">
           <product-type-auto-complete v-model="filters['type.id']" />
+        </v-col>
+        <v-col cols="12" md="4">
+          <product-tag-filter v-model="filters.tagIds" />
         </v-col>
       </v-row>
     </v-card-text>

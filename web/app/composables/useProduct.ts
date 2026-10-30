@@ -6,6 +6,7 @@ export interface ProductSearchQuery extends PageQuery {
   status?: ProductStatus;
   keyword?: string;
   "type.id"?: string;
+  "tags.id"?: string;
   available?: boolean;
   minimumRentalPrice?: number;
   maximumRentalPrice?: number;

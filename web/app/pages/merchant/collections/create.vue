@@ -21,7 +21,7 @@ definePageMeta({
 const { t } = useI18n();
 const route = useRoute();
 const snackbar = useSnackbarStore();
-const { apiErrorMessage } = useApiError();
+const { notifyCollectionError, watchCollectionErrors } = useCollectionError();
 
 const {
   findCollections,
@@ -47,7 +47,7 @@ const {
   },
 );
 
-const { data: collectionSummaries } = await useAsyncData<CollectionSummary[]>(
+const { data: collectionSummaries, error: collectionOptionsError } = await useAsyncData<CollectionSummary[]>(
   "merchant-collection-options",
   () => findCollections(),
   {
@@ -55,11 +55,11 @@ const { data: collectionSummaries } = await useAsyncData<CollectionSummary[]>(
   },
 );
 
-const collectionFormSchema = toTypedSchema(
+const collectionFormSchema = computed(() => toTypedSchema(
   z
     .object({
-      name: z.string().trim().min(1, "Collection name is required."),
-      slug: z.string().trim().min(1, "Slug is required."),
+      name: z.string().trim().min(1, t("collections.validation.titleRequired")),
+      slug: z.string().trim().min(1, t("collections.validation.slugRequired")),
       imageUrl: z.string(),
       parentId: z.string().nullable(),
       description: z.string(),
@@ -92,7 +92,7 @@ const collectionFormSchema = toTypedSchema(
         ctx.addIssue({
           code: "custom",
           path: ["productIds"],
-          message: "collections.noProductsSelected",
+          message: t("collections.noProductsSelected"),
         });
       }
 
@@ -101,7 +101,7 @@ const collectionFormSchema = toTypedSchema(
           ctx.addIssue({
             code: "custom",
             path: ["rules"],
-            message: "collections.validation.atLeastOneCondition",
+            message: t("collections.validation.atLeastOneCondition"),
           });
         }
 
@@ -110,13 +110,13 @@ const collectionFormSchema = toTypedSchema(
             ctx.addIssue({
               code: "custom",
               path: ["rules", index, "values"],
-              message: "collections.validation.conditionValueRequired",
+              message: t("collections.validation.conditionValueRequired"),
             });
           }
         });
       }
     }),
-);
+));
 
 const { values, errors, setFieldValue, resetForm, handleSubmit, defineField } =
   useForm<{
@@ -143,6 +143,11 @@ const { values, errors, setFieldValue, resetForm, handleSubmit, defineField } =
       productIds: [],
     },
   });
+
+function ruleValueError(index: number): string | undefined {
+  const fieldErrors = errors.value as Record<string, string | undefined>;
+  return fieldErrors[`rules[${index}].values`] ?? fieldErrors[`rules.${index}.values`];
+}
 
 const [name] = defineField("name");
 const [slug] = defineField("slug");
@@ -250,6 +255,12 @@ const {
     default: () => [],
   },
 );
+
+watchCollectionErrors([
+  { error: () => collectionError.value, fallback: "collections.errors.loadFailed" },
+  { error: () => collectionOptionsError.value, fallback: "collections.errors.loadOptionsFailed" },
+  { error: () => collectionProductsError.value, fallback: "collections.errors.loadProductsFailed" },
+]);
 
 /**
  * Restore product display order from collection.productIds.
@@ -490,11 +501,7 @@ const save = handleSubmit(async (formValues) => {
     clearNuxtData("merchant-collection-options");
     await navigateTo("/merchant/collections", { replace: true });
   } catch (error: unknown) {
-    const apiError = error as { data?: { message?: string } };
-    snackbar.openSnackbar({
-      type: "error",
-      message: apiErrorMessage(apiError),
-    });
+    notifyCollectionError(error);
   } finally {
     saving.value = false;
   }
@@ -554,22 +561,6 @@ const collectionTypeOptions = computed<
       color="primary"
       class="mb-4"
     />
-
-    <v-alert v-if="collectionError" type="error" variant="tonal" class="mb-4">
-      {{ collectionError.message || t("collections.errors.loadFailed") }}
-    </v-alert>
-
-    <v-alert
-      v-if="collectionProductsError"
-      type="error"
-      variant="tonal"
-      class="mb-4"
-    >
-      {{
-        collectionProductsError.message ||
-        t("collections.errors.loadProductsFailed")
-      }}
-    </v-alert>
 
     <v-form @submit.prevent="save">
       <v-row>
@@ -763,6 +754,7 @@ const collectionTypeOptions = computed<
             <v-divider />
 
             <v-card-text>
+              <p v-if="errors.productIds" class="text-error text-body-small mb-3" role="alert">{{ errors.productIds }}</p>
               <div
                 v-if="collectionProductsPending"
                 class="d-flex justify-center py-8"
@@ -984,6 +976,7 @@ const collectionTypeOptions = computed<
                       hide-details="auto"
                       :disabled="saving"
                     />
+                    <p v-if="ruleValueError(index)" class="text-error text-body-small mt-2" role="alert">{{ ruleValueError(index) }}</p>
                   </v-col>
                 </v-row>
               </div>

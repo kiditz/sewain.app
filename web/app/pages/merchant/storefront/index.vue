@@ -51,7 +51,7 @@ const storefrontUrl = computed(() => {
       </p>
     </header>
 
-    <v-card border flat rounded="lg" class="overflow-hidden">
+    <v-card variant="outlined"  rounded="lg" class="overflow-hidden">
       <div
         class="storefront-theme-preview pa-8 pa-md-12 rounded-lg"
         :style="{

@@ -83,6 +83,7 @@ final class ProductSpecifications {
 		);
 
 		return specification
+				.and(withTags(values.get("tags.id")))
 				.and(availableProducts(values.get("available")))
 				.and(rentalPrice(values, sort));
 	}
@@ -100,6 +101,25 @@ final class ProductSpecifications {
 
 		return SearchUtils.toSort(Product.class, sortFields, RULES).and(Sort.by("id"));
 	}
+
+    private static Specification<Product> withTags(String value) {
+        if (value == null || value.isBlank()) return Specification.unrestricted();
+        final List<java.util.UUID> ids;
+        try {
+            ids = java.util.Arrays.stream(value.split(",")).map(String::trim)
+                    .filter(id -> !id.isEmpty()).map(java.util.UUID::fromString).distinct().toList();
+        } catch (IllegalArgumentException ex) {
+            throw new app.sewain.exception.ValidationException(app.sewain.exception.ErrorCode.PRODUCT_TAG_FILTER_INVALID);
+        }
+        if (ids.isEmpty()) return Specification.unrestricted();
+        return (root, query, cb) -> {
+            var matchingTag = query.subquery(java.util.UUID.class);
+            var product = matchingTag.correlate(root);
+            var tag = product.join("tags");
+            matchingTag.select(tag.get("id")).where(tag.get("id").in(ids));
+            return cb.exists(matchingTag);
+        };
+    }
 
 	private static Specification<Product> availableProducts(String available) {
 		if (!Boolean.parseBoolean(available)) return Specification.unrestricted();

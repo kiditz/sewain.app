@@ -1,5 +1,11 @@
 {
   "apiErrors": {
+    "product_tags_filter_invalid": "Filter tag produk tidak valid.",
+    "collection_notfound": "Koleksi tidak ditemukan.",
+    "collection_inuse": "Koleksi ini masih digunakan dan tidak dapat dihapus.",
+    "collection_reorder_invalid": "Urutan koleksi tidak valid.",
+    "collection_slug_already_exists": "Koleksi dengan slug ini sudah ada.",
+    "collection_conflict": "Data koleksi bertentangan dengan data yang sudah ada atau masih digunakan.",
     "attribute_notfound": "Atribut tidak ditemukan.",
     "attribute_slug_already_exists": "Atribut dengan URL ini sudah ada.",
     "attribute_value_notfound": "Nilai atribut tidak ditemukan.",
@@ -269,7 +275,7 @@
       "selectImage": "Pilih gambar"
     },
     "add": {
-      "success": "Collection berhasil dibuat"
+      "success": "Koleksi berhasil dibuat."
     },
     "automaticProducts": "Otomatis",
     "condition": {
@@ -277,8 +283,8 @@
       "contains": "mengandung",
       "endsWith": "diakhiri dengan",
       "equals": "sama dengan",
-      "field": "Field",
-      "notContains": "Tidak mengandung",
+      "field": "Kolom",
+      "notContains": "tidak mengandung",
       "notEquals": "tidak sama dengan",
       "operator": "Operator",
       "productTitle": "Nama produk",
@@ -292,10 +298,15 @@
     "createSubtitle": "Buat koleksi untuk mengatur produk kamu.",
     "deleteConfirm": "Yakin ingin menghapus koleksi ini?",
     "edit": {
-      "success": "Collection berhasil diperbarui"
+      "success": "Koleksi berhasil diperbarui."
     },
     "empty": "Koleksi tidak ditemukan.",
     "errors": {
+      "connectionFailed": "Tidak dapat terhubung ke server. Silakan coba lagi.",
+      "forbidden": "Anda tidak memiliki izin untuk mengelola koleksi ini.",
+      "sessionExpired": "Sesi Anda telah berakhir. Silakan masuk kembali.",
+      "saveFailed": "Koleksi gagal disimpan. Silakan coba lagi.",
+      "loadOptionsFailed": "Gagal memuat pilihan koleksi induk.",
       "deleteFailed": "Koleksi gagal dihapus.",
       "loadFailed": "Gagal memuat koleksi.",
       "loadProductsFailed": "Gagal memuat produk koleksi."
@@ -350,9 +361,11 @@
       "manualDescription": "Pilih sendiri produk yang ingin dimasukkan."
     },
     "validation": {
+      "slugInvalid": "Gunakan huruf kecil, angka, dan tanda hubung tanpa spasi.",
       "atLeastOneCondition": "Tambahkan minimal satu kondisi.",
-      "checkForm": "Lengkapi field collection yang wajib diisi",
+      "checkForm": "Lengkapi kolom koleksi yang wajib diisi.",
       "conditionValueRequired": "Masukkan minimal satu nilai kondisi.",
+      "slugRequired": "Slug koleksi wajib diisi.",
       "titleRequired": "Nama koleksi wajib diisi."
     }
   },
@@ -1166,6 +1179,9 @@
       "variants": "Varian"
     },
     "filters": {
+      "tags": "Filter tag",
+      "tagsPlaceholder": "Pilih tag produk",
+      "tagsHint": "Tampilkan produk dengan salah satu tag yang dipilih.",
       "allProducts": "Semua produk",
       "rentalPlan": "Paket sewa",
       "search": "Cari produk",

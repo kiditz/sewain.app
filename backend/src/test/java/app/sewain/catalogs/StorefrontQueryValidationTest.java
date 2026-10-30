@@ -41,9 +41,16 @@ class StorefrontQueryValidationTest {
                 var root = criteria.from(Product.class);
                 criteria.select(root).where(ProductSpecifications.search(java.util.Map.of(
                         "id", java.util.UUID.randomUUID() + "," + java.util.UUID.randomUUID(),
+                        "tags.id", java.util.UUID.randomUUID() + "," + java.util.UUID.randomUUID(),
                         "status", "ACTIVE", "available", "true"
                 )).toPredicate(root, criteria, cb));
                 session.createQuery(criteria);
+                var count = cb.createQuery(Long.class);
+                var countRoot = count.from(Product.class);
+                count.select(cb.count(countRoot)).where(ProductSpecifications.search(java.util.Map.of(
+                        "tags.id", java.util.UUID.randomUUID().toString()
+                )).toPredicate(countRoot, count, cb));
+                session.createQuery(count);
             }
         } finally { StandardServiceRegistryBuilder.destroy(registry); }
     }

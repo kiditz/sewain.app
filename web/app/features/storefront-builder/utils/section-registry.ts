@@ -1,3 +1,4 @@
+import { imageBannerDefaults } from "./image-banner";
 import { checkoutSectionDefaults, checkoutBlockTypes } from "./checkout-layout";
 import { cartSectionDefaults } from "./cart-layout";
 import type { Component } from "vue";
@@ -76,7 +77,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     label: "Image banner",
     description: "A promotional banner with a call to action.",
     component: ImageBannerSection,
-    defaults: { background: "#e8e4dc" },
+    defaults: imageBannerDefaults(),
     allowedBlocks: ["HEADING", "TEXT", "BUTTON", "IMAGE"],
     defaultBlocks: ["HEADING", "TEXT", "BUTTON"],
   },

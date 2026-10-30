@@ -6,7 +6,7 @@ const auth = useAuth();
 
 const logout = () => {
   auth.logout();
-  navigateTo("/login");
+  return navigateTo("/login", { replace: true });
 };
 </script>
 
