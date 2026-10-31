@@ -18,7 +18,18 @@ const style = computed(() => ({
 }));
 </script>
 <template>
-  <a v-if="href || preview" :href="href || undefined" class="social-link" :style="style" :aria-label="label" :title="label" :target="block.settings.openInNewTab !== false ? '_blank' : undefined" :rel="block.settings.openInNewTab !== false ? 'noopener noreferrer' : undefined" @click="preview && $event.preventDefault()"><component :is="icon" aria-hidden="true" /></a>
+  <component
+    :is="href ? 'a' : 'span'"
+    :href="href || undefined"
+    class="social-link"
+    :style="style"
+    :aria-label="label"
+    :role="href ? undefined : 'img'"
+    :title="label"
+    :target="href && block.settings.openInNewTab !== false ? '_blank' : undefined"
+    :rel="href && block.settings.openInNewTab !== false ? 'noopener noreferrer' : undefined"
+    @click="preview && $event.preventDefault()"
+  ><component :is="icon" aria-hidden="true" /></component>
 </template>
 <style scoped>
 .social-link { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; max-width: 100%; color: inherit; text-decoration: none; border-radius: 6px; }

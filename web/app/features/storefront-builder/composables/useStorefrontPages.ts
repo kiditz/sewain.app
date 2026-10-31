@@ -370,7 +370,6 @@ export function useStorefrontPages() {
       });
       for (const page of pages.value) {
         ensureNavigationSection(page);
-        ensureFooterSection(page);
         for (const section of page.sections) {
           normalizeCartSection(section);
           normalizeCheckoutSection(section);
@@ -472,15 +471,19 @@ export function useStorefrontPages() {
     page.updatedAt = new Date().toISOString();
     schedulePage(page);
   }
-  function addSection(page: StorefrontPage, type: SectionType) {
+  function addSection(page: StorefrontPage, type: SectionType, afterId?: string | null) {
     if (["NAVIGATION", "FOOTER"].includes(type) && page.sections.some(section => section.type === type)) return;
+    const section = createSection(type);
+    const afterIndex = afterId ? page.sections.findIndex(section => section.id === afterId) : -1;
     const footerIndex = page.sections.findIndex(section => section.type === "FOOTER");
-    if (footerIndex >= 0 && type !== "FOOTER") page.sections.splice(footerIndex, 0, createSection(type));
-    else page.sections.push(createSection(type));
+    if (afterIndex >= 0) page.sections.splice(afterIndex + 1, 0, section);
+    else if (footerIndex >= 0 && type !== "FOOTER") page.sections.splice(footerIndex, 0, section);
+    else page.sections.push(section);
     touch(page);
+    return section;
   }
   function removeSection(page: StorefrontPage, id: string) {
-    const header = page.sections.find(section => section.id === id && ["NAVIGATION", "FOOTER"].includes(section.type));
+    const header = page.sections.find(section => section.id === id && section.type === "NAVIGATION");
     if (header) { header.enabled = false; touch(page); return; }
     page.sections = page.sections.filter((section) => section.id !== id);
     touch(page);

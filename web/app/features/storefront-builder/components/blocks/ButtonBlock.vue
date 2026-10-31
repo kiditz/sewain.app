@@ -29,7 +29,7 @@ const settings = computed(() =>
 .block-button {
   gap: 12px;
   align-items: center;
-
+  cursor: pointer;
   border-radius: var(--store-radius);
   background: var(--store-primary);
   color: #fff;

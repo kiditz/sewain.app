@@ -42,6 +42,10 @@ const selectedId = ref<string | null>(props.page.sections[0]?.id ?? null);
 const selectedBlockId = ref<string | null>(
   props.page.sections[0]?.blocks[0]?.id ?? null,
 );
+const collapsedSections = ref<Record<string, boolean>>({});
+watch([selectedId, selectedBlockId], ([id]) => {
+  if (id) collapsedSections.value[id] = false;
+});
 const router = useRouter();
 function switchPage(selectedPage: StorefrontPage) {
   if (selectedPage.id === props.page.id) return;
@@ -52,6 +56,7 @@ function switchPage(selectedPage: StorefrontPage) {
 watch(
   () => props.page.id,
   () => {
+    collapsedSections.value = {};
     selectedId.value = props.page.sections[0]?.id ?? null;
     selectedBlockId.value = props.page.sections[0]?.blocks[0]?.id ?? null;
   },
@@ -123,6 +128,12 @@ const addingBlockType = ref<BlockType | null>(null);
 const showAddBlock = ref(false);
 const addingType = ref<SectionType | null>(null);
 const showAddSection = ref(false);
+const addSectionAfterId = ref<string | null>(null);
+function openAddSection(afterId: string | null = null) {
+  addSectionAfterId.value = afterId;
+  addingType.value = null;
+  showAddSection.value = true;
+}
 const sectionScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
 async function refreshSectionScrollbar() {
   await nextTick();
@@ -159,9 +170,10 @@ const previewStyle = computed(() => ({
 
 function addSection() {
   if (addingType.value) {
-    store.addSection(props.page, addingType.value);
-    selectedId.value = props.page.sections.at(-1)?.id ?? null;
-    selectedBlockId.value = props.page.sections.at(-1)?.blocks[0]?.id ?? null;
+    const section = store.addSection(props.page, addingType.value, addSectionAfterId.value);
+    if (!section) return;
+    selectedId.value = section.id;
+    selectedBlockId.value = section.blocks[0]?.id ?? null;
     addingType.value = null;
     showAddSection.value = false;
   }
@@ -340,7 +352,7 @@ provide(builderDndKey, {
             size="small"
             variant="tonal"
             :aria-label="$t('ui.add_section')"
-            @click="showAddSection = true"
+            @click="openAddSection()"
           />
         </div>
         <VueDraggable
@@ -352,7 +364,7 @@ provide(builderDndKey, {
           @end="store.touch(page)"
         >
           <div
-            v-for="(section, index) in page.sections"
+            v-for="section in page.sections"
             :key="section.id"
             class="section-tree-item"
           >
@@ -362,10 +374,18 @@ provide(builderDndKey, {
               @click="selectSection(section.id)"
             >
               <v-icon class="drag-handle" size="18">mdi-drag</v-icon>
+              <v-btn
+                :icon="collapsedSections[section.id] ? 'mdi-chevron-right' : 'mdi-chevron-down'"
+                size="x-small"
+                variant="text"
+                :aria-label="sectionRegistry[section.type].label"
+                :aria-expanded="!collapsedSections[section.id]"
+                @click.stop="collapsedSections[section.id] = !collapsedSections[section.id]"
+              />
+              <v-icon size="17" class="section-type-icon">mdi-view-agenda-outline</v-icon>
               <div class="section-row__text">
                 <strong
-                  >{{ index + 1 }}.
-                  {{ sectionRegistry[section.type].label }}</strong
+                  >{{ sectionRegistry[section.type].label }}</strong
                 >
                 <small>{{ section.enabled ? "Visible" : "Hidden" }}</small>
               </div>
@@ -382,46 +402,55 @@ provide(builderDndKey, {
                 "
               />
             </div>
-            <BlockTreeList
-              :blocks="section.blocks"
-              :selected-block-id="
-                selectedId === section.id ? selectedBlockId : null
-              "
-              @select="
-                (id) => {
-                  selectedId = section.id;
-                  selectedBlockId = id;
-                }
-              "
-              @toggle="
-                (block) => {
-                  block.enabled = !block.enabled;
-                  store.touch(page);
-                }
-              "
-              @add-child="(block) => openAddBlock(section, block)"
-              @reorder="
-                (blocks) => {
-                  section.blocks = blocks;
-                  store.touch(page);
-                }
-              "
-              @reorder-children="
-                ({ parent, blocks }) => {
-                  parent.blocks = blocks;
-                  store.touch(page);
-                }
-              "
-            />
+            <div v-show="!collapsedSections[section.id]" class="section-tree-children">
+              <BlockTreeList
+                :blocks="section.blocks"
+                :selected-block-id="
+                  selectedId === section.id ? selectedBlockId : null
+                "
+                @select="
+                  (id) => {
+                    selectedId = section.id;
+                    selectedBlockId = id;
+                  }
+                "
+                @toggle="
+                  (block) => {
+                    block.enabled = !block.enabled;
+                    store.touch(page);
+                  }
+                "
+                @add-child="(block) => openAddBlock(section, block)"
+                @reorder="
+                  (blocks) => {
+                    section.blocks = blocks;
+                    store.touch(page);
+                  }
+                "
+                @reorder-children="
+                  ({ parent, blocks }) => {
+                    parent.blocks = blocks;
+                    store.touch(page);
+                  }
+                "
+              />
+              <v-btn
+                size="x-small"
+                variant="text"
+                prepend-icon="mdi-plus"
+                v-if="sectionRegistry[section.type].allowedBlocks.length"
+                class="nested-add-block"
+                @click.stop="openAddBlock(section)"
+                >{{ $t("ui.add_block") }}</v-btn
+              >
+            </div>
             <v-btn
+              class="section-insert-button"
               size="x-small"
               variant="text"
               prepend-icon="mdi-plus"
-              v-if="sectionRegistry[section.type].allowedBlocks.length"
-              class="nested-add-block"
-              @click.stop="openAddBlock(section)"
-              >{{ $t("ui.add_block") }}</v-btn
-            >
+              @click.stop="openAddSection(section.id)"
+            >{{ $t('ui.add_section') }}</v-btn>
           </div>
         </VueDraggable>
         <v-btn
@@ -429,7 +458,7 @@ provide(builderDndKey, {
           prepend-icon="mdi-plus"
           variant="tonal"
           class="add-section-button"
-          @click="showAddSection = true"
+          @click="openAddSection()"
           >{{ $t("ui.add_section") }}</v-btn
         >
         <div class="page-settings">
@@ -581,9 +610,7 @@ provide(builderDndKey, {
                     <template #prepend
                       ><v-radio :value="definition.type"
                     /></template>
-                    <template #append
-                      ><v-icon>mdi-plus-circle-outline</v-icon></template
-                    >
+
                   </v-list-item>
                 </v-list>
               </v-radio-group>
@@ -757,8 +784,8 @@ provide(builderDndKey, {
 .section-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 10px 6px;
+  gap: 4px;
+  padding: 6px 4px;
   border: 1px solid transparent;
   border-radius: 9px;
   cursor: pointer;
@@ -883,53 +910,38 @@ provide(builderDndKey, {
 }
 
 .section-tree-item {
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f0f1f3;
+  min-width: 0;
+}
+.section-insert-button {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  padding-inline: 8px;
+  margin-top: 4px;
+  color: rgb(var(--v-theme-primary));
 }
 
-.nested-block-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 2px 0 0 20px;
+.section-tree-children {
+  margin: 2px 0 8px 34px;
   padding-left: 8px;
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.16);
 }
 
-.nested-block-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 30px;
-  padding: 2px 3px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  color: #626a75;
-  cursor: pointer;
-  font-size: 11px;
+.section-type-icon {
+  color: rgb(var(--v-theme-primary));
+  flex-shrink: 0;
 }
 
-.nested-block-row.active {
-  border-color: rgb(var(--v-theme-primary));
-  background: rgba(var(--v-theme-primary), 0.07);
-  color: #20252b;
-}
-
-.nested-block-row span {
-  flex: 1;
+.section-row__text strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .nested-add-block {
-  margin: 3px 0 0 20px;
-  width: calc(100% - 20px);
-}
-
-.block-drag-handle {
-  cursor: grab;
-  color: #858b94;
+  margin-top: 3px;
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .empty-settings {
