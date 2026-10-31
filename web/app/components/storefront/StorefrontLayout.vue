@@ -53,24 +53,7 @@ await cartStore.getCart().catch(() => undefined);
       <slot />
     </main>
 
-    <v-footer class="store-footer">
-      <v-container class="store-footer__inner">
-        <v-row align="center" justify="space-between">
-          <v-col cols="12" sm="auto">
-            <div class="store-footer__brand">
-              {{ merchantName }}
-            </div>
-            <div class="store-footer__tagline">
-              {{ $t("ui.rent_more_own_less") }}
-            </div>
-          </v-col>
 
-          <v-col cols="12" sm="auto" class="text-sm-right">
-            © {{ new Date().getFullYear() }}
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-footer>
   </component>
 </template>
 
@@ -84,30 +67,13 @@ await cartStore.getCart().catch(() => undefined);
 }
 
 .storefront--preview { min-height: 640px; isolation: isolate; }
-.store-footer__inner { max-width: var(--store-width); }
 
 .store-main {
   flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
-
-.store-footer {
-  margin-top: var(--store-spacing);
-  background: var(--store-secondary);
-  color: var(--store-text);
-}
-
-.store-footer__inner {
-  padding-top: 36px;
-  padding-bottom: 36px;
-}
-
-.store-footer__brand {
-  font-weight: 700;
-}
-
-.store-footer__tagline {
-  opacity: 0.8;
-}
-
+ .store-main :deep(.storefront-sections) { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.store-main :deep(.builder-section[data-section-type="FOOTER"]) { margin-top: auto; }
 </style>

@@ -1,4 +1,12 @@
 {
+  "storefrontFooter": {
+    "platform": "Platform sosial",
+    "url": "URL akun sosial",
+    "invalidUrl": "Gunakan URL lengkap dengan https:// atau http://.",
+    "label": "Label aksesibilitas (opsional)",
+    "size": "Ukuran ikon",
+    "openInNewTab": "Buka di tab baru"
+  },
   "apiErrors": {
     "product_tags_filter_invalid": "Filter tag produk tidak valid.",
     "collection_notfound": "Koleksi tidak ditemukan.",

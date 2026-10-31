@@ -47,6 +47,7 @@ const dragSections = computed<StorefrontSection[]>({
         'is-preview': preview,
       }"
       :data-section-id="section.id"
+      :data-section-type="section.type"
       :data-section-label="sectionRegistry[section.type].label"
       :data-section-selected="
         preview && section.id === selectedSectionId ? 'true' : 'false'

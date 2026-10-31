@@ -1,3 +1,4 @@
+import { socialLinkDefaults } from "./footer-section";
 import { checkoutBlockDefaults } from "./checkout-layout";
 import { cartBlockDefaults } from "./cart-layout";
 import {
@@ -21,6 +22,7 @@ export interface BlockDefinition {
 }
 
 export const blockRegistry: Record<BlockType, BlockDefinition> = {
+  SOCIAL_LINK: { type: "SOCIAL_LINK", label: "Social link", description: "Social account icon and external URL.", defaults: socialLinkDefaults() },
   CHECKOUT_CONTACT: { type: "CHECKOUT_CONTACT", label: "Contact", description: "Checkout contact.", defaults: checkoutBlockDefaults("CHECKOUT_CONTACT") },
   CHECKOUT_FULFILLMENT: { type: "CHECKOUT_FULFILLMENT", label: "Fulfillment", description: "Checkout fulfillment.", defaults: checkoutBlockDefaults("CHECKOUT_FULFILLMENT") },
   CHECKOUT_NOTES: { type: "CHECKOUT_NOTES", label: "Order notes", description: "Checkout order notes.", defaults: checkoutBlockDefaults("CHECKOUT_NOTES") },

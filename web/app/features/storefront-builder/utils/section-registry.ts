@@ -1,3 +1,5 @@
+import FooterSection from "../components/sections/FooterSection.vue";
+import { footerDefaults } from "./footer-section";
 import { imageBannerDefaults } from "./image-banner";
 import { checkoutSectionDefaults, checkoutBlockTypes } from "./checkout-layout";
 import { cartSectionDefaults } from "./cart-layout";
@@ -36,6 +38,12 @@ export interface SectionDefinition {
 }
 
 export const sectionRegistry: Record<SectionType, SectionDefinition> = {
+  FOOTER: {
+    type: "FOOTER", label: "Footer", description: "Store branding, links and social accounts.",
+    component: FooterSection, defaults: footerDefaults(),
+    allowedBlocks: ["LOGO", "HEADER", "TEXT", "MENU", "SOCIAL_LINK"],
+    defaultBlocks: ["HEADER", "SOCIAL_LINK", "TEXT"],
+  },
   NAVIGATION: {
     type: "NAVIGATION",
     label: "Navigation",

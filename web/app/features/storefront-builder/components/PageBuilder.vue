@@ -489,7 +489,7 @@ provide(builderDndKey, {
           ><v-radio-group v-model="addingType"
             ><v-list lines="two" select-strategy="single-independent"
               ><v-list-item
-                v-for="definition in sectionTypes.filter(item => item.type !== 'NAVIGATION' || !page.sections.some(section => section.type === 'NAVIGATION'))"
+                v-for="definition in sectionTypes.filter(item => !['NAVIGATION', 'FOOTER'].includes(item.type) || !page.sections.some(section => section.type === item.type))"
                 :key="definition.type"
                 :title="definition.label"
                 :subtitle="definition.description"

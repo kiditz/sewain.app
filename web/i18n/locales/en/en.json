@@ -1,4 +1,12 @@
 {
+  "storefrontFooter": {
+    "platform": "Social platform",
+    "url": "Social account URL",
+    "invalidUrl": "Use a complete URL starting with https:// or http://.",
+    "label": "Accessible label (optional)",
+    "size": "Icon size",
+    "openInNewTab": "Open in a new tab"
+  },
   "apiErrors": {
     "product_tags_filter_invalid": "The product tag filter is invalid.",
     "collection_notfound": "Collection was not found.",

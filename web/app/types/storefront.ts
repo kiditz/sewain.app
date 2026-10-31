@@ -24,6 +24,7 @@ export type PageKind =
   | "CART"
   | "CHECKOUT";
 export type SectionType =
+  | "FOOTER"
   | "NAVIGATION"
   | "HERO"
   | "RICH_TEXT"
@@ -38,6 +39,7 @@ export type SectionType =
   | "CHECKOUT";
 
 export type BlockType =
+  | "SOCIAL_LINK"
   | "CHECKOUT_CONTACT"
   | "CHECKOUT_FULFILLMENT"
   | "CHECKOUT_NOTES"

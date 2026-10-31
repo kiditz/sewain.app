@@ -5,6 +5,7 @@ import EditorFieldRow from "../../EditorFieldRow.vue";
 import PaddingField from "../../PaddingField.vue";
 import LayoutField from "../../LayoutField.vue";
 import TextField from "./TextField.vue";
+import { socialPlatforms, socialLinkHref } from "../../../utils/social-links";
 import BlockLinkField from "./BlockLinkField.vue";
 import { isBlockLinkField } from "../../../utils/block-link";
 import MenuField from "./MenuField.vue";
@@ -94,6 +95,7 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string): string {
+  if (props.block.type === "SOCIAL_LINK" && ["size", "openInNewTab"].includes(key)) return t(`storefrontFooter.${key}`);
   const labels: Record<string, string> = {
     collectionIds: "ui.collections_to_show",
     level: "ui.heading_level",
@@ -153,6 +155,15 @@ function update(key: string, value: unknown) {
         />
       </EditorFieldRow>
 
+      <EditorFieldRow v-else-if="block.type === 'SOCIAL_LINK' && key === 'network'" :label="t('storefrontFooter.platform')">
+        <v-select :model-value="value" :items="socialPlatforms" variant="outlined" density="compact" hide-details @update:model-value="update('network', $event)" />
+      </EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'SOCIAL_LINK' && key === 'url'" :label="t('storefrontFooter.url')">
+        <v-text-field :model-value="String(value || '')" placeholder="https://instagram.com/yourstore" variant="outlined" density="compact" clearable :error-messages="value && !socialLinkHref(value) ? [t('storefrontFooter.invalidUrl')] : []" @update:model-value="update('url', String($event || ''))" />
+      </EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'SOCIAL_LINK' && key === 'label'" :label="t('storefrontFooter.label')">
+        <v-text-field :model-value="String(value || '')" variant="outlined" density="compact" hide-details @update:model-value="update('label', String($event || ''))" />
+      </EditorFieldRow>
       <EditorFieldRow v-else-if="isBlockLinkField(String(key), value)" :label="labelOf(String(key)).replace(/url|href/gi, 'Link')">
         <BlockLinkField :settings="block.settings" :field-key="String(key)" :label="labelOf(String(key)).replace(/url|href/gi, 'Link')" @update="update" />
       </EditorFieldRow>

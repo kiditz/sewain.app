@@ -69,6 +69,7 @@ useSeoMeta({ title: () => title.value });
       </p>
       <v-pagination v-if="pageCount > 1" v-model="currentPage" :length="pageCount" :total-visible="5" class="mt-6" />
     </section>
+    <StorefrontRenderer v-if="slug !== 'all'" :sections="getPageByKind('COLLECTIONS')?.sections.filter(section => section.type === 'FOOTER') || []" />
   </StorefrontLayout>
 </template>
 

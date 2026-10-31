@@ -20,7 +20,7 @@ const emit = defineEmits<{
     </div>
 
     <v-btn
-      v-if="section.type !== 'NAVIGATION'"
+      v-if="!['NAVIGATION', 'FOOTER'].includes(section.type)"
       icon="mdi-trash-can-outline"
       color="error"
       variant="text"
