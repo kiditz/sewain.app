@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { useStorefrontCatalog } from "../../composables/useStorefrontCatalog";
-import type { StorefrontBlock } from "~/types/storefront";
+import type { StorefrontBlock, SectionLayout } from "~/types/storefront";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
+import { useStorefront } from "../../composables/useStorefront";
+import { productInformationSettings } from "../../utils/product-information-layout";
+import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
 const store = useStorefrontProductStore();
 const { product, gallery, selectedMedia } = storeToRefs(store);
 const activeImageIndex = computed({
@@ -15,11 +18,23 @@ const activeImageIndex = computed({
   },
 });
 const props = defineProps<{
-  settings: Record<string, string | number | boolean>;
+  settings: Record<string, unknown>;
   blocks: StorefrontBlock[];
   preview?: boolean;
   selectedBlockId?: string | null;
 }>();
+const { theme } = useStorefront();
+const settings = computed(() => productInformationSettings(props.settings));
+const layout = computed(() => settings.value.layout);
+const sectionStyle = computed(() => ({
+  ...getLayoutStyle(layout.value, theme.value),
+  ...getPaddingStyle(settings.value.padding, theme.value),
+  width: "100%",
+  display: layout.value.direction === "horizontal" ? "grid" : "flex",
+}));
+const detailsLayout = computed<SectionLayout>(() => ({
+  ...layout.value, direction: "vertical", alignment: "left", position: "top", width: "full", height: "auto",
+}));
 const catalog = useStorefrontCatalog();
 if (props.preview && !store.product) {
   const { data: example } = await useAsyncData(catalog.queryKey("preview-product"), () => catalog.fetchProducts({ page: 0, size: 1, available: true }));
@@ -30,7 +45,7 @@ function selectImage(index: number) {
 }
 </script>
 <template>
-  <section class="product-information">
+  <section class="product-information" :style="sectionStyle" :class="{ 'product-information--media-right': settings.mediaPosition === 'right' }">
     <div class="product-information__media">
       <div class="product-image">
         <v-carousel
@@ -76,6 +91,7 @@ function selectImage(index: number) {
     <div class="product-information__details">
       <BlockRenderer
         :blocks="blocks"
+        :layout="detailsLayout"
         :preview="preview"
         :selected-block-id="selectedBlockId"
       />
@@ -84,13 +100,18 @@ function selectImage(index: number) {
 </template>
 <style scoped>
 .product-information {
-  max-width: var(--store-width);
-  margin: auto;
-  padding: var(--store-spacing) 24px;
-  display: grid;
+  container: product-information / inline-size;
+  box-sizing: border-box;
+  min-width: 0;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(28px, 5vw, 72px);
-  align-items: start;
+  margin-inline: auto;
+}
+.product-information__media {
+  min-width: 0;
+  width: 100%;
+}
+.product-information--media-right .product-information__media {
+  order: 1;
 }
 .product-image {
   height: 460px;
@@ -154,17 +175,16 @@ function selectImage(index: number) {
 
 .product-information__details {
   min-width: 0;
-  padding-top: 4px;
+  width: 100%;
 }
-.product-information__details :deep(.block-renderer) {
-  gap: 18px;
-}
-.product-information__details :deep(.block-heading) {
-  font-size: clamp(28px, 3.5vw, 42px);
-}
-@media (max-width: 760px) {
-  .product-information {
-    grid-template-columns: 1fr;
+@container product-information (max-width: 760px) {
+  .product-information__media,
+  .product-information__details {
+    grid-column: 1 / -1;
+  }
+  .product-information__media,
+  .product-information--media-right .product-information__media {
+    order: 0;
   }
   .product-image {
     height: 320px;

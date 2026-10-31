@@ -11,7 +11,9 @@ import { blockComponentRegistry } from "~/features/storefront-builder/utils/bloc
 import {
   getBorderRadiusStyle,
   getLayoutStyle,
+  getPaddingStyle,
 } from "~/features/storefront-builder/utils/block-settings";
+import { productControlTypes, productControlDefaults, objectSettings } from "~/features/storefront-builder/utils/product-information-layout";
 import { builderDndKey } from "~/features/storefront-builder/utils/builder-dnd";
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 
@@ -38,6 +40,16 @@ const layoutStyle = computed(() => ({
 }));
 
 function blockStyle(block: StorefrontBlock) {
+  if (productControlTypes.includes(block.type)) {
+    const layout = { ...productControlDefaults(block.type).layout, ...objectSettings(block.settings.layout) } as Partial<SectionLayout>;
+    return {
+      width: "100%",
+      maxWidth: layout.width === "page" ? `${storefront.theme.value.layout.contentMaxWidth}px` : undefined,
+      marginInline: layout.width === "page" ? "auto" : undefined,
+      minWidth: 0,
+      boxSizing: "border-box" as const,
+    };
+  }
   if (["HEADER", "MENU"].includes(block.type)) {
     return {
       width: "100%",
@@ -53,6 +65,17 @@ function blockStyle(block: StorefrontBlock) {
   );
 
   return { width: "100%", ...borderRadiusStyle };
+}
+
+function productControlStyle(block: StorefrontBlock) {
+  if (!productControlTypes.includes(block.type)) return undefined;
+  const defaults = productControlDefaults(block.type);
+  return {
+    ...getPaddingStyle({ ...defaults.padding, ...objectSettings(block.settings.padding) }, storefront.theme.value),
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box" as const,
+  };
 }
 
 function childLayout(block: StorefrontBlock) {
@@ -121,6 +144,7 @@ function isFillTextBlock(block: StorefrontBlock) {
 
       <component
         :is="blockComponentRegistry[block.type]"
+        :style="productControlStyle(block)"
         :block="block"
         :preview="preview"
         :selected-block-id="selectedBlockId"

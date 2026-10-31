@@ -1,4 +1,5 @@
 import { socialLinkDefaults } from "./footer-section";
+import { productControlDefaults } from "./product-information-layout";
 import { checkoutBlockDefaults } from "./checkout-layout";
 import { cartBlockDefaults } from "./cart-layout";
 import {
@@ -177,37 +178,37 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     type: "VARIANT_SELECTOR",
     label: "Variant selector",
     description: "Lets customers choose a product variant.",
-    defaults: { label: "Choose an option" },
+    defaults: { label: "Choose an option", ...productControlDefaults("VARIANT_SELECTOR") },
   },
   RENTAL_PLAN_SELECTOR: {
     type: "RENTAL_PLAN_SELECTOR",
     label: "Rental duration",
     description: "Lets customers choose a rental duration.",
-    defaults: { label: "Rental duration" },
+    defaults: { label: "Rental duration", ...productControlDefaults("RENTAL_PLAN_SELECTOR") },
   },
   DEPOSIT_INFO: {
     type: "DEPOSIT_INFO",
     label: "Deposit information",
     description: "Displays the required refundable deposit.",
-    defaults: { label: "Refundable deposit" },
+    defaults: { label: "Refundable deposit", ...productControlDefaults("DEPOSIT_INFO") },
   },
   QUANTITY_SELECTOR: {
     type: "QUANTITY_SELECTOR",
     label: "Quantity selector",
     description: "Controls the rental quantity.",
-    defaults: { label: "Quantity" },
+    defaults: { label: "Quantity", ...productControlDefaults("QUANTITY_SELECTOR") },
   },
   ADD_TO_CART: {
     type: "ADD_TO_CART",
     label: "Add to cart",
     description: "Adds the selected rental to the cart.",
-    defaults: { label: "Sewa Sekarang", style: "primary" },
+    defaults: { label: "Sewa Sekarang", style: "primary", ...productControlDefaults("ADD_TO_CART") },
   },
   PRICE_SUMMARY: {
     type: "PRICE_SUMMARY",
     label: "Price summary",
     description: "Summary of pricing",
-    defaults: { label: "Ringkasan pembayaran", style: "primary" },
+    defaults: { label: "Ringkasan pembayaran", style: "primary", ...productControlDefaults("PRICE_SUMMARY") },
   },
   CART_ITEMS: {
     type: "CART_ITEMS",

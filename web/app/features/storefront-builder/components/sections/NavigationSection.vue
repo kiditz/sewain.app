@@ -163,26 +163,27 @@ onBeforeUnmount(() => {
         >
           <UserOutlined aria-hidden="true" />
         </v-btn>
-        <v-btn
-          :to="preview ? undefined : '/cart'"
-          :href="preview ? '/cart' : undefined"
-          icon
-          variant="text"
-          class="store-header__cart"
-          :aria-label="`${$t('ui.cart')} (${itemCount})`"
+        <v-badge
+          :model-value="itemCount > 0"
+          :content="itemCount"
+          :max="99"
+          :offset-x="8"
+          :offset-y="8"
+          color="primary"
           :class="{ 'cart-bump': cartBump }"
-          @click="preview && $event.preventDefault()"
         >
-          <v-badge
-            :model-value="itemCount > 0"
-            :content="itemCount"
-            :max="99"
-            color="primary"
-            floating
+          <v-btn
+            :to="preview ? undefined : '/cart'"
+            :href="preview ? '/cart' : undefined"
+            icon
+            variant="text"
+            class="store-header__cart"
+            :aria-label="`${$t('ui.cart')} (${itemCount})`"
+            @click="preview && $event.preventDefault()"
           >
             <ShoppingCartOutlined aria-hidden="true" />
-          </v-badge>
-        </v-btn>
+          </v-btn>
+        </v-badge>
       </div>
     </div>
   </header>

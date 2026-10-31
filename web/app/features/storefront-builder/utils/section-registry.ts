@@ -1,5 +1,6 @@
 import FooterSection from "../components/sections/FooterSection.vue";
 import { footerDefaults } from "./footer-section";
+import { productInformationDefaults } from "./product-information-layout";
 import { imageBannerDefaults } from "./image-banner";
 import { checkoutSectionDefaults, checkoutBlockTypes } from "./checkout-layout";
 import { cartSectionDefaults } from "./cart-layout";
@@ -171,7 +172,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     label: "Product information",
     description: "Product details and rental purchase controls.",
     component: ProductInformationSection,
-    defaults: { layout: "two-column", mediaPosition: "left" },
+    defaults: productInformationDefaults(),
     allowedBlocks: [
       "PRODUCT_TITLE",
       "PRODUCT_PRICE",

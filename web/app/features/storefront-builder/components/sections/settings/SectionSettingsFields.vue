@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { imageBannerDefaults } from "../../../utils/image-banner";
+import { productInformationSettings } from "../../../utils/product-information-layout";
 import type { StorefrontSection } from "~/types/storefront";
 import ProductSelector from "../../ProductSelector.vue";
 import EditorFieldRow from "../../EditorFieldRow.vue";
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const sectionSettings = computed(() => {
+  if (props.section.type === "PRODUCT_INFORMATION") return productInformationSettings(props.section.settings);
   if (props.section.type !== "IMAGE_BANNER") return props.section.settings;
   const defaults = imageBannerDefaults();
   return { ...defaults, ...props.section.settings,
@@ -120,6 +122,9 @@ function labelOf(key: string) {
           <v-text-field :model-value="String(bannerImage(value).alt || '')" variant="outlined" density="compact" hide-details :aria-label="t('ui.alt_text')" @update:model-value="update('image', { ...bannerImage(value), alt: $event })" />
         </EditorFieldRow>
       </div>
+      <EditorFieldRow v-else-if="section.type === 'PRODUCT_INFORMATION' && key === 'mediaPosition'" :label="t('ui.position')">
+        <v-select :model-value="value" :items="[{ title: t('ui.left'), value: 'left' }, { title: t('ui.right'), value: 'right' }]" variant="outlined" density="compact" hide-details @update:model-value="update('mediaPosition', $event)" />
+      </EditorFieldRow>
       <EditorFieldRow v-else-if="section.type === 'CART' && key === 'summaryPosition'" label="Posisi ringkasan">
         <v-select :model-value="value" :items="[{ title: 'Kiri', value: 'left' }, { title: 'Kanan', value: 'right' }]" variant="outlined" density="compact" hide-details @update:model-value="update('summaryPosition', $event)" />
       </EditorFieldRow>

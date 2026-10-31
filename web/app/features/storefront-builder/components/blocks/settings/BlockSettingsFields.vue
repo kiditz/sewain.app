@@ -14,6 +14,7 @@ import ProductCardStyleField from "./ProductCardStyleField.vue";
 import ImageField from "./ImageField.vue";
 import BorderRadiusField from "../../BorderRadiusField.vue";
 import { useStorefront } from "../../../composables/useStorefront";
+import { productControlTypes, productControlDefaults, objectSettings } from "../../../utils/product-information-layout";
 
 const props = defineProps<{
   block: StorefrontBlock;
@@ -74,6 +75,14 @@ const editableSettings = computed<Record<string, unknown>>(() =>
 );
 
 const blockSettings = computed<Record<string, unknown>>(() => {
+  if (productControlTypes.includes(props.block.type)) {
+    const defaults = productControlDefaults(props.block.type);
+    return {
+      ...editableSettings.value,
+      layout: { ...defaults.layout, ...objectSettings(editableSettings.value.layout) },
+      padding: { ...defaults.padding, ...objectSettings(editableSettings.value.padding) },
+    };
+  }
   if (["PRODUCT_TITLE", "PRODUCT_PRICE"].includes(props.block.type)) {
     return {
       ...editableSettings.value,
@@ -362,7 +371,7 @@ function update(key: string, value: unknown) {
       <LayoutField
         v-else-if="
           key === 'layout' &&
-          (['HEADER', 'MENU'].includes(block.type) ||
+          (['HEADER', 'MENU'].includes(block.type) || productControlTypes.includes(block.type) ||
             block.type.startsWith('CHECKOUT_'))
         "
         :settings="blockSettings"
