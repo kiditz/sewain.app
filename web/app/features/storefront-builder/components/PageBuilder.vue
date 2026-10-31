@@ -31,7 +31,9 @@ const emit = defineEmits<{
 }>();
 const store = useStorefront();
 await store.loadCollections().catch(() => undefined);
-const pageSaveStatus = computed(() => store.pageStore.pageStatus(props.page.id).status.value);
+const pageSaveStatus = computed(
+  () => store.pageStore.pageStatus(props.page.id).status.value,
+);
 const saving = computed(() => pageSaveStatus.value.saving);
 const saveError = computed(() => pageSaveStatus.value.error);
 const hasUnsavedChanges = computed(() => pageSaveStatus.value.dirty);
@@ -60,7 +62,10 @@ const selectedSection = computed(
     props.page.sections.find((section) => section.id === selectedId.value) ??
     null,
 );
-function findBlock(blocks: StorefrontBlock[], id: string): StorefrontBlock | null {
+function findBlock(
+  blocks: StorefrontBlock[],
+  id: string,
+): StorefrontBlock | null {
   for (const block of blocks) {
     if (block.id === id) return block;
     const nested = findBlock(block.blocks ?? [], id);
@@ -87,8 +92,8 @@ function hasProductCardAncestor(
   }
   return false;
 }
-const selectedBlock = computed(
-  () => selectedSection.value
+const selectedBlock = computed(() =>
+  selectedSection.value
     ? findBlock(selectedSection.value.blocks, selectedBlockId.value ?? "")
     : null,
 );
@@ -118,7 +123,36 @@ const addingBlockType = ref<BlockType | null>(null);
 const showAddBlock = ref(false);
 const addingType = ref<SectionType | null>(null);
 const showAddSection = ref(false);
+const sectionScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
+async function refreshSectionScrollbar() {
+  await nextTick();
+  sectionScrollbar.value?.$refs.el?.update();
+}
 const previewDevice = ref<"desktop" | "mobile">("desktop");
+const previewScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
+const previewViewport = ref<HTMLElement>();
+const previewContent = ref<HTMLElement>();
+let previewObserver: ResizeObserver | undefined;
+let previewDisposed = false;
+function refreshPreviewScrollbar() {
+  previewScrollbar.value?.$refs.el?.update();
+}
+onMounted(async () => {
+  await nextTick();
+  if (previewDisposed) return;
+  previewObserver = new ResizeObserver(refreshPreviewScrollbar);
+  if (previewViewport.value) previewObserver.observe(previewViewport.value);
+  if (previewContent.value) previewObserver.observe(previewContent.value);
+  refreshPreviewScrollbar();
+});
+watch([() => props.page.id, previewDevice], async () => {
+  await nextTick();
+  refreshPreviewScrollbar();
+});
+onBeforeUnmount(() => {
+  previewDisposed = true;
+  previewObserver?.disconnect();
+});
 const previewStyle = computed(() => ({
   maxWidth: previewDevice.value === "mobile" ? "390px" : "100%",
 }));
@@ -261,13 +295,13 @@ provide(builderDndKey, {
       <template #title>
         {{ page.title }}
       </template>
-      <v-spacer/>
-        <page-autocomplete
-          :model-value="page.id"
-          :label="page.title"
-          @select="switchPage"
-        />
-        <v-spacer/>
+      <v-spacer />
+      <page-autocomplete
+        :model-value="page.id"
+        :label="page.title"
+        @select="switchPage"
+      />
+      <v-spacer />
       <template #append>
         <v-chip
           :color="page.status === 'PUBLISHED' ? 'success' : 'default'"
@@ -277,11 +311,13 @@ provide(builderDndKey, {
         <span v-if="saveError" class="save-status save-status--error">{{
           $t("common.saveFailed")
         }}</span>
-        
+
         <span v-else class="save-status mr-3">{{
           saving ? "Saving…" : hasUnsavedChanges ? "Unsaved changes" : "Saved"
         }}</span>
-        <v-btn class="mr-2" color="primary" variant="outlined" @click="save">{{ $t("common.save") }}</v-btn>
+        <v-btn class="mr-2" color="primary" variant="outlined" @click="save">{{
+          $t("common.save")
+        }}</v-btn>
         <v-btn
           color="primary"
           @click="
@@ -291,8 +327,6 @@ provide(builderDndKey, {
           >{{ $t("ui.publish") }}</v-btn
         >
       </template>
-
-     
     </v-app-bar>
     <div class="builder-body">
       <aside class="builder-sidebar section-sidebar">
@@ -350,12 +384,34 @@ provide(builderDndKey, {
             </div>
             <BlockTreeList
               :blocks="section.blocks"
-              :selected-block-id="selectedId === section.id ? selectedBlockId : null"
-              @select="(id) => { selectedId = section.id; selectedBlockId = id; }"
-              @toggle="(block) => { block.enabled = !block.enabled; store.touch(page); }"
+              :selected-block-id="
+                selectedId === section.id ? selectedBlockId : null
+              "
+              @select="
+                (id) => {
+                  selectedId = section.id;
+                  selectedBlockId = id;
+                }
+              "
+              @toggle="
+                (block) => {
+                  block.enabled = !block.enabled;
+                  store.touch(page);
+                }
+              "
               @add-child="(block) => openAddBlock(section, block)"
-              @reorder="(blocks) => { section.blocks = blocks; store.touch(page); }"
-              @reorder-children="({ parent, blocks }) => { parent.blocks = blocks; store.touch(page); }"
+              @reorder="
+                (blocks) => {
+                  section.blocks = blocks;
+                  store.touch(page);
+                }
+              "
+              @reorder-children="
+                ({ parent, blocks }) => {
+                  parent.blocks = blocks;
+                  store.touch(page);
+                }
+              "
             />
             <v-btn
               size="x-small"
@@ -421,23 +477,32 @@ provide(builderDndKey, {
             /></v-btn-toggle>
           </div>
         </div>
-        <nuxt-scrollbar style="max-height: 100vh" class="preview-scroll">
-          <div
-            class="preview-canvas"
-            :class="{ 'is-mobile-preview': previewDevice === 'mobile' }"
-            :style="previewStyle"
-            @click="handlePreviewClick"
+        <div ref="previewViewport" class="preview-scroll-viewport">
+          <nuxt-scrollbar
+            ref="previewScrollbar"
+            style="position: absolute; inset: 0; width: 100%; height: 100%"
+            class="preview-scroll"
+            :options="{ suppressScrollX: true, wheelPropagation: false }"
           >
-            <StorefrontLayout :theme="theme" preview>
-              <StorefrontRenderer
-                :sections="page.sections"
-                :preview="true"
-                :selected-section-id="selectedId"
-                :selected-block-id="selectedBlockId"
-              />
-            </StorefrontLayout>
-          </div>
-        </nuxt-scrollbar>
+            <div ref="previewContent" class="preview-scroll-content">
+            <div
+              class="preview-canvas"
+              :class="{ 'is-mobile-preview': previewDevice === 'mobile' }"
+              :style="previewStyle"
+              @click="handlePreviewClick"
+            >
+              <StorefrontLayout :theme="theme" preview>
+                <StorefrontRenderer
+                  :sections="page.sections"
+                  :preview="true"
+                  :selected-section-id="selectedId"
+                  :selected-block-id="selectedBlockId"
+                />
+              </StorefrontLayout>
+            </div>
+            </div>
+          </nuxt-scrollbar>
+        </div>
       </main>
       <aside class="builder-sidebar settings-sidebar">
         <template v-if="selectedSection">
@@ -466,6 +531,7 @@ provide(builderDndKey, {
             />
 
             <BlockSettingsFields
+              :key="selectedBlock.id"
               :block="selectedBlock"
               :collections="store.collections.value"
               :product-image="selectedBlockIsProductImage"
@@ -482,35 +548,59 @@ provide(builderDndKey, {
         </div> -->
       </aside>
     </div>
-    <v-dialog v-model="showAddSection" max-width="680">
-      <v-card rounded="xl"
-        ><v-card-title class="pa-5">{{ $t("ui.add_a_section") }}</v-card-title
-        ><v-card-text
-          ><v-radio-group v-model="addingType"
-            ><v-list lines="two" select-strategy="single-independent"
-              ><v-list-item
-                v-for="definition in sectionTypes.filter(item => !['NAVIGATION', 'FOOTER'].includes(item.type) || !page.sections.some(section => section.type === item.type))"
-                :key="definition.type"
-                :title="definition.label"
-                :subtitle="definition.description"
-                @click="addingType = definition.type"
-                ><template #prepend
-                  ><v-radio :value="definition.type" /></template
-                ><template #append
-                  ><v-icon>mdi-plus-circle-outline</v-icon></template
-                ></v-list-item
-              ></v-list
-            ></v-radio-group
-          ></v-card-text
-        ><v-card-actions class="pa-5 pt-0"
-          ><v-spacer /><v-btn variant="text" @click="showAddSection = false">{{
+    <v-dialog
+      v-model="showAddSection"
+      max-width="680"
+      @after-enter="refreshSectionScrollbar"
+    >
+      <v-card rounded="xl" class="add-section-dialog">
+        <v-card-title class="pa-5">{{ $t("ui.add_a_section") }}</v-card-title>
+        <v-divider />
+        <v-card-text class="add-section-dialog__body pa-0">
+          <nuxt-scrollbar
+            ref="sectionScrollbar"
+            style="position: relative; height: min(60dvh, calc(100dvh - 220px))"
+            :options="{ suppressScrollX: true, wheelPropagation: false }"
+          >
+            <div class="pa-5">
+              <v-radio-group v-model="addingType" hide-details>
+                <v-list lines="two" select-strategy="single-independent">
+                  <v-list-item
+                    v-for="definition in sectionTypes.filter(
+                      (item) =>
+                        !['NAVIGATION', 'FOOTER'].includes(item.type) ||
+                        !page.sections.some(
+                          (section) => section.type === item.type,
+                        ),
+                    )"
+                    :key="definition.type"
+                    :title="definition.label"
+                    :subtitle="definition.description"
+                    @click="addingType = definition.type"
+                  >
+                    <template #prepend
+                      ><v-radio :value="definition.type"
+                    /></template>
+                    <template #append
+                      ><v-icon>mdi-plus-circle-outline</v-icon></template
+                    >
+                  </v-list-item>
+                </v-list>
+              </v-radio-group>
+            </div>
+          </nuxt-scrollbar>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-5">
+          <v-spacer />
+          <v-btn variant="text" @click="showAddSection = false">{{
             $t("common.cancel")
-          }}</v-btn
-          ><v-btn color="primary" :disabled="!addingType" @click="addSection">{{
+          }}</v-btn>
+          <v-btn color="primary" :disabled="!addingType" @click="addSection">{{
             $t("ui.add_section")
-          }}</v-btn></v-card-actions
-        ></v-card
-      >
+          }}</v-btn>
+        </v-card-actions>
+      </v-card>
     </v-dialog>
     <v-dialog v-model="showAddBlock" max-width="600">
       <v-card rounded="xl"
@@ -558,8 +648,23 @@ provide(builderDndKey, {
 </template>
 
 <style scoped>
+.add-section-dialog {
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+}
+.add-section-dialog__body {
+  min-height: 0;
+  overflow: hidden;
+}
+.add-section-dialog > .v-card-title,
+.add-section-dialog > .v-card-actions {
+  flex-shrink: 0;
+}
+
 .builder {
-  height: 100dvh;
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  box-sizing: border-box;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: #f5f6f8;
@@ -601,6 +706,8 @@ provide(builderDndKey, {
 .builder-body {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 340px;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
   min-height: 0;
   flex: 1;
 }
@@ -701,12 +808,15 @@ provide(builderDndKey, {
 
 .preview-area {
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
 .preview-toolbar {
   height: 52px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -717,14 +827,22 @@ provide(builderDndKey, {
   font-weight: 600;
 }
 
-.preview-scroll {
-  flex: 1;
+.preview-scroll-viewport {
+  position: relative;
+  flex: 1 1 0;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
+}
+
+.preview-scroll-viewport :deep(.preview-scroll) {
+  box-sizing: border-box;
+}
+
+.preview-scroll-content {
+  width: 100%;
+  box-sizing: border-box;
   padding: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  display: flow-root;
 }
 
 .preview-canvas {
@@ -853,7 +971,7 @@ provide(builderDndKey, {
     padding: 12px 8px;
   }
 
-  .preview-scroll {
+  .preview-scroll-content {
     padding: 10px;
   }
 
