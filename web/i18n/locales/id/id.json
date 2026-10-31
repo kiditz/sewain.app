@@ -2017,5 +2017,17 @@
     "width": "Lebar",
     "you_example_com": "kamu{'@'}contoh.com",
     "menu": "Menu"
+  },
+  "storefrontSearch": {
+    "title": "Cari Produk",
+    "placeholder": "Cari produk...",
+    "close": "Tutup pencarian",
+    "results": "Hasil Pencarian",
+    "recentlyViewed": "Terakhir Dilihat",
+    "loadFailed": "Gagal memuat produk. Silakan coba lagi.",
+    "retry": "Coba Lagi",
+    "noRecent": "Belum ada produk yang dilihat.",
+    "noResults": "Produk tidak ditemukan."
   }
+
 }

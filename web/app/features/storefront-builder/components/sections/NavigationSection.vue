@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { UserOutlined, ShoppingCartOutlined } from "@ant-design/icons-vue";
+import {
+  UserOutlined,
+  ShoppingCartOutlined,
+  SearchOutlined,
+} from "@ant-design/icons-vue";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
+import StorefrontSearchDialog from "~/components/storefront/StorefrontSearchDialog.vue";
 import type {
   SectionLayout,
   StorefrontBlock,
@@ -28,6 +33,7 @@ const props = defineProps<{
 }>();
 const storefront = useStorefront();
 const branding = inject(storefrontBrandingKey, null);
+const searchDialog = ref(false)
 const drawerTarget = inject(storefrontDrawerTargetKey, "body");
 const { current: merchant } = storeToRefs(useMerchantStore());
 const merchantName = computed(
@@ -61,6 +67,7 @@ function escapedText(text: string) {
       ]!,
   );
 }
+
 const navigationBlocks = computed(() =>
   props.blocks.map((block) => {
     if (block.type === "HEADER")
@@ -130,9 +137,13 @@ onBeforeUnmount(() => {
   observer?.disconnect();
   if (bumpTimer) clearTimeout(bumpTimer);
 });
+const openSearchDialog = () =>{
+  searchDialog.value = !searchDialog.value;
+}
 </script>
 
 <template>
+  <StorefrontSearchDialog :preview="preview" v-model="searchDialog"/>
   <header ref="header" class="store-header">
     <div class="store-header__inner" :style="layoutStyle">
       <v-btn
@@ -162,6 +173,14 @@ onBeforeUnmount(() => {
           class="store-header__account"
         >
           <UserOutlined aria-hidden="true" />
+        </v-btn>
+        <v-btn
+          icon
+          @click="openSearchDialog"
+          variant="text"
+          aria-label="Search"
+        >
+          <SearchOutlined aria-hidden="true" />
         </v-btn>
         <v-badge
           :model-value="itemCount > 0"
@@ -229,6 +248,7 @@ onBeforeUnmount(() => {
       </v-navigation-drawer>
     </Teleport>
   </ClientOnly>
+  
 </template>
 
 <style scoped>

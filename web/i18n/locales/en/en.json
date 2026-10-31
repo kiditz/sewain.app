@@ -2017,5 +2017,16 @@
     "width": "Width",
     "you_example_com": "you{'@'}example.com",
     "menu": "Menu"
+  },
+  "storefrontSearch": {
+    "title": "Search Products",
+    "placeholder": "Search products...",
+    "close": "Close search",
+    "results": "Search Results",
+    "recentlyViewed": "Recently Viewed",
+    "loadFailed": "Failed to load products. Please try again.",
+    "retry": "Try Again",
+    "noRecent": "No recently viewed products.",
+    "noResults": "No products found."
   }
 }

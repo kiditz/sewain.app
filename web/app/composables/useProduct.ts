@@ -5,6 +5,7 @@ export interface ProductSearchQuery extends PageQuery {
   id?: string;
   status?: ProductStatus;
   keyword?: string;
+  name?: string;
   "type.id"?: string;
   "tags.id"?: string;
   available?: boolean;
