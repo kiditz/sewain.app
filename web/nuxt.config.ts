@@ -84,10 +84,12 @@ export default defineNuxtConfig({
       {
         code: "id",
         name: "Indonesia",
+        file: "id/index.ts",
       },
       {
         code: "en",
         name: "English",
+        file: "en/index.ts",
       },
     ],
     vueI18n: "./i18n.config.ts",
