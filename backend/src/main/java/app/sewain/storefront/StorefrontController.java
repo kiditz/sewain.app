@@ -9,30 +9,32 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 class StorefrontController {
     private final StorefrontService service;
+    private final ThemeLibraryService themes;
 
     @GetMapping
-    StorefrontResponse get() { return service.get(); }
+    StorefrontResponse get(@RequestParam(required = false) String themeId) { return document(themes.draft(themeId)); }
 
     @GetMapping("/published")
-    StorefrontResponse getPublished() { return service.getPublished(); }
+    StorefrontResponse getPublished() { return document(themes.live()); }
 
     @GetMapping("/pages")
-    StorefrontResponse pages() { return service.getPages(); }
+    StorefrontResponse pages(@RequestParam(required = false) String themeId) { return themes.resource(themeId, "pages"); }
 
     @PutMapping("/pages/{id}")
-    StorefrontResponse savePage(@PathVariable String id, @Valid @RequestBody StorefrontCommand command) {
-        return service.saveResource(StorefrontService.resourceKey("PAGE:", id), command);
+    StorefrontResponse savePage(@PathVariable String id, @Valid @RequestBody StorefrontCommand command, @RequestParam(required = false) String themeId) {
+        StorefrontService.resourceKey("PAGE:", id);
+        return themes.saveResource(themeId, "page:" + id, command.configuration());
     }
 
     @DeleteMapping("/pages/{id}")
     @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
-    void deletePage(@PathVariable String id) { service.deletePage(id); }
+    void deletePage(@PathVariable String id, @RequestParam(required = false) String themeId) { themes.deletePage(themeId, id); }
 
     @GetMapping("/theme")
-    StorefrontResponse theme() { return service.getResource("THEME"); }
+    StorefrontResponse theme(@RequestParam(required = false) String themeId) { return themes.resource(themeId, "theme"); }
 
     @PutMapping("/theme")
-    StorefrontResponse saveTheme(@Valid @RequestBody StorefrontCommand command) { return service.saveResource("THEME", command); }
+    StorefrontResponse saveTheme(@Valid @RequestBody StorefrontCommand command, @RequestParam(required = false) String themeId) { return themes.saveResource(themeId, "theme", command.configuration()); }
 
     @GetMapping("/menus")
     StorefrontResponse menus() { return service.getMenus(); }
@@ -51,4 +53,11 @@ class StorefrontController {
 
     @PutMapping("/navigation")
     StorefrontResponse saveNavigation(@Valid @RequestBody StorefrontCommand command) { return service.saveResource("NAVIGATION", command); }
+
+    private StorefrontResponse document(tools.jackson.databind.JsonNode document) {
+        var result = document.deepCopy().asObject();
+        result.set("MenuItems", service.getMenus().configuration());
+        result.set("headerMenuId", service.getResource("NAVIGATION").configuration().path("headerMenuId"));
+        return new StorefrontResponse(result, null);
+    }
 }

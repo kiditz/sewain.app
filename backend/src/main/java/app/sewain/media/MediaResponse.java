@@ -9,6 +9,7 @@ record MediaResponse(
       String contentType,
       Long size,
       String url,
-      LocalDateTime createdAt
+      LocalDateTime createdAt,
+      boolean backgroundRemoved
 ) {
 }

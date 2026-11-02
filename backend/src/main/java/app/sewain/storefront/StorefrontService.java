@@ -157,9 +157,13 @@ class StorefrontService {
                 reference.set("target", destination);
             } else {
                 var pageId = item.path("pageId").asString("");
-                var page = repository.findByKey(resourceKey("PAGE:", pageId))
+                resourceKey("PAGE:", pageId);
+                var page = repository.findAllByKeyStartingWithOrderByCreatedAtAsc("THM:").stream()
+                        .flatMap(theme -> json.readTree(theme.getConfiguration()).path("draft").path("pages").asArray().valueStream())
+                        .filter(candidate -> pageId.equals(candidate.path("id").asString())).findFirst()
+                        .or(() -> repository.findByKey("PAGE:" + pageId).map(row -> json.readTree(row.getConfiguration())))
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Menu page does not exist"));
-                require(!"PRODUCT".equals(json.readTree(page.getConfiguration()).path("kind").asString()));
+                require(!"PRODUCT".equals(page.path("kind").asString()));
                 reference.put("pageId", pageId);
             }
             var label = item.get("label");

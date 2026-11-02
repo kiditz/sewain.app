@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { slideshowSettings } from "../../../utils/slideshow";
 import { imageBannerDefaults } from "../../../utils/image-banner";
 import { productInformationSettings } from "../../../utils/product-information-layout";
 import { navigationDefaults } from "../../../utils/navigation-section";
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>();
 
 const sectionSettings = computed(() => {
+  if (props.section.type === "SLIDESHOW") return slideshowSettings(props.section.settings);
   if (props.section.type === "NAVIGATION") {
     const defaults = navigationDefaults();
     return { ...defaults, ...props.section.settings,
@@ -81,6 +83,7 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string) {
+  if (props.section.type === "SLIDESHOW" && ["autoplay", "interval", "showArrows", "showIndicators"].includes(key)) return t(`storefrontSlideshow.${key}`);
   if (props.section.type === "NAVIGATION" && key === "sticky") return t("storefrontNavigation.sticky");
   const labels: Record<string, string> = {
     background: "ui.background",
@@ -125,7 +128,10 @@ function labelOf(key: string) {
 <template>
   <div class="settings-fields">
     <template v-for="(value, key) in sectionSettings" :key="key">
-      <div v-if="section.type === 'IMAGE_BANNER' && key === 'image'">
+      <EditorFieldRow v-if="section.type === 'SLIDESHOW' && key === 'interval'" :label="labelOf(String(key))">
+        <v-number-input :model-value="Number(value)" :min="2" :max="30" variant="outlined" density="compact" hide-details @update:model-value="update('interval', Math.min(30, Math.max(2, Number($event) || 5)))" />
+      </EditorFieldRow>
+      <div v-else-if="section.type === 'IMAGE_BANNER' && key === 'image'">
         <ImageField :settings="bannerImage(value)" @update="(field, selected) => update('image', { ...bannerImage(value), [field]: selected })" />
         <EditorFieldRow :label="t('ui.alt_text')">
           <v-text-field :model-value="String(bannerImage(value).alt || '')" variant="outlined" density="compact" hide-details :aria-label="t('ui.alt_text')" @update:model-value="update('image', { ...bannerImage(value), alt: $event })" />

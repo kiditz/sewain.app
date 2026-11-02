@@ -4,6 +4,7 @@ import { DeleteOutlined, EditOutlined, LinkOutlined, MenuOutlined, SwapOutlined 
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 import EditorFieldRow from "../../EditorFieldRow.vue";
 
+const route = useRoute();
 type MenuAction = "edit" | "replace" | "remove";
 const props = withDefaults(defineProps<{ modelValue?: string | null }>(), { modelValue: null });
 const emit = defineEmits<{
@@ -27,7 +28,7 @@ async function handleAction(value: MenuAction) {
   if (value === "remove") { confirmDeleteDialog.value = true; return; }
   if (value === "edit") {
     emit("action", "edit", selectedMenu.value?.id ?? null);
-    await navigateTo("/merchant/storefront/menus");
+    await navigateTo({ path: "/merchant/storefront/menus", query: route.query });
     return;
   }
   await nextTick();

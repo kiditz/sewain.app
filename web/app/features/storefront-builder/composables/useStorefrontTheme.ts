@@ -7,14 +7,22 @@ export function useStorefrontTheme() {
   const theme = useState<StorefrontTheme>("storefront-theme", () => structuredClone(initialTheme));
   const initialized = useState("storefront-theme-initialized", () => false);
   const loading = useState("storefront-theme-loading", () => false);
-  const resource = useStorefrontResource("theme", "theme", "/storefront/theme");
+  const resolvedTheme = useState<string | null>("storefront-resolved-theme", () => useRequestURL().searchParams.get("themeId"));
+  let targetThemeId = resolvedTheme.value;
+  const resource = useStorefrontResource("theme", "theme", () => {
+    if (!targetThemeId) throw new Error("Load the storefront before saving theme settings");
+    return `/storefront/theme?themeId=${encodeURIComponent(targetThemeId)}`;
+  });
   const api = useApi();
+  const themeId = useRequestURL().searchParams.get("themeId");
   async function load() {
     if (initialized.value) return;
     loading.value = true;
     try {
-      const response = await api<{ configuration: Partial<StorefrontTheme> }>("/storefront/theme");
-      if (response.configuration?.colors) theme.value = response.configuration as StorefrontTheme;
+      const response = await api<{ configuration: Partial<StorefrontTheme>; themeId: string }>("/storefront/theme", { query: themeId ? { themeId } : undefined });
+      targetThemeId = response.themeId;
+      resolvedTheme.value = targetThemeId;
+      theme.value = response.configuration?.colors ? response.configuration as StorefrontTheme : structuredClone(initialTheme);
       initialized.value = true;
     } finally { loading.value = false; }
   }

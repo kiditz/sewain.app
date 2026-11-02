@@ -1,3 +1,4 @@
+import SlideBlock from "../components/blocks/SlideBlock.vue";
 import SocialLinkBlock from "../components/blocks/SocialLinkBlock.vue";
 import CheckoutSubmitBlock from "../components/blocks/CheckoutSubmitBlock.vue";
 import CheckoutSummaryBlock from "../components/blocks/CheckoutSummaryBlock.vue";
@@ -29,6 +30,7 @@ import RentalDateRangeBlock from "../components/blocks/RentalDateRangeBlock.vue"
 import PriceSummaryBlock from "../components/blocks/PriceSummaryBlock.vue";
 
 export const blockComponentRegistry = {
+  SLIDE: SlideBlock,
   SOCIAL_LINK: SocialLinkBlock,
   CHECKOUT_SUBMIT: CheckoutSubmitBlock,
   CHECKOUT_SUMMARY: CheckoutSummaryBlock,

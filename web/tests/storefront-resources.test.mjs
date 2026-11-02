@@ -364,3 +364,23 @@ test('catalog menu destinations resolve without exposing a URL editor or requiri
   assert.equal(menuHelpers.hasMenuDestination(items[2], []), false);
   assert.equal(menuHelpers.menuItemTitle(items[1], []), 'Cameras');
 });
+
+test('theme-targeted queues keep their captured destination and flush pending saves before publish', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const calls = [];
+  context(async (url, options) => { calls.push([url, options.body?.configuration]); });
+  const factory = resourceModule.useStorefrontResourceFactory('pages');
+  const original = factory('home', () => '/storefront/pages/home?themeId=original');
+  const second = factory('home', () => '/storefront/pages/home?themeId=second');
+  original.schedule({ title: 'Original draft' });
+  second.schedule({ title: 'Second draft' });
+  const flushWrites = resourceModule.useStorefrontWriteFlush();
+  await flushWrites();
+  assert.deepEqual(calls, [
+    ['/storefront/pages/home?themeId=original', { title: 'Original draft' }],
+    ['/storefront/pages/home?themeId=second', { title: 'Second draft' }],
+  ]);
+  t.mock.timers.tick(600);
+  await flush();
+  assert.equal(calls.length, 2);
+});

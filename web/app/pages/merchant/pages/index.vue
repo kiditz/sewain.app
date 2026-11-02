@@ -54,7 +54,7 @@ async function remove() {
       <div v-if="loadError" class="pa-5"><p class="mb-3">Halaman gagal dimuat.</p><v-btn variant="outlined" @click="load">Coba lagi</v-btn></div>
       <v-data-table v-else :headers="headers" :items="pages" :search="search || ''" :loading="storefront.pageStore.loading.value" :items-per-page="10" :no-data-text="$t('ui.no_pages_found')">
         <template #item.title="{ item }"><NuxtLink :to="`/merchant/storefront/pages/${item.slug}`" class="text-primary text-decoration-none">{{ item.title }}</NuxtLink></template>
-        <template #item.status="{ item }"><v-chip size="small" :color="item.status === 'PUBLISHED' ? 'success' : 'default'">{{ item.status === 'PUBLISHED' ? 'Published' : 'Draft' }}</v-chip></template>
+        <template #item.status="{ item }"><v-chip size="small" :color="item.status === 'PUBLISHED' ? 'success' : 'default'">{{ item.status === 'PUBLISHED' ? $t('themeLibrary.pageReady') : $t('themeLibrary.draft') }}</v-chip></template>
         <template #item.actions="{ item }">
           <v-btn icon="mdi-pencil-outline" variant="text" size="small" :aria-label="`${$t('common.edit')} ${item.title}`" :to="`/merchant/storefront/pages/${item.slug}`" />
           <v-btn icon="mdi-trash-can-outline" variant="text" size="small" color="error" :aria-label="`${$t('ui.delete_page')} ${item.title}`" :loading="deletingId === item.id" :disabled="deletingId !== null" @click="requestDelete(item)" />

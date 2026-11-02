@@ -7,7 +7,7 @@ import java.util.UUID;
 
 interface MediaCommandService {
 
-    List<MediaResponse> upload(List<MultipartFile> files);
+    List<MediaResponse> upload(List<MultipartFile> files, List<Integer> backgroundRemoved);
 
     void delete(UUID id);
 

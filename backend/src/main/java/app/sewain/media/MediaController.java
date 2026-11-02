@@ -26,8 +26,9 @@ class MediaController {
 	private final MediaQueryService queryService;
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	ResponseEntity<List<MediaResponse>> upload(@RequestPart("files") List<MultipartFile> files) {
-		return ResponseEntity.ok(commandService.upload(files));
+	ResponseEntity<List<MediaResponse>> upload(@RequestPart("files") List<MultipartFile> files,
+                                             @RequestParam(value = "backgroundRemoved", required = false) List<Integer> backgroundRemoved) {
+		return ResponseEntity.ok(commandService.upload(files, backgroundRemoved == null ? List.of() : backgroundRemoved));
 	}
 
 	@GetMapping

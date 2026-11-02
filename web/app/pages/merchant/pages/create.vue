@@ -47,7 +47,7 @@ async function create() {
         <v-card-text class="d-flex flex-column ga-4">
           <v-text-field v-model="title" :label="$t('ui.page_title')" variant="outlined" :disabled="saving" :error-messages="titleError" autofocus />
           <v-text-field v-model="slug" label="Slug" :placeholder="normalizedSlug" variant="outlined" :disabled="saving" :error-messages="slugError" :hint="`/pages/${normalizedSlug || 'nama-halaman'}`" persistent-hint />
-          <p class="text-body-small text-medium-emphasis">Halaman baru disimpan sebagai draft. Atur konten dan publikasikan melalui editor halaman.</p>
+          <p class="text-body-small text-medium-emphasis">Halaman baru disimpan sebagai draft. Atur kontennya di editor, lalu publish theme melalui library storefront.</p>
         </v-card-text>
         <v-card-actions class="pa-4"><v-spacer /><v-btn variant="text" to="/merchant/pages" :disabled="saving">{{ $t('common.cancel') }}</v-btn><v-btn type="submit" color="primary" variant="flat" :loading="saving">{{ $t('ui.create_page') }}</v-btn></v-card-actions>
       </v-card>

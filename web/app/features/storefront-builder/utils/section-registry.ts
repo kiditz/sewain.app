@@ -1,3 +1,5 @@
+import SlideshowSection from "../components/sections/SlideshowSection.vue";
+import { slideshowDefaults } from "./slideshow";
 import FooterSection from "../components/sections/FooterSection.vue";
 import { footerDefaults } from "./footer-section";
 import { productInformationDefaults } from "./product-information-layout";
@@ -80,6 +82,11 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     defaults: { alignment: "center" },
     allowedBlocks: ["HEADING", "TEXT", "IMAGE", "BUTTON"],
     defaultBlocks: ["HEADING", "TEXT"],
+  },
+  SLIDESHOW: {
+    type: "SLIDESHOW", label: "Slideshow", description: "Image slides with editable content and navigation.",
+    component: SlideshowSection, defaults: slideshowDefaults(),
+    allowedBlocks: ["SLIDE"], defaultBlocks: ["SLIDE", "SLIDE"],
   },
   IMAGE_BANNER: {
     type: "IMAGE_BANNER",

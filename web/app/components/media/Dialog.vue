@@ -28,7 +28,7 @@ const emit = defineEmits<{
   selected: [media: Media | Media[]];
 }>();
 
-const { uploadMedia, getMedia, updateMediaFilename, deleteMedia } = useMedia();
+const { uploadMedia, getMedia, updateMediaFilename, deleteMedia, getMediaFile, replaceMediaFile } = useMedia();
 const libraryScrollbar = ref<ComponentPublicInstance | null>(null);
 
 const activeTab = ref("library");
@@ -47,18 +47,19 @@ watch(files, (selected) => {
 onBeforeUnmount(() => { for (const preview of filePreviews.value) URL.revokeObjectURL(preview.url); });
 
 async function removeFileBackground(file: File) {
+  if (originalFiles.has(file) || removingBackground.value) return;
   processingFile.value = file;
   try {
     const result = await backgroundRemoval.removeBackground(file);
     originalFiles.set(result, file);
     files.value = files.value.map(item => item === file ? result : item);
-    snackbar.openSnackbar({ type: "success", message: t("media.backgroundRemoval.success") });
+    snackbar.openSnackbar({ type: "success", message: "media.backgroundRemoval.success" });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") return;
-    console.warn("Photo background removal: " + String(error instanceof Error ? error.cause ?? error.message : error));
+    if (import.meta.dev) console.warn("Photo background removal: " + String(error instanceof Error ? error.cause ?? error.message : error));
     const code = error instanceof Error ? error.message : "";
     const key = code === "UNSUPPORTED_IMAGE" ? "unsupported" : code === "IMAGE_TOO_LARGE" ? "tooLarge" : "failed";
-    snackbar.openSnackbar({ type: "error", message: t(`media.backgroundRemoval.${key}`) });
+    snackbar.openSnackbar({ type: "error", message: `media.backgroundRemoval.${key}` });
   } finally { processingFile.value = null; }
 }
 
@@ -75,6 +76,64 @@ const editedFilename = ref("");
 const savingFilename = ref(false);
 const deletingMedia = ref(false);
 const showDeleteConfirmation = ref(false);
+const preparingExisting = ref(false);
+const replacingMedia = ref(false);
+const editingBusy = computed(() => preparingExisting.value || removingBackground.value || replacingMedia.value);
+const existingPreview = ref<{ id: string; file: File; url: string } | null>(null);
+const imageVersions = ref<Record<string, number>>({});
+let existingRequest = 0;
+const canRemoveExistingBackground = computed(() => !!activeMedia.value && !activeMedia.value.backgroundRemoved && ["image/png", "image/jpeg", "image/webp"].includes(activeMedia.value.contentType));
+
+function mediaImageUrl(item: Media) {
+  const version = imageVersions.value[item.id];
+  if (!version) return item.url;
+  return `${item.url}${item.url.includes("?") ? "&" : "?"}media-revision=${version}`;
+}
+
+function discardExistingPreview() {
+  if (existingPreview.value) URL.revokeObjectURL(existingPreview.value.url);
+  existingPreview.value = null;
+}
+
+watch(() => activeMedia.value?.id, discardExistingPreview);
+onBeforeUnmount(discardExistingPreview);
+
+async function removeExistingBackground() {
+  const item = activeMedia.value;
+  if (!item || editingBusy.value || !canRemoveExistingBackground.value) return;
+  const request = ++existingRequest;
+  preparingExisting.value = true;
+  try {
+    const blob = await getMediaFile(item.id);
+    if (request !== existingRequest || !props.modelValue) return;
+    const original = new File([blob], item.filename, { type: item.contentType });
+    const result = await backgroundRemoval.removeBackground(original);
+    if (request !== existingRequest || activeMedia.value?.id !== item.id || !props.modelValue) return;
+    discardExistingPreview();
+    existingPreview.value = { id: item.id, file: result, url: URL.createObjectURL(result) };
+  } catch (error) {
+    if (request !== existingRequest || (error instanceof Error && error.name === "AbortError")) return;
+    snackbar.openSnackbar({ type: "error", message: "media.backgroundRemoval.failed" });
+  } finally { if (request === existingRequest) preparingExisting.value = false; }
+}
+
+async function updateExistingFile() {
+  const preview = existingPreview.value;
+  if (!preview || editingBusy.value || activeMedia.value?.id !== preview.id) return;
+  replacingMedia.value = true;
+  try {
+    const updated = await replaceMediaFile(preview.id, preview.file);
+    media.value = media.value.map(item => item.id === updated.id ? updated : item);
+    selectedMedia.value = selectedMedia.value.map(item => item.id === updated.id ? updated : item);
+    activeMedia.value = updated;
+    editedFilename.value = updated.filename;
+    imageVersions.value[updated.id] = Date.now();
+    discardExistingPreview();
+    snackbar.openSnackbar({ type: "success", message: "media.backgroundRemoval.updated" });
+  } catch {
+    snackbar.openSnackbar({ type: "error", message: "media.backgroundRemoval.updateFailed" });
+  } finally { replacingMedia.value = false; }
+}
 
 const search = ref("");
 const page = ref(1);
@@ -99,7 +158,8 @@ const upload = async () => {
   uploading.value = true;
   uploadError.value = null;
   try {
-    await uploadMedia(files.value);
+    const processed = files.value.flatMap((file, index) => originalFiles.has(file) ? [index] : []);
+    await uploadMedia(files.value, processed);
 
     clearFiles();
 
@@ -160,6 +220,7 @@ const clearSearch = async () => {
 };
 
 const toggleSelection = (item: Media) => {
+  if (editingBusy.value) return;
   activeMedia.value = item;
   editedFilename.value = item.filename;
   if (!props.multiple) {
@@ -257,7 +318,10 @@ const confirmSelection = () => {
 };
 
 const close = () => {
-  if (uploading.value) return;
+  if (uploading.value || replacingMedia.value) return;
+  ++existingRequest;
+  preparingExisting.value = false;
+  discardExistingPreview();
   backgroundRemoval.cancel();
   emit("update:modelValue", false);
 };
@@ -278,6 +342,9 @@ watch(
   () => props.modelValue,
   async (open) => {
     if (!open) {
+      ++existingRequest;
+      preparingExisting.value = false;
+      discardExistingPreview();
       backgroundRemoval.cancel();
       return;
     }
@@ -298,7 +365,7 @@ watch(
     :model-value="modelValue"
     max-width="1280"
     scrollable
-    :persistent="uploading"
+    :persistent="uploading || replacingMedia"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card>
@@ -317,12 +384,12 @@ watch(
 
       <!-- Tabs -->
       <v-tabs v-model="activeTab" grow>
-        <v-tab value="library">
+        <v-tab value="library" :disabled="editingBusy">
           <FileImageOutlined class="mr-2" />
           {{ t("media.tabs.library") }}
         </v-tab>
 
-        <v-tab value="upload">
+        <v-tab value="upload" :disabled="editingBusy">
           <CloudUploadOutlined class="mr-2" />
           {{ t("media.tabs.upload") }}
         </v-tab>
@@ -394,6 +461,7 @@ watch(
                       <v-card
                         variant="outlined"
                         class="media-card"
+                        :disabled="editingBusy"
                         :class="{
                           'media-card-selected': isSelected(item),
                           'media-card-active': activeMedia?.id === item.id,
@@ -401,7 +469,7 @@ watch(
                         @click="toggleSelection(item)"
                       >
                         <div class="media-image">
-                          <v-img :src="item.url" height="140" cover />
+                          <v-img :src="mediaImageUrl(item)" height="140" cover />
                           <div
                             v-if="isSelected(item)"
                             class="media-selected-overlay"
@@ -439,10 +507,11 @@ watch(
                   <v-card variant="outlined" class="media-details h-100">
                     <template v-if="activeMedia">
                       <v-img
-                        :src="activeMedia.url"
+                        :src="existingPreview?.id === activeMedia.id ? existingPreview.url : mediaImageUrl(activeMedia)"
                         height="210"
                         contain
                         class="media-details-preview"
+                        :class="{ 'media-cutout-preview': existingPreview?.id === activeMedia.id }"
                       />
                       <v-card-text>
                         <div class="text-title-medium mb-1">{{ t("media.details.title") }}</div>
@@ -457,6 +526,7 @@ watch(
                           density="compact"
                           hide-details
                           maxlength="255"
+                          :disabled="editingBusy || !!existingPreview"
                         />
                         <v-btn
                           block
@@ -465,6 +535,7 @@ watch(
                           :loading="savingFilename"
                           :disabled="
                             !editedFilename.trim() ||
+                            editingBusy || !!existingPreview ||
                             editedFilename.trim() === activeMedia.filename
                           "
                           @click="saveFilename"
@@ -472,11 +543,23 @@ watch(
                           {{ t("common.save") }}
                         </v-btn>
                         <v-divider class="my-4" />
+                        <v-chip v-if="activeMedia.backgroundRemoved" color="success" variant="tonal" prepend-icon="mdi-check" class="mb-3">{{ t('media.backgroundRemoval.alreadyRemoved') }}</v-chip>
+                        <template v-if="canRemoveExistingBackground">
+                          <v-btn v-if="!existingPreview" block variant="tonal" prepend-icon="mdi-image-remove" :loading="preparingExisting" :disabled="editingBusy" @click="removeExistingBackground">{{ t('media.backgroundRemoval.action') }}</v-btn>
+                          <p v-if="preparingExisting" role="status" class="text-body-small mt-2">{{ t(backgroundRemovalPhase === 'processing' ? 'media.backgroundRemoval.processing' : 'media.backgroundRemoval.loading') }}</p>
+                          <template v-if="existingPreview">
+                            <p class="text-body-small mb-3">{{ t('media.backgroundRemoval.replaceHint') }}</p>
+                            <v-btn block color="primary" :loading="replacingMedia" :disabled="editingBusy" @click="updateExistingFile">{{ t('media.backgroundRemoval.updateFile') }}</v-btn>
+                            <v-btn block variant="text" class="mt-2" :disabled="editingBusy" @click="discardExistingPreview">{{ t('media.backgroundRemoval.discard') }}</v-btn>
+                          </template>
+                          <v-divider class="my-4" />
+                        </template>
                         <v-btn
                           block
                           color="error"
                           variant="outlined"
                           :loading="deletingMedia"
+                          :disabled="editingBusy || !!existingPreview"
                           @click="showDeleteConfirmation = true"
                         >
                           <DeleteOutlined class="mr-2" />
@@ -571,7 +654,7 @@ watch(
         <v-btn
           v-if="activeTab === 'library'"
           color="primary"
-          :disabled="selectedMedia.length === 0"
+          :disabled="selectedMedia.length === 0 || editingBusy || !!existingPreview"
           @click="confirmSelection"
         >
           {{ t("common.select") }}

@@ -149,7 +149,7 @@ class StorefrontServiceTest {
         service.deleteMenu("main");
         assertEquals(0, service.getMenus().configuration().size());
         assertTrue(service.getPublished().configuration().path("headerMenuId").isNull());
-        MockMvcBuilders.standaloneSetup(new StorefrontController(service)).build()
+        MockMvcBuilders.standaloneSetup(new StorefrontController(service, mock(ThemeLibraryService.class))).build()
                 .perform(put("/api/storefront").contentType("application/json").content("{\"configuration\":{}}"))
                 .andExpect(status().isMethodNotAllowed());
     }

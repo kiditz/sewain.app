@@ -2,17 +2,20 @@
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 import PageBuilder from "~/features/storefront-builder/components/PageBuilder.vue";
 definePageMeta({
+  key: route => route.fullPath,
   
   middleware: ["merchant"],
 });
 const route = useRoute();
 const router = useRouter();
 const store = useStorefront();
+store.pageStore.initialized.value = false;
+store.themeStore.initialized.value = false;
+store.menuStore.initialized.value = false;
 await store.load();
 const page = computed(() =>
   store.getPageBySlugForEditing(String(route.params.slug)),
 );
-console.trace(page.value)
 if (!page.value) await navigateTo("/merchant/storefront");
 useHead({
   title: page.value?.title,

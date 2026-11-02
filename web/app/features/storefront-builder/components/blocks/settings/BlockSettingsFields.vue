@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { slideSettings } from "../../../utils/slideshow";
+import AppearanceField from "../../AppearanceField.vue";
 import { computed } from "vue";
 import { allPaddingZero, type StorefrontBlock } from "~/types/storefront";
 import EditorFieldRow from "../../EditorFieldRow.vue";
@@ -75,6 +77,7 @@ const editableSettings = computed<Record<string, unknown>>(() =>
 );
 
 const blockSettings = computed<Record<string, unknown>>(() => {
+  if (props.block.type === "SLIDE") return slideSettings(editableSettings.value);
   if (productControlTypes.includes(props.block.type)) {
     const defaults = productControlDefaults(props.block.type);
     return {
@@ -133,6 +136,7 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string): string {
+  if (props.block.type === "SLIDE" && key === "name") return t("storefrontSlideshow.name");
   if (
     props.block.type === "SOCIAL_LINK" &&
     ["size", "openInNewTab"].includes(key)
@@ -185,8 +189,15 @@ function update(key: string, value: unknown) {
       v-for="{ key, value } in settingFields"
       :key="`${block.id}:${key}`"
     >
+      <div v-if="block.type === 'SLIDE' && key === 'image'">
+        <ImageField :settings="asSettings(value)" @update="(field, selected) => update('image', { ...asSettings(value), [field]: selected })" />
+        <EditorFieldRow :label="t('ui.alt_text')">
+          <v-text-field :model-value="String(asSettings(value).alt || '')" variant="outlined" density="compact" hide-details @update:model-value="update('image', { ...asSettings(value), alt: $event })" />
+        </EditorFieldRow>
+      </div>
+      <AppearanceField v-else-if="block.type === 'SLIDE' && key === 'appearance'" :settings="blockSettings" @update="update" />
       <EditorFieldRow
-        v-if="key === 'collectionIds'"
+        v-else-if="key === 'collectionIds'"
         :label="labelOf(String(key))"
       >
         <v-autocomplete
@@ -371,7 +382,7 @@ function update(key: string, value: unknown) {
       <LayoutField
         v-else-if="
           key === 'layout' &&
-          (['HEADER', 'MENU'].includes(block.type) || productControlTypes.includes(block.type) ||
+          (['HEADER', 'MENU', 'SLIDE'].includes(block.type) || productControlTypes.includes(block.type) ||
             block.type.startsWith('CHECKOUT_'))
         "
         :settings="blockSettings"

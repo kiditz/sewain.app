@@ -67,12 +67,12 @@ function canAddChild(block: StorefrontBlock) {
           :icon="collapsedBlocks[block.id] ? 'mdi-chevron-right' : 'mdi-chevron-down'"
           size="x-small"
           variant="text"
-          :aria-label="blockRegistry[block.type].label"
+          :aria-label="block.type === 'SLIDE' ? String(block.settings.name || blockRegistry[block.type].label) : blockRegistry[block.type].label"
           :aria-expanded="!collapsedBlocks[block.id]"
           @click.stop="collapsedBlocks[block.id] = !collapsedBlocks[block.id]"
         />
         <v-icon v-else size="15" class="block-leaf-icon">mdi-shape-outline</v-icon>
-        <span class="block-tree-label">{{ blockRegistry[block.type].label }}</span>
+        <span class="block-tree-label">{{ block.type === 'SLIDE' ? String(block.settings.name || blockRegistry[block.type].label) : blockRegistry[block.type].label }}</span>
         <v-btn
           v-if="canAddChild(block)"
           icon="mdi-plus"

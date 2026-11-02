@@ -5,4 +5,5 @@ export interface Media {
   size: number;
   url: string;
   createdAt: string;
+  backgroundRemoved?: boolean;
 }

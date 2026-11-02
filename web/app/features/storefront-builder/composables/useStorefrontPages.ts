@@ -1,3 +1,4 @@
+import { synchronizeThemeGlobals } from "../utils/theme-globals";
 import { createFooterSection, ensureFooterSection } from "../utils/footer-section";
 import { checkoutBlockDefaults, normalizeCheckoutSection } from "../utils/checkout-layout";
 import { cartBlockDefaults, normalizeCartSection } from "../utils/cart-layout";
@@ -17,12 +18,13 @@ function cloneBlockWithNewIds(block: StorefrontBlock): StorefrontBlock {
   };
 }
 
-function createSection(type: SectionType): StorefrontSection {
+export function createSection(type: SectionType): StorefrontSection {
   if (type === "NAVIGATION") return createNavigationSection();
   if (type === "FOOTER") return createFooterSection();
   const definition = sectionRegistry[type];
-  const blocks = definition.defaultBlocks.map(blockType => {
+  const blocks = definition.defaultBlocks.map((blockType, index) => {
     const block = createDefaultBlock(blockType);
+    if (type === "SLIDESHOW") block.settings.name = `Slide ${index + 1}`;
     if (["CART", "CHECKOUT"].includes(type) && blockType === "HEADER") {
       block.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
       block.settings = type === "CHECKOUT" ? checkoutBlockDefaults("HEADER") : cartBlockDefaults("HEADER");
@@ -218,20 +220,30 @@ export function useStorefrontPages() {
   const initialized = useState("storefront-pages-initialized", () => false);
   const loading = useState("storefront-pages-loading", () => false);
   const api = useApi();
+  const themeId = useRequestURL().searchParams.get("themeId");
+  const resolvedTheme = useState<string | null>("storefront-resolved-theme", () => themeId);
+  let targetThemeId = resolvedTheme.value;
+  const endpoint = (id: string) => {
+    if (!targetThemeId) throw new Error("Load the storefront before saving pages");
+    return `/storefront/pages/${encodeURIComponent(id)}?themeId=${encodeURIComponent(targetThemeId)}`;
+  };
   const createResource = useStorefrontResourceFactory("pages");
-  const resource = (id: string) => createResource(id, `/storefront/pages/${encodeURIComponent(id)}`);
+  const resource = (id: string) => createResource(id, () => endpoint(id));
   const statuses = computed(() => pages.value.map(page => resource(page.id).status.value));
   const publishedPages = computed(() => pages.value.filter(page => page.status === "PUBLISHED"));
-  const schedulePage = (page: StorefrontPage) => resource(page.id).schedule(page);
-  const savePage = (page: StorefrontPage) => resource(page.id).save(page);
+  const schedulePage = (page: StorefrontPage) => { synchronizeThemeGlobals(pages.value, page); resource(page.id).schedule(page); };
+  const savePage = (page: StorefrontPage) => { synchronizeThemeGlobals(pages.value, page); return resource(page.id).save(page); };
   async function load() {
     if (initialized.value) return;
     loading.value = true;
     try {
-      const response = await api<{ configuration: StorefrontPage[] }>("/storefront/pages");
+      const response = await api<{ configuration: StorefrontPage[]; themeId: string }>("/storefront/pages", { query: themeId ? { themeId } : undefined });
+      targetThemeId = response.themeId;
+      resolvedTheme.value = targetThemeId;
       pages.value = response.configuration ?? [];
       if (!pages.value.length) {
         pages.value = samplePages();
+        synchronizeThemeGlobals(pages.value, pages.value.find(page => page.kind === "HOME"));
         await Promise.all(pages.value.map(savePage));
       } else {
         const previous = new Map(pages.value.map(page => [page.id, JSON.stringify(page)]));
@@ -429,6 +441,8 @@ export function useStorefrontPages() {
       sections: [createNavigationSection(), createFooterSection()],
       updatedAt: new Date().toISOString(),
     };
+    const home = pages.value.find(page => page.kind === "HOME");
+    if (home) synchronizeThemeGlobals([page], home);
     pages.value.push(page);
     schedulePage(page);
     return page;
@@ -456,6 +470,8 @@ export function useStorefrontPages() {
       })),
       updatedAt: new Date().toISOString(),
     };
+    const home = pages.value.find(page => page.kind === "HOME");
+    if (home) synchronizeThemeGlobals([page], home);
     pages.value.push(page);
     schedulePage(page);
     return page;

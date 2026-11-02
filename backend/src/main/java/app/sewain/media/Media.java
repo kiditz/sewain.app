@@ -41,6 +41,9 @@ class Media {
     @Column(nullable = false, length = 500)
     private String url;
 
+    @Column(name = "background_removed", nullable = false)
+    private boolean backgroundRemoved;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -1,3 +1,4 @@
+import { slideDefaults } from "./slideshow";
 import { socialLinkDefaults } from "./footer-section";
 import { productControlDefaults } from "./product-information-layout";
 import { checkoutBlockDefaults } from "./checkout-layout";
@@ -23,6 +24,10 @@ export interface BlockDefinition {
 }
 
 export const blockRegistry: Record<BlockType, BlockDefinition> = {
+  SLIDE: {
+    type: "SLIDE", label: "Slide", description: "Background image, content and call to action.",
+    defaults: slideDefaults(), allowedChildren: ["HEADER", "BUTTON"], defaultChildren: ["HEADER", "BUTTON"],
+  },
   SOCIAL_LINK: { type: "SOCIAL_LINK", label: "Social link", description: "Social account icon and external URL.", defaults: socialLinkDefaults() },
   CHECKOUT_CONTACT: { type: "CHECKOUT_CONTACT", label: "Contact", description: "Checkout contact.", defaults: checkoutBlockDefaults("CHECKOUT_CONTACT") },
   CHECKOUT_FULFILLMENT: { type: "CHECKOUT_FULFILLMENT", label: "Fulfillment", description: "Checkout fulfillment.", defaults: checkoutBlockDefaults("CHECKOUT_FULFILLMENT") },
@@ -263,6 +268,12 @@ export function createDefaultBlock(type: BlockType): StorefrontBlock {
     if (type === "HEADER" && childType === "BUTTON") {
       child.settings.label = "View all";
       child.settings.url = "/collections/all";
+    }
+    if (type === "SLIDE" && childType === "HEADER") {
+      child.settings.layout = { direction: "vertical", alignment: "left", position: "center", gap: 12, width: "full", height: "auto", customHeight: 0, alignTextBaseline: false };
+      child.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
+      const copy = ["NEW COLLECTION", "Make room for more", "Discover products for your next adventure."];
+      child.blocks.forEach((block, index) => { block.settings.text = copy[index]; });
     }
     return child;
   });

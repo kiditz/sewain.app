@@ -34,12 +34,18 @@ class MediaCommandServiceImpl implements MediaCommandService {
 
     @Override
     @Transactional
-    public List<MediaResponse> upload(List<MultipartFile> files) {
+    public List<MediaResponse> upload(List<MultipartFile> files, List<Integer> backgroundRemoved) {
 
         var result = new ArrayList<Media>();
         var tenantSchema = tenantSchemaFolder();
+        var processed = new java.util.HashSet<>(backgroundRemoved == null ? List.<Integer>of() : backgroundRemoved);
+        for (var index : processed) {
+            if (index == null || index < 0 || index >= files.size()) throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
+            validateReplacement(files.get(index));
+        }
 
-        for (var file : files) {
+        for (int index = 0; index < files.size(); index++) {
+            var file = files.get(index);
             validate(file);
 
             var objectKey = generateObjectKey(file, tenantSchema);
@@ -62,6 +68,7 @@ class MediaCommandServiceImpl implements MediaCommandService {
             media.setContentType(file.getContentType());
             media.setSize(file.getSize());
             media.setUrl(stored.url());
+            media.setBackgroundRemoved(processed.contains(index));
 
             result.add(media);
         }
@@ -114,20 +121,12 @@ class MediaCommandServiceImpl implements MediaCommandService {
     public MediaResponse replaceFile(UUID id, MultipartFile file) {
         var media = repository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MEDIA_NOT_FOUND));
-        validate(file);
-        // Background removal always produces PNG; retain the object key and public URL.
-        try (var input = file.getInputStream()) {
-            var signature = new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 };
-            if (!MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(file.getContentType())
-                    || !Arrays.equals(signature, input.readNBytes(8))) {
-                throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
-            }
-        } catch (IOException error) {
-            throw new app.sewain.exception.MediaStorageException("Failed to read replacement image", error);
-        }
+        if (media.isBackgroundRemoved()) return mapper.toResponse(media);
+        validateReplacement(file);
         var replacement = storage.replace(file, media.getObjectKey());
         boolean registered = false;
         try {
+            media.setBackgroundRemoved(true);
             media.setContentType(MediaType.IMAGE_PNG_VALUE);
             media.setSize(file.getSize());
             var filename = media.getFilename().replaceFirst("\\.[^.]+$", "");
@@ -147,6 +146,20 @@ class MediaCommandServiceImpl implements MediaCommandService {
             return response;
         } finally {
             if (!registered) replacement.complete(false);
+        }
+    }
+
+    private void validateReplacement(MultipartFile file) {
+        validate(file);
+        // Background removal always produces PNG; retain the object key and public URL.
+        try (var input = file.getInputStream()) {
+            var signature = new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 };
+            if (!MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(file.getContentType())
+                    || !Arrays.equals(signature, input.readNBytes(8))) {
+                throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
+            }
+        } catch (IOException error) {
+            throw new app.sewain.exception.MediaStorageException("Failed to read replacement image", error);
         }
     }
 

@@ -29,6 +29,7 @@ export type SectionType =
   | "HERO"
   | "RICH_TEXT"
   | "IMAGE_BANNER"
+  | "SLIDESHOW"
   | "FEATURED_PRODUCTS"
   | "COLLECTION_LIST"
   | "COLLECTION_PRODUCTS"
@@ -39,6 +40,7 @@ export type SectionType =
   | "CHECKOUT";
 
 export type BlockType =
+  | "SLIDE"
   | "SOCIAL_LINK"
   | "CHECKOUT_CONTACT"
   | "CHECKOUT_FULFILLMENT"

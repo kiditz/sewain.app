@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { slideContentLayout } from "~/features/storefront-builder/utils/slideshow";
 import { VueDraggable } from "vue-draggable-plus";
 import type {
   StorefrontBlock,
@@ -50,7 +51,7 @@ function blockStyle(block: StorefrontBlock) {
       boxSizing: "border-box" as const,
     };
   }
-  if (["HEADER", "MENU"].includes(block.type)) {
+  if (["HEADER", "MENU", "SLIDE"].includes(block.type)) {
     return {
       width: "100%",
       flex: "0 1 100%",
@@ -79,6 +80,7 @@ function productControlStyle(block: StorefrontBlock) {
 }
 
 function childLayout(block: StorefrontBlock) {
+  if (block.type === "SLIDE") return slideContentLayout(block.settings);
   return block.type === "HEADER"
     ? (block.settings.layout as SectionLayout | undefined)
     : layout.value;

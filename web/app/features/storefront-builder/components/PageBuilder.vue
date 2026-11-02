@@ -47,10 +47,11 @@ watch([selectedId, selectedBlockId], ([id]) => {
   if (id) collapsedSections.value[id] = false;
 });
 const router = useRouter();
+const route = useRoute();
 function switchPage(selectedPage: StorefrontPage) {
   if (selectedPage.id === props.page.id) return;
   if (!store.pages.value.some((page) => page.id === selectedPage.id)) return;
-  router.push(`/merchant/storefront/pages/${selectedPage.slug}`);
+  router.push({ path: `/merchant/storefront/pages/${selectedPage.slug}`, query: route.query });
 }
 
 watch(
@@ -318,14 +319,14 @@ provide(builderDndKey, {
         <v-chip
           :color="page.status === 'PUBLISHED' ? 'success' : 'default'"
           size="small"
-          >{{ page.status === "PUBLISHED" ? "Published" : "Draft" }}</v-chip
+          >{{ page.status === "PUBLISHED" ? $t("themeLibrary.pageReady") : $t("themeLibrary.draft") }}</v-chip
         >
         <span v-if="saveError" class="save-status save-status--error">{{
           $t("common.saveFailed")
         }}</span>
 
         <span v-else class="save-status mr-3">{{
-          saving ? "Saving…" : hasUnsavedChanges ? "Unsaved changes" : "Saved"
+          saving ? "Saving…" : hasUnsavedChanges ? "Unsaved changes" : $t("themeLibrary.draftSaved")
         }}</span>
         <v-btn class="mr-2" color="primary" variant="outlined" @click="save">{{
           $t("common.save")
@@ -336,7 +337,7 @@ provide(builderDndKey, {
             page.status = 'PUBLISHED';
             save();
           "
-          >{{ $t("ui.publish") }}</v-btn
+          >{{ $t("themeLibrary.includePage") }}</v-btn
         >
       </template>
     </v-app-bar>

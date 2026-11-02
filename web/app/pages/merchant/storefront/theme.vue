@@ -3,10 +3,14 @@ import { useStorefront } from "~/features/storefront-builder/composables/useStor
 import { storefrontPresets, presetColors, setStorefrontThemeMode, applyStorefrontPreset } from "~/features/storefront-builder/utils/storefront-theme";
 import type { StorefrontThemeMode } from "~/types/storefront";
 const storefront = useStorefront();
+storefront.pageStore.initialized.value = false;
+storefront.themeStore.initialized.value = false;
+storefront.menuStore.initialized.value = false;
 await storefront.load();
 const { theme } = storefront;
 const { saving, saveError, hasUnsavedChanges } = storefront.themeStore;
 definePageMeta({
+  key: route => route.fullPath,
   layout: "merchant",
   middleware: ["merchant"],
 });
