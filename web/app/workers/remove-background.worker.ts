@@ -11,8 +11,8 @@ self.addEventListener("message", async (event: MessageEvent<{ id: string; file: 
     const image = await RawImage.fromBlob(file);
     if (image.width * image.height > 16_000_000) throw new Error("IMAGE_TOO_LARGE");
     self.postMessage({ id, phase: "loading" });
-    segmenter ??= pipeline("background-removal", "onnx-community/ormbg-ONNX", {
-      revision: "c491647",
+    segmenter ??= pipeline<"background-removal">("background-removal", "onnx-community/ormbg-ONNX", {
+      revision: "034e2d884afbab897e10e78fc5bb566b29533fd6",
       dtype: "q8",
       device: "wasm",
     });
@@ -24,6 +24,6 @@ self.addEventListener("message", async (event: MessageEvent<{ id: string; file: 
     self.postMessage({ id, blob });
   } catch (error) {
     segmenter = undefined;
-    self.postMessage({ id, error: error instanceof Error && error.message === "IMAGE_TOO_LARGE" ? "IMAGE_TOO_LARGE" : "PROCESSING_FAILED" });
+    self.postMessage({ id, error: error instanceof Error && error.message === "IMAGE_TOO_LARGE" ? "IMAGE_TOO_LARGE" : "PROCESSING_FAILED", detail: error instanceof Error ? error.message : String(error) });
   }
 });

@@ -2,6 +2,7 @@ export function useBackgroundRemoval() {
   const processing = ref(false);
   const phase = ref<"idle" | "loading" | "processing">("idle");
   let worker: Worker | undefined;
+  let requestId = 0;
   let pending: { id: string; resolve: (blob: Blob) => void; reject: (error: Error) => void } | undefined;
 
   function cancel() {
@@ -16,15 +17,21 @@ export function useBackgroundRemoval() {
   function getWorker() {
     if (worker) return worker;
     worker = new Worker(new URL("../workers/remove-background.worker.ts", import.meta.url), { type: "module" });
-    worker.onmessage = (event: MessageEvent<{ id: string; phase?: "loading" | "processing"; blob?: Blob; error?: string }>) => {
+    worker.onmessage = (event: MessageEvent<{ id: string; phase?: "loading" | "processing"; blob?: Blob; error?: string; detail?: string }>) => {
       if (!pending || event.data.id !== pending.id) return;
       if (event.data.phase) { phase.value = event.data.phase; return; }
       const task = pending;
       pending = undefined;
       if (event.data.blob) task.resolve(event.data.blob);
-      else task.reject(new Error(event.data.error || "PROCESSING_FAILED"));
+      else {
+        if (import.meta.dev && event.data.detail) console.error("Background removal failed:", event.data.detail);
+        worker?.terminate();
+        worker = undefined;
+        task.reject(new Error(event.data.error || "PROCESSING_FAILED", { cause: event.data.detail }));
+      }
     };
-    worker.onerror = () => {
+    worker.onerror = (event) => {
+      if (import.meta.dev) console.error("Background removal worker failed:", event.message);
       const task = pending;
       pending = undefined;
       worker?.terminate();
@@ -42,7 +49,7 @@ export function useBackgroundRemoval() {
     try {
       const engine = getWorker();
       const blob = await new Promise<Blob>((resolve, reject) => {
-        const id = crypto.randomUUID();
+        const id = String(++requestId);
         pending = { id, resolve, reject };
         engine.postMessage({ id, file });
       });

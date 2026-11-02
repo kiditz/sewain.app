@@ -55,6 +55,7 @@ async function removeFileBackground(file: File) {
     snackbar.openSnackbar({ type: "success", message: t("media.backgroundRemoval.success") });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") return;
+    console.warn("Photo background removal: " + String(error instanceof Error ? error.cause ?? error.message : error));
     const code = error instanceof Error ? error.message : "";
     const key = code === "UNSUPPORTED_IMAGE" ? "unsupported" : code === "IMAGE_TOO_LARGE" ? "tooLarge" : "failed";
     snackbar.openSnackbar({ type: "error", message: t(`media.backgroundRemoval.${key}`) });
