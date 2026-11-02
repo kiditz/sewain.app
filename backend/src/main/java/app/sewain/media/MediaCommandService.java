@@ -12,4 +12,6 @@ interface MediaCommandService {
     void delete(UUID id);
 
     MediaResponse updateFilename(UUID id, UpdateMediaFilenameCommand command);
+
+    MediaResponse replaceFile(UUID id, MultipartFile file);
 }

@@ -1,6 +1,7 @@
 package app.sewain.media;
 
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
 
 interface MediaStorage {
 
@@ -12,4 +13,8 @@ interface MediaStorage {
 	String getUrl(String objectKey);
 
 	void delete(String objectKey);
+
+	Resource read(String objectKey);
+
+	MediaReplacement replace(MultipartFile file, String objectKey);
 }

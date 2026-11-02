@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.io.IOException;
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -70,7 +75,7 @@ class MediaCommandServiceImpl implements MediaCommandService {
     @Override
     @Transactional
     public void delete(UUID id) {
-        var media = repository.findById(id)
+        var media = repository.findByIdForUpdate(id)
               .orElseThrow(() ->
                     new ResourceNotFoundException(
                           ErrorCode.MEDIA_NOT_FOUND
@@ -84,7 +89,7 @@ class MediaCommandServiceImpl implements MediaCommandService {
     @Override
     @Transactional
     public MediaResponse updateFilename(UUID id, UpdateMediaFilenameCommand command) {
-        var media = repository.findById(id)
+        var media = repository.findByIdForUpdate(id)
               .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MEDIA_NOT_FOUND));
         mapper.updateFilename(command, media);
         return mapper.toResponse(repository.save(media));
@@ -101,6 +106,47 @@ class MediaCommandServiceImpl implements MediaCommandService {
             throw new ValidationException(
                   ErrorCode.MEDIA_INVALID_TYPE
             );
+        }
+    }
+
+    @Override
+    @Transactional
+    public MediaResponse replaceFile(UUID id, MultipartFile file) {
+        var media = repository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MEDIA_NOT_FOUND));
+        validate(file);
+        // Background removal always produces PNG; retain the object key and public URL.
+        try (var input = file.getInputStream()) {
+            var signature = new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 };
+            if (!MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(file.getContentType())
+                    || !Arrays.equals(signature, input.readNBytes(8))) {
+                throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
+            }
+        } catch (IOException error) {
+            throw new app.sewain.exception.MediaStorageException("Failed to read replacement image", error);
+        }
+        var replacement = storage.replace(file, media.getObjectKey());
+        boolean registered = false;
+        try {
+            media.setContentType(MediaType.IMAGE_PNG_VALUE);
+            media.setSize(file.getSize());
+            var filename = media.getFilename().replaceFirst("\\.[^.]+$", "");
+            media.setFilename(filename.substring(0, Math.min(filename.length(), 251)) + ".png");
+            var response = mapper.toResponse(repository.saveAndFlush(media));
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        replacement.complete(status == STATUS_COMMITTED);
+                    }
+                });
+            } else {
+                replacement.complete(true);
+            }
+            registered = true;
+            return response;
+        } finally {
+            if (!registered) replacement.complete(false);
         }
     }
 

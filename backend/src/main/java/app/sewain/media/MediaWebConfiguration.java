@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.http.CacheControl;
 
 import java.nio.file.Path;
 
@@ -22,6 +23,9 @@ class MediaWebConfiguration implements WebMvcConfigurer {
                                 .toAbsolutePath()
                                 .normalize()
                                 + "/"
-                );
+                )
+                .setCacheControl(CacheControl.noCache())
+                .resourceChain(false)
+                .addResolver(new MediaResourceResolver());
     }
 }
