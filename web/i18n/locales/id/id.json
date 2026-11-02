@@ -1,4 +1,13 @@
 {
+  "storefrontTheme": {
+    "mode": "Mode tampilan",
+    "light": "Terang",
+    "dark": "Gelap",
+    "modeHint": "Atur tampilan storefront. Warna custom disimpan terpisah untuk setiap mode."
+  },
+  "storefrontNavigation": {
+    "sticky": "Header tetap di atas saat scroll"
+  },
   "storefrontFooter": {
     "platform": "Platform sosial",
     "url": "URL akun sosial",
@@ -801,6 +810,17 @@
     "title": "Masuk ke akun Anda"
   },
   "media": {
+    "backgroundRemoval": {
+      "action": "Hapus background",
+      "restore": "Pulihkan foto asli",
+      "hint": "Hapus background foto sebelum mengunggah. Foto diproses di browser; pemakaian pertama perlu mengunduh pemroses. Hasil PNG transparan bisa diperiksa dan dipulihkan sebelum diunggah.",
+      "loading": "Menyiapkan pemroses foto… Pemakaian pertama bisa lebih lama.",
+      "processing": "Menghapus background foto…",
+      "success": "Background dihapus. Periksa hasilnya sebelum mengunggah.",
+      "failed": "Background belum berhasil dihapus. Coba lagi atau unggah foto asli.",
+      "unsupported": "Hapus background mendukung foto PNG, JPEG, dan WebP.",
+      "tooLarge": "Foto terlalu besar untuk diproses. Gunakan foto maksimal 16 megapiksel."
+    },
     "details": {
       "confirm_delete_message": "File ini akan dihapus permanen dari pustaka media.",
       "confirm_delete_title": "Hapus file media?",
@@ -1351,6 +1371,8 @@
       "retry": "Coba lagi",
       "searchPlaceholder": "Cari nama atau slug produk...",
       "subtitle": "Pilih satu varian. Produk itu sendiri tidak bisa dipilih.",
+      "multipleSubtitle": "Pilih satu atau beberapa varian. Pilihan tetap tersimpan saat mencari atau pindah halaman.",
+      "selectedCount": "{count} varian dipilih",
       "title": "Pilih varian produk"
     },
     "variants": {

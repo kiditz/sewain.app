@@ -35,6 +35,36 @@ const activeTab = ref("library");
 
 const files = ref<File[]>([]);
 const uploading = ref(false);
+const backgroundRemoval = useBackgroundRemoval();
+const { processing: removingBackground, phase: backgroundRemovalPhase } = backgroundRemoval;
+const processingFile = ref<File | null>(null);
+const originalFiles = new WeakMap<File, File>();
+const filePreviews = ref<Array<{ file: File; url: string }>>([]);
+watch(files, (selected) => {
+  for (const preview of filePreviews.value) URL.revokeObjectURL(preview.url);
+  filePreviews.value = selected.map(file => ({ file, url: URL.createObjectURL(file) }));
+});
+onBeforeUnmount(() => { for (const preview of filePreviews.value) URL.revokeObjectURL(preview.url); });
+
+async function removeFileBackground(file: File) {
+  processingFile.value = file;
+  try {
+    const result = await backgroundRemoval.removeBackground(file);
+    originalFiles.set(result, file);
+    files.value = files.value.map(item => item === file ? result : item);
+    snackbar.openSnackbar({ type: "success", message: t("media.backgroundRemoval.success") });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") return;
+    const code = error instanceof Error ? error.message : "";
+    const key = code === "UNSUPPORTED_IMAGE" ? "unsupported" : code === "IMAGE_TOO_LARGE" ? "tooLarge" : "failed";
+    snackbar.openSnackbar({ type: "error", message: t(`media.backgroundRemoval.${key}`) });
+  } finally { processingFile.value = null; }
+}
+
+function restoreOriginal(file: File) {
+  const original = originalFiles.get(file);
+  if (original) files.value = files.value.map(item => item === file ? original : item);
+}
 const loading = ref(false);
 
 const media = ref<Media[]>([]);
@@ -61,7 +91,7 @@ const clearFiles = () => {
 };
 
 const upload = async () => {
-  if (!hasFiles.value || uploading.value) {
+  if (!hasFiles.value || uploading.value || removingBackground.value) {
     return;
   }
 
@@ -226,6 +256,8 @@ const confirmSelection = () => {
 };
 
 const close = () => {
+  if (uploading.value) return;
+  backgroundRemoval.cancel();
   emit("update:modelValue", false);
 };
 
@@ -245,6 +277,7 @@ watch(
   () => props.modelValue,
   async (open) => {
     if (!open) {
+      backgroundRemoval.cancel();
       return;
     }
 
@@ -264,6 +297,7 @@ watch(
     :model-value="modelValue"
     max-width="1280"
     scrollable
+    :persistent="uploading"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <v-card>
@@ -463,6 +497,7 @@ watch(
             <!-- ========================= -->
             <v-window-item value="upload">
               <v-file-upload
+                :disabled="uploading || removingBackground"
                 :loading="uploading"
                 v-model="files"
                 accept="image/*"
@@ -487,10 +522,26 @@ watch(
                     }}
                   </div>
 
-                  <v-btn variant="text" size="small" @click="clearFiles">
+                  <v-btn variant="text" size="small" :disabled="uploading || removingBackground" @click="clearFiles">
                     {{ t("common.clear") }}
                   </v-btn>
                 </div>
+                <p class="text-body-small text-medium-emphasis mb-3">{{ t('media.backgroundRemoval.hint') }}</p>
+                <v-row>
+                  <v-col v-for="preview in filePreviews" :key="preview.url" cols="12" sm="6" md="4">
+                    <v-card variant="outlined" rounded="lg">
+                      <div class="media-cutout-preview">
+                        <v-img :src="preview.url" :alt="preview.file.name" height="180" contain />
+                      </div>
+                      <div class="pa-3">
+                        <div class="text-body-small text-truncate mb-2">{{ preview.file.name }}</div>
+                        <v-btn v-if="originalFiles.has(preview.file)" variant="text" size="small" :disabled="uploading || removingBackground" @click="restoreOriginal(preview.file)">{{ t('media.backgroundRemoval.restore') }}</v-btn>
+                        <v-btn v-else variant="tonal" size="small" prepend-icon="mdi-image-remove" :loading="processingFile === preview.file" :disabled="uploading || removingBackground" @click="removeFileBackground(preview.file)">{{ t('media.backgroundRemoval.action') }}</v-btn>
+                        <p v-if="processingFile === preview.file" role="status" class="text-body-small mt-2">{{ t(backgroundRemovalPhase === 'loading' ? 'media.backgroundRemoval.loading' : 'media.backgroundRemoval.processing') }}</p>
+                      </div>
+                    </v-card>
+                  </v-col>
+                </v-row>
               </div>
             </v-window-item>
           </v-window>
@@ -510,7 +561,7 @@ watch(
           v-if="files.length > 0 && activeTab === 'upload'"
           color="primary"
           :loading="uploading"
-          :disabled="uploading"
+          :disabled="uploading || removingBackground"
           @click="upload"
         >
           <CloudUploadOutlined class="mr-2" />
@@ -550,6 +601,9 @@ watch(
 </template>
 
 <style scoped>
+.media-cutout-preview {
+  background: repeating-conic-gradient(#e5e7eb 0% 25%, #fff 0% 50%) 50% / 20px 20px;
+}
 .media-upload-zone {
   min-height: 280px;
   border: 2px dashed rgba(var(--v-theme-on-surface), 0.2);

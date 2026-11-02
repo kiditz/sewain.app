@@ -45,6 +45,7 @@ const dragSections = computed<StorefrontSection[]>({
       :class="{
         'is-selected': preview && section.id === selectedSectionId,
         'is-preview': preview,
+        'is-navigation-sticky': section.type === 'NAVIGATION' && section.settings.sticky === true,
       }"
       :data-section-id="section.id"
       :data-section-type="section.type"
@@ -75,6 +76,11 @@ const dragSections = computed<StorefrontSection[]>({
 </template>
 
 <style>
+.builder-section.is-navigation-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 /* Style handle drag di preview builder (global, class ber-prefix `builder-`). */
 .builder-handle {
   position: absolute;

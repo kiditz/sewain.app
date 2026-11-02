@@ -288,6 +288,9 @@ const addProduct = (selection: ProductVariantSelection) => {
   setFieldValue("productIds", [...currentProductIds, product.id]);
   selectedProducts.value = [...selectedProducts.value, product];
 };
+const addProducts = (selections: ProductVariantSelection[]) => {
+  for (const selection of selections) addProduct(selection);
+};
 
 const removeProduct = (productId: string) => {
   setFieldValue(
@@ -1087,7 +1090,7 @@ const collectionTypeOptions = computed<
     </v-form>
   </v-container>
 
-  <ProductVariantDialog v-model="productVariantDialog" @selected="addProduct" />
+  <ProductVariantDialog v-model="productVariantDialog" multiple @selected-multiple="addProducts" />
 
   <MediaDialog v-model="mediaDialog" @selected="selectImage" />
 </template>

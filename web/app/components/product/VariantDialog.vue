@@ -7,7 +7,7 @@ import type {
 import imagePlaceholder from "~/assets/images/placeholder.svg";
 
 /**
- * Dialog untuk memilih SATU varian produk.
+ * Dialog untuk memilih satu atau beberapa varian produk.
  *
  * - Produk bisa dicari (nama / slug) dan setiap varian-nya ditampilkan.
  * - Yang bisa dipilih hanya varian, produk tidak.
@@ -16,10 +16,12 @@ import imagePlaceholder from "~/assets/images/placeholder.svg";
 const props = withDefaults(
   defineProps<{
     modelValue: boolean;
+    multiple?: boolean;
     /** Varian yang sedang terpilih (ditandai saat dialog dibuka). */
     selectedVariantId?: string | null;
   }>(),
   {
+    multiple: false,
     selectedVariantId: null,
   },
 );
@@ -27,6 +29,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
   selected: [selection: ProductVariantSelection];
+  selectedMultiple: [selections: ProductVariantSelection[]];
 }>();
 
 const { t } = useI18n();
@@ -34,18 +37,22 @@ const { findProducts } = useProduct();
 
 const PAGE_SIZE = 6;
 
-const keyword = ref("");
+const keyword = ref<string | null>("");
 const page = ref(1);
 const totalItems = ref(0);
 const products = ref<Product[]>([]);
 const loading = ref(false);
 const failed = ref(false);
 
-const selection = ref<ProductVariantSelection | null>(null);
+const selections = ref<ProductVariantSelection[]>([]);
 
 const activeVariantId = computed(
-  () => selection.value?.variant.id ?? props.selectedVariantId,
+  () => selections.value[0]?.variant.id ?? props.selectedVariantId,
 );
+const selectedIds = computed(() => new Set(selections.value.map(item => item.variant.id)));
+function isSelected(id: string) {
+  return props.multiple ? selectedIds.value.has(id) : activeVariantId.value === id;
+}
 
 const pageCount = computed(() =>
   Math.max(1, Math.ceil(totalItems.value / PAGE_SIZE)),
@@ -64,7 +71,7 @@ const loadProducts = async () => {
     const query: Record<string, unknown> = {
       page: page.value - 1,
       size: PAGE_SIZE,
-      keyword: keyword.value.trim() || undefined,
+      keyword: (keyword.value || "").trim() || undefined,
     };
 
     const response = await findProducts(query);
@@ -99,7 +106,7 @@ watch(
   (open) => {
     if (!open) return;
 
-    selection.value = null;
+    selections.value = [];
     keyword.value = "";
     page.value = 1;
 
@@ -116,7 +123,13 @@ onBeforeUnmount(() => {
 const pick = (product: Product, variant: ProductVariant) => {
   if (!variant.active) return;
 
-  selection.value = { product, variant };
+  if (!props.multiple) {
+    selections.value = [{ product, variant }];
+  } else if (selectedIds.value.has(variant.id)) {
+    selections.value = selections.value.filter(item => item.variant.id !== variant.id);
+  } else {
+    selections.value = [...selections.value, { product, variant }];
+  }
 };
 
 const close = () => {
@@ -124,9 +137,10 @@ const close = () => {
 };
 
 const confirm = () => {
-  if (!selection.value) return;
+  if (!selections.value.length) return;
 
-  emit("selected", selection.value);
+  if (props.multiple) emit("selectedMultiple", [...selections.value]);
+  else emit("selected", selections.value[0]!);
   close();
 };
 </script>
@@ -135,17 +149,18 @@ const confirm = () => {
   <v-dialog
     :model-value="modelValue"
     max-width="720"
+    height="min(85dvh, 760px)"
     scrollable
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card rounded="lg">
+    <v-card rounded="lg" class="variant-dialog-card">
       <v-card-title class="d-flex align-center justify-space-between pa-5">
-        <div>
+        <div class="min-width-0">
           <div class="text-title-medium">
             {{ t("product.variantDialog.title") }}
           </div>
-          <div class="text-body-small text-medium-emphasis mt-1">
-            {{ t("product.variantDialog.subtitle") }}
+          <div class="text-body-small text-medium-emphasis text-wrap mt-1">
+            {{ t(multiple ? "product.variantDialog.multipleSubtitle" : "product.variantDialog.subtitle") }}
           </div>
         </div>
 
@@ -238,25 +253,29 @@ const confirm = () => {
               v-if="product.variants?.length"
               density="comfortable"
               class="pa-2"
-              role="radiogroup"
+              rounded="lg"
+              :role="multiple ? 'group' : 'radiogroup'"
+              :aria-label="product.name"
             >
               <v-list-item
                 v-for="variant in product.variants"
                 :key="variant.id"
-                :active="activeVariantId === variant.id"
+                :active="isSelected(variant.id)"
                 :disabled="!variant.active"
                 color="primary"
+                class="pa-2"
                 rounded="lg"
-                role="radio"
-                :aria-checked="activeVariantId === variant.id"
+                :role="multiple ? 'checkbox' : 'radio'"
+                :aria-checked="isSelected(variant.id)"
+                :aria-label="`${product.name} · ${variant.name} (${variant.sku})`"
                 @click="pick(product, variant)"
               >
                 <template #prepend>
                   <v-icon
                     :icon="
-                      activeVariantId === variant.id
-                        ? 'mdi-radiobox-marked'
-                        : 'mdi-radiobox-blank'
+                      multiple
+                        ? isSelected(variant.id) ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'
+                        : isSelected(variant.id) ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'
                     "
                   />
                 </template>
@@ -325,10 +344,12 @@ const confirm = () => {
 
       <v-card-actions class="pa-4">
         <div
-          v-if="selection"
+          v-if="selections.length"
           class="text-body-small text-medium-emphasis text-truncate"
         >
-          {{ selection.product.name }} · {{ selection.variant.name }}
+          {{ multiple
+            ? t('product.variantDialog.selectedCount', { count: selections.length })
+            : `${selections[0]!.product.name} · ${selections[0]!.variant.name}` }}
         </div>
 
         <v-spacer />
@@ -337,7 +358,7 @@ const confirm = () => {
           {{ t("common.cancel") }}
         </v-btn>
 
-        <v-btn color="primary" :disabled="!selection" @click="confirm">
+        <v-btn color="primary" :disabled="!selections.length" @click="confirm">
           {{ t("common.select") }}
         </v-btn>
       </v-card-actions>
@@ -346,8 +367,23 @@ const confirm = () => {
 </template>
 
 <style scoped>
+.variant-dialog-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.variant-dialog-card > :not(.variant-dialog-body) {
+  flex-shrink: 0;
+}
+
 .variant-dialog-body {
-  min-height: 320px;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .product-header {

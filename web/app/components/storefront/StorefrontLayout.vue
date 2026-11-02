@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { VLayout } from "vuetify/components";
+import { VLayout, VThemeProvider } from "vuetify/components";
+import { useTheme } from "vuetify";
 import { storefrontBrandingKey, storefrontDrawerTargetKey } from "~/features/storefront-builder/utils/storefront-branding";
 import type { StorefrontTheme } from "~/types/storefront";
 
@@ -8,6 +9,25 @@ const props = defineProps<{
   preview?: boolean;
 }>();
 const layoutId = `storefront-layout-${useId()}`;
+const vuetify = useTheme();
+const vuetifyThemeName = `storefront-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+const mode = computed(() => props.theme.mode === "dark" ? "dark" : "light");
+watchEffect(() => {
+  const colors = props.theme.colors;
+  vuetify.themes.value[vuetifyThemeName] = {
+    dark: mode.value === "dark",
+    colors: {
+      primary: colors.primary, secondary: colors.secondary,
+      background: colors.background, surface: colors.surface,
+      "surface-bright": colors.surface, "surface-light": colors.secondary,
+      "surface-variant": colors.secondary,
+      "on-background": colors.text, "on-surface": colors.text,
+      "on-surface-variant": colors.text,
+    },
+    variables: {},
+  };
+});
+onUnmounted(() => { delete vuetify.themes.value[vuetifyThemeName]; });
 provide(storefrontDrawerTargetKey, `#${layoutId}`);
 const { current: merchant } = storeToRefs(useMerchantStore());
 const { host } = useSiteContext();
@@ -34,13 +54,16 @@ const style = computed(() => ({
   "--store-secondary": props.theme.colors.secondary,
   "--store-background": props.theme.colors.background,
   "--store-surface": props.theme.colors.surface,
+  "--store-image-background": props.theme.colors.surface,
   "--store-text": props.theme.colors.text,
+  "--store-on-primary": "rgb(var(--v-theme-on-primary))",
   "--store-heading-font": props.theme.typography.headingFont,
   "--store-radius": `${props.theme.layout.borderRadius}px`,
   "--store-width": `${props.theme.layout.contentMaxWidth}px`,
   "--store-spacing": `${props.theme.layout.sectionSpacing}px`,
   fontFamily: props.theme.typography.bodyFont,
   fontSize: `${props.theme.typography.baseFontSize}px`,
+  colorScheme: mode.value,
 }));
 
 const cartStore = useCartStore();
@@ -48,13 +71,15 @@ await cartStore.getCart().catch(() => undefined);
 </script>
 
 <template>
-  <component :is="preview ? VLayout : 'div'" :id="layoutId" class="storefront" :class="{ 'storefront--preview': preview }" :style="style">
+  <VThemeProvider :theme="vuetifyThemeName">
+  <VLayout :id="layoutId" class="storefront" :class="[`${vuetify.prefix}theme--${vuetifyThemeName}`, { 'storefront--preview': preview }]" :style="{ ...style, overflow: 'visible' }">
     <main class="store-main">
       <slot />
     </main>
 
 
-  </component>
+  </VLayout>
+  </VThemeProvider>
 </template>
 
 <style scoped>

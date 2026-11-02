@@ -1,4 +1,13 @@
 {
+  "storefrontTheme": {
+    "mode": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "modeHint": "Set the storefront appearance. Custom colors are kept separately for each mode."
+  },
+  "storefrontNavigation": {
+    "sticky": "Keep header at the top while scrolling"
+  },
   "storefrontFooter": {
     "platform": "Social platform",
     "url": "Social account URL",
@@ -801,6 +810,17 @@
     "title": "Sign in to your account"
   },
   "media": {
+    "backgroundRemoval": {
+      "action": "Remove background",
+      "restore": "Restore original photo",
+      "hint": "Remove photo backgrounds before uploading. Processing runs in your browser; the first use downloads the processor. Review the transparent PNG or restore the original before uploading.",
+      "loading": "Preparing photo processing… The first use can take longer.",
+      "processing": "Removing the photo background…",
+      "success": "Background removed. Review the result before uploading.",
+      "failed": "Could not remove the background. Try again or upload the original photo.",
+      "unsupported": "Background removal supports PNG, JPEG, and WebP photos.",
+      "tooLarge": "This photo is too large to process. Use a photo up to 16 megapixels."
+    },
     "details": {
       "confirm_delete_message": "This file will be permanently deleted from your media library.",
       "confirm_delete_title": "Delete media file?",
@@ -1351,6 +1371,8 @@
       "retry": "Try again",
       "searchPlaceholder": "Search product name or slug...",
       "subtitle": "Choose one variant. Products themselves cannot be selected.",
+      "multipleSubtitle": "Choose one or more variants. Selections are kept across searches and pages.",
+      "selectedCount": "{count} variants selected",
       "title": "Select product variant"
     },
     "variants": {

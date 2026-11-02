@@ -340,7 +340,7 @@ function isFillTextBlock(block: StorefrontBlock) {
 }
 .cart-button.button-primary {
   background: var(--store-primary);
-  color: white;
+  color: var(--store-on-primary, white);
 }
 .cart-button.button-secondary {
   background: var(--store-secondary);

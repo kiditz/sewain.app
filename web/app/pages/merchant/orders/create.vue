@@ -307,6 +307,9 @@ const addSelection = (selection: ProductVariantSelection) => {
     variantRentalPlans: selection.variant.rentalPlans,
   });
 };
+const addSelections = (selections: ProductVariantSelection[]) => {
+  for (const selection of selections) addSelection(selection);
+};
 
 const isoDate = (value: string) =>
   value ? new Date(value).toISOString() : undefined;
@@ -782,7 +785,8 @@ const formatCurrency = (amount: number) => formatMoney(amount);
     </v-form>
     <ProductVariantDialog
       v-model="variantDialogOpen"
-      @selected="addSelection"
+      multiple
+      @selected-multiple="addSelections"
     />
   </v-container>
 </template>

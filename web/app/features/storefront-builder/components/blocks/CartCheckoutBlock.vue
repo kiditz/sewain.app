@@ -60,7 +60,7 @@ const visible = computed(() => !loading.value && !error.value && !isEmpty.value)
   border: 1px solid var(--store-primary);
   border-radius: var(--store-radius);
   background: var(--store-primary);
-  color: white;
+  color: var(--store-on-primary, white);
   font-size: 13px;
   font-weight: 600;
   text-align: center;

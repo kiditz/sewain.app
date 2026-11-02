@@ -4,6 +4,7 @@ import {
   ShoppingCartOutlined,
   SearchOutlined,
 } from "@ant-design/icons-vue";
+import { VAppBar, VSheet } from "vuetify/components";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import StorefrontSearchDialog from "~/components/storefront/StorefrontSearchDialog.vue";
 import type {
@@ -33,7 +34,7 @@ const props = defineProps<{
 }>();
 const storefront = useStorefront();
 const branding = inject(storefrontBrandingKey, null);
-const searchDialog = ref(false)
+const searchDialog = ref(false);
 const drawerTarget = inject(storefrontDrawerTargetKey, "body");
 const { current: merchant } = storeToRefs(useMerchantStore());
 const merchantName = computed(
@@ -103,6 +104,13 @@ watch(drawer, async (open, previouslyOpen) => {
 });
 const drawerId = `storefront-menu-${useId()}`;
 const header = ref<HTMLElement>();
+const headerHeight = ref(72);
+const appBarProps = computed(() => props.preview ? {} : {
+  height: headerHeight.value,
+  flat: true,
+  // The section wrapper owns sticky positioning; keep the app bar in document flow.
+  style: { position: "relative" as const, top: "auto", left: "auto", right: "auto", width: "100%", transform: "none" },
+});
 const route = useRoute();
 watch(
   () => route.fullPath,
@@ -118,7 +126,10 @@ let observer: ResizeObserver | undefined;
 onMounted(() => {
   if (!header.value) return;
   observer = new ResizeObserver((entries) => {
-    if ((entries[0]?.contentRect.width ?? 0) >= 600) drawer.value = false;
+    const entry = entries[0];
+    if (!entry) return;
+    headerHeight.value = Math.ceil(entry.borderBoxSize?.[0]?.blockSize ?? header.value!.getBoundingClientRect().height);
+    if (entry.contentRect.width >= 600) drawer.value = false;
   });
   observer.observe(header.value);
 });
@@ -137,15 +148,15 @@ onBeforeUnmount(() => {
   observer?.disconnect();
   if (bumpTimer) clearTimeout(bumpTimer);
 });
-const openSearchDialog = () =>{
-  searchDialog.value = !searchDialog.value;
-}
+const openSearchDialog = () => {
+  searchDialog.value = true;
+};
 </script>
 
 <template>
   <StorefrontSearchDialog :preview="preview" v-model="searchDialog"/>
-  <header ref="header" class="store-header">
-    <div class="store-header__inner" :style="layoutStyle">
+  <component :is="preview ? VSheet : VAppBar" v-bind="appBarProps" tag="header" class="store-header">
+    <div ref="header" class="store-header__inner" :style="layoutStyle">
       <v-btn
         v-if="hasMenu"
         ref="mobileToggle"
@@ -178,7 +189,8 @@ const openSearchDialog = () =>{
           icon
           @click="openSearchDialog"
           variant="text"
-          aria-label="Search"
+          :aria-label="$t('storefrontSearch.title')"
+          aria-haspopup="dialog"
         >
           <SearchOutlined aria-hidden="true" />
         </v-btn>
@@ -205,7 +217,7 @@ const openSearchDialog = () =>{
         </v-badge>
       </div>
     </div>
-  </header>
+  </component>
   <ClientOnly>
     <Teleport :to="drawerTarget" :disabled="!preview" defer>
       <v-navigation-drawer
@@ -261,6 +273,12 @@ const openSearchDialog = () =>{
 .store-header__inner {
   display: flex;
   min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.store-header :deep(.v-toolbar__content) {
+  height: auto !important;
+  overflow: visible;
 }
 .store-header__blocks {
   flex: 1;

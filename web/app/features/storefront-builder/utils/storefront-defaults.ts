@@ -2,6 +2,7 @@ import type { StorefrontTheme } from "~/types/storefront";
 export const initialTheme: StorefrontTheme = {
   name: "Everyday",
   preset: "everyday",
+  mode: "light",
   colors: {
     primary: "#315c4c",
     secondary: "#d9e7de",

@@ -8,6 +8,7 @@ import type {
 
 export function navigationDefaults() {
   return {
+    sticky: false,
     padding: { top: 12, right: 24, bottom: 12, left: 24 },
     layout: {
       direction: "horizontal",

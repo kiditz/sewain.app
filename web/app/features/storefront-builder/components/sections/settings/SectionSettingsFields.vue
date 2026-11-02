@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { imageBannerDefaults } from "../../../utils/image-banner";
 import { productInformationSettings } from "../../../utils/product-information-layout";
+import { navigationDefaults } from "../../../utils/navigation-section";
 import type { StorefrontSection } from "~/types/storefront";
 import ProductSelector from "../../ProductSelector.vue";
 import EditorFieldRow from "../../EditorFieldRow.vue";
@@ -16,6 +17,13 @@ const props = defineProps<{
 }>();
 
 const sectionSettings = computed(() => {
+  if (props.section.type === "NAVIGATION") {
+    const defaults = navigationDefaults();
+    return { ...defaults, ...props.section.settings,
+      layout: { ...defaults.layout, ...bannerImage(props.section.settings.layout) },
+      padding: { ...defaults.padding, ...bannerImage(props.section.settings.padding) },
+    };
+  }
   if (props.section.type === "PRODUCT_INFORMATION") return productInformationSettings(props.section.settings);
   if (props.section.type !== "IMAGE_BANNER") return props.section.settings;
   const defaults = imageBannerDefaults();
@@ -73,6 +81,7 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string) {
+  if (props.section.type === "NAVIGATION" && key === "sticky") return t("storefrontNavigation.sticky");
   const labels: Record<string, string> = {
     background: "ui.background",
     alignment: "ui.alignment",

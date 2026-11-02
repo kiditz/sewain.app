@@ -116,7 +116,7 @@ function selectImage(index: number) {
 .product-image {
   height: 460px;
   border-radius: var(--store-radius);
-  background: #d9e3dc;
+  background: var(--store-image-background, var(--store-surface));
   display: grid;
   place-items: center;
   position: relative;
@@ -161,7 +161,7 @@ function selectImage(index: number) {
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  background: #e9dfd2;
+  background: var(--store-image-background, var(--store-surface));
 }
 .product-thumbnail--active {
   border-color: var(--store-primary);

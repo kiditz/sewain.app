@@ -73,7 +73,7 @@ const handleAddToCart = async () => {
   height: auto;
   border-radius: var(--store-radius);
   background: var(--store-primary);
-  color: #fff;
+  color: var(--store-on-primary, #fff);
   text-decoration: none;
   font-weight: 600;
 }

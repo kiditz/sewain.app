@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
+import { storefrontPresets, presetColors, setStorefrontThemeMode, applyStorefrontPreset } from "~/features/storefront-builder/utils/storefront-theme";
+import type { StorefrontThemeMode } from "~/types/storefront";
 const storefront = useStorefront();
 await storefront.load();
 const { theme } = storefront;
@@ -9,32 +11,13 @@ definePageMeta({
   middleware: ["merchant"],
 });
 watch(theme, () => storefront.themeStore.scheduleSave(), { deep: true });
-const presets = [
-  {
-    name: "Everyday",
-    primary: "#315c4c",
-    secondary: "#d9e7de",
-    background: "#fbfaf7",
-  },
-  {
-    name: "Studio",
-    primary: "#343c65",
-    secondary: "#e2e4f1",
-    background: "#fafaff",
-  },
-  {
-    name: "Sunrise",
-    primary: "#a44e2c",
-    secondary: "#f2dfd1",
-    background: "#fffaf5",
-  },
-];
-function applyPreset(preset: (typeof presets)[number]) {
-  theme.value.name = preset.name;
-  theme.value.preset = preset.name.toLowerCase();
-  theme.value.colors.primary = preset.primary;
-  theme.value.colors.secondary = preset.secondary;
-  theme.value.colors.background = preset.background;
+const mode = computed<StorefrontThemeMode>(() => theme.value.mode === "dark" ? "dark" : "light");
+const presets = computed(() => storefrontPresets.map(name => ({ name, ...presetColors(name, mode.value) })));
+function changeMode(value: StorefrontThemeMode) {
+  if (value === "light" || value === "dark") setStorefrontThemeMode(theme.value, value);
+}
+function applyPreset(preset: { name: string }) {
+  applyStorefrontPreset(theme.value, preset.name);
 }
 </script>
 <template>
@@ -58,7 +41,14 @@ function applyPreset(preset: (typeof presets)[number]) {
     </v-alert>
     <v-row
       ><v-col cols="12" md="7"
-        ><v-card border flat rounded="lg" class="pa-5 mb-5"
+        ><v-card border flat rounded="lg" class="pa-5 mb-5">
+          <h2 class="text-title-medium mb-3">{{ $t('storefrontTheme.mode') }}</h2>
+          <v-btn-toggle :model-value="mode" mandatory divided color="primary" :aria-label="$t('storefrontTheme.mode')" @update:model-value="changeMode">
+            <v-btn value="light" prepend-icon="mdi-white-balance-sunny">{{ $t('storefrontTheme.light') }}</v-btn>
+            <v-btn value="dark" prepend-icon="mdi-weather-night">{{ $t('storefrontTheme.dark') }}</v-btn>
+          </v-btn-toggle>
+          <p class="text-body-small text-medium-emphasis mt-3">{{ $t('storefrontTheme.modeHint') }}</p>
+        </v-card><v-card border flat rounded="lg" class="pa-5 mb-5"
           ><h2 class="text-title-medium mb-4">{{ $t("ui.theme_presets") }}</h2>
           <v-row
             ><v-col

@@ -10,7 +10,8 @@ const { t } = useI18n();
 const catalog = useStorefrontCatalog();
 const history = useRecentlyViewedProducts();
 const dialogTarget = inject(storefrontDrawerTargetKey, "body");
-const search = ref("");
+const search = ref<string | null>("");
+const searchTerm = computed(() => (search.value || "").trim());
 const results = ref<Product[]>([]);
 const recentProducts = ref<Product[]>([]);
 const loading = ref(false);
@@ -20,12 +21,14 @@ const recentFailed = ref(false);
 const page = ref(0);
 const total = ref(0);
 const input = ref<{ focus: () => void }>();
+const scrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
+const retryPage = ref(0);
 let sequence = 0;
 let recentSequence = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 const groups = computed(() => [
-  ...(search.value.trim()
+  ...(searchTerm.value
     ? [
         {
           id: "results",
@@ -46,9 +49,11 @@ const groups = computed(() => [
 ]);
 
 async function fetchResults(nextPage = 0) {
-  const name = search.value.trim();
+  const name = searchTerm.value;
   if (!open.value || !name) return;
+  if (timer) clearTimeout(timer);
   const request = ++sequence;
+  retryPage.value = nextPage;
   loading.value = true;
   failed.value = false;
   try {
@@ -110,14 +115,14 @@ async function fetchRecent() {
   }
 }
 
-watch(search, () => {
+watch(searchTerm, () => {
   ++sequence;
   if (timer) clearTimeout(timer);
   results.value = [];
   total.value = 0;
   page.value = 0;
   failed.value = false;
-  loading.value = !!search.value.trim() && open.value;
+  loading.value = !!searchTerm.value && open.value;
   if (loading.value)
     timer = setTimeout(() => {
       void fetchResults();
@@ -126,7 +131,7 @@ watch(search, () => {
 watch(open, (visible) => {
   if (visible) {
     void fetchRecent();
-    if (search.value.trim()) void fetchResults();
+    if (searchTerm.value) void fetchResults();
   } else {
     ++sequence;
     ++recentSequence;
@@ -135,6 +140,15 @@ watch(open, (visible) => {
     recentLoading.value = false;
   }
 });
+async function refreshScrollbar() {
+  await nextTick();
+  scrollbar.value?.$refs.el?.update();
+}
+async function focusSearch() {
+  input.value?.focus();
+  await refreshScrollbar();
+}
+watch([results, recentProducts, loading, recentLoading, failed, recentFailed], refreshScrollbar, { flush: "post" });
 onBeforeUnmount(() => {
   ++sequence;
   ++recentSequence;
@@ -161,7 +175,8 @@ function selectProduct(event: MouseEvent) {
     max-width="900"
     :attach="preview ? dialogTarget : undefined"
     :contained="preview"
-    @after-enter="input?.focus()"
+    :aria-label="t('storefrontSearch.title')"
+    @after-enter="focusSearch"
   >
     <v-card class="storefront-search" rounded="lg">
       <div class="storefront-search__heading">
@@ -188,6 +203,7 @@ function selectProduct(event: MouseEvent) {
       </div>
       <v-divider />
       <nuxt-scrollbar
+        ref="scrollbar"
         class="storefront-search__scroll"
         :options="{ suppressScrollX: true, wheelPropagation: false }"
       >
@@ -208,7 +224,7 @@ function selectProduct(event: MouseEvent) {
             <v-btn
               variant="text"
               @click="
-                group.id === 'recent' ? fetchRecent() : fetchResults(page)
+                group.id === 'recent' ? fetchRecent() : fetchResults(retryPage)
               "
               >{{ t("storefrontSearch.retry") }}</v-btn
             >
@@ -235,12 +251,14 @@ function selectProduct(event: MouseEvent) {
               md="3"
             >
               <v-card
-                :to="`/products/${product.slug}`"
+                :to="preview ? undefined : `/products/${product.slug}`"
                 variant="outlined"
 
+                class="storefront-search__product"
                 @click="selectProduct"
               >
                 <v-img
+                  v-if="imageFor(product)"
                   :src="imageFor(product)"
                   :alt="product.name"
                   aspect-ratio="1"
@@ -258,6 +276,7 @@ function selectProduct(event: MouseEvent) {
                     </div>
                   </template>
                 </v-img>
+                <div v-else class="storefront-search__product-image storefront-search__no-image" aria-hidden="true" />
 
                 <div class="pa-2">
                   <div class="text-body-medium storefront-search__product-name">
@@ -287,9 +306,15 @@ function selectProduct(event: MouseEvent) {
 
 <style scoped>
 .storefront-search {
+  display: flex;
+  flex-direction: column;
+  max-height: min(85dvh, 800px);
+  overflow: hidden;
   background: var(--store-surface, rgb(var(--v-theme-surface)));
   color: var(--store-text, rgb(var(--v-theme-on-surface)));
 }
+
+
 .storefront-search__heading {
   display: flex;
   align-items: center;
@@ -299,7 +324,9 @@ function selectProduct(event: MouseEvent) {
 }
 .storefront-search__scroll {
   position: relative;
-  height: min(55dvh, 480px);
+  flex: 0 1 auto;
+  min-height: 0;
+  height: min(60dvh, 560px);
 }
 .storefront-search__group {
   padding-bottom: 12px;
@@ -326,14 +353,16 @@ function selectProduct(event: MouseEvent) {
 .storefront-search__product-image {
   width: 100%;
   border-radius: 8px;
-  background: rgba(var(--v-theme-on-surface), 0.04);
+  background: var(--store-image-background, rgb(var(--v-theme-surface)));
 }
 
 .storefront-search__product-name {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
   line-height: 1.4;
 }
+.storefront-search__no-image { aspect-ratio: 1; }
 </style>

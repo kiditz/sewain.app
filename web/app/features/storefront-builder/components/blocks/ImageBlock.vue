@@ -78,7 +78,7 @@ const paddingStyle = computed(() =>
     v-if="settings.url && !productContext"
     :href="settings.url"
     class="block-image"
-    :class="{ 'block-image--fixed-ratio': fixedAspectRatio }"
+    :class="{ 'block-image--fixed-ratio': fixedAspectRatio, 'block-image--product': !!productContext }"
     :style="{
       ...(fixedAspectRatio ? { aspectRatio } : {}),
       ...borderRadiusStyle,
@@ -96,7 +96,7 @@ const paddingStyle = computed(() =>
   <div
     v-else
     class="block-image"
-    :class="{ 'block-image--fixed-ratio': fixedAspectRatio }"
+    :class="{ 'block-image--fixed-ratio': fixedAspectRatio, 'block-image--product': !!productContext }"
     :style="{
       ...(fixedAspectRatio ? { aspectRatio } : {}),
       ...borderRadiusStyle,
@@ -141,6 +141,9 @@ const paddingStyle = computed(() =>
   width: 100%;
   height: auto;
   object-fit: cover;
+}
+.block-image--product {
+  background: var(--store-image-background, var(--store-surface));
 }
 .block-image--fixed-ratio img {
   height: 100%;

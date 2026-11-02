@@ -877,7 +877,7 @@ provide(builderDndKey, {
   margin-inline: auto;
   background: white;
   box-shadow: 0 4px 22px #17203312;
-  overflow: hidden;
+  overflow: clip;
   transition: max-width 0.2s;
 }
 .preview-canvas.is-mobile-preview :deep(.product-list-grid) {
@@ -891,9 +891,13 @@ provide(builderDndKey, {
   position: relative;
   cursor: pointer;
 }
-
 .preview-canvas :deep(.builder-section.is-selected) {
   z-index: 3;
+}
+.preview-canvas :deep(.builder-section.is-navigation-sticky) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .preview-canvas :deep(.builder-section.is-selected::after) {

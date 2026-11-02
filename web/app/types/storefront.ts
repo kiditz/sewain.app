@@ -125,9 +125,12 @@ export interface StorefrontProductCardStyle {
   color: "store-primary" | "store-secondary" | "none" | "white";
 }
 
+export type StorefrontThemeMode = "light" | "dark";
 export interface StorefrontTheme {
   name: string;
   preset: string;
+  mode?: StorefrontThemeMode;
+  colorSchemes?: Partial<Record<StorefrontThemeMode, StorefrontTheme["colors"]>>;
   colors: {
     primary: string;
     secondary: string;
