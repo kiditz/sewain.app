@@ -3,7 +3,7 @@ import type { StorefrontBlock, SectionLayout } from "~/types/storefront";
 import type { Product } from "~/types/product";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import { useStorefront } from "../../composables/useStorefront";
-import { getLayoutHeight, getPaddingStyle } from "../../utils/block-settings";
+import { getLayoutHeight, getLayoutWidthStyle, getPaddingStyle } from "../../utils/block-settings";
 import {
   slideshowSettings,
   slideContainingBlock,
@@ -36,10 +36,7 @@ const rootLayout: SectionLayout = {
 };
 const sectionStyle = computed(() => ({
   ...getPaddingStyle(settings.value.padding, theme.value),
-  maxWidth:
-    settings.value.layout.width === "page"
-      ? `${theme.value.layout.contentMaxWidth}px`
-      : undefined,
+  ...getLayoutWidthStyle(settings.value.layout, theme.value),
   "--slideshow-slide-height":
     settings.value.layout.height === "auto"
       ? "0px"
@@ -124,6 +121,7 @@ onBeforeUnmount(() => {
   <section
     v-if="slides.length || preview"
     class="slideshow-section"
+    :class="`slideshow-section--${settings.variant || 'full'}`"
     :style="sectionStyle"
     :aria-label="t('storefrontSlideshow.title')"
     aria-roledescription="carousel"
@@ -228,4 +226,10 @@ onBeforeUnmount(() => {
     transition: none !important;
   }
 }
+.slideshow-section--inset .slideshow-section__window {border-radius:var(--store-radius)}
+.slideshow-section--layered {padding-bottom:32px!important;isolation:isolate}
+.slideshow-section--layered .slideshow-section__window {position:relative;overflow:visible;margin:16px}
+.slideshow-section--layered :deep(.v-window__container) {border-radius:var(--store-radius);overflow:hidden}
+.slideshow-section--layered .slideshow-section__window::before,.slideshow-section--layered .slideshow-section__window::after {content:'';position:absolute;inset:0;background:var(--store-secondary);border:1px solid var(--store-primary);border-radius:var(--store-radius);z-index:-1;transform:translateY(10px) rotate(-2deg)}
+.slideshow-section--layered .slideshow-section__window::after {transform:translateY(20px) rotate(2deg);z-index:-2}
 </style>

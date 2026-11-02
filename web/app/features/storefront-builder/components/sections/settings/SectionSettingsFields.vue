@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { contentSectionSettings } from "../../../utils/content-section-layout";
 import { slideshowSettings } from "../../../utils/slideshow";
 import { imageBannerDefaults } from "../../../utils/image-banner";
 import { productInformationSettings } from "../../../utils/product-information-layout";
@@ -18,6 +19,7 @@ const props = defineProps<{
 }>();
 
 const sectionSettings = computed(() => {
+  if (["RICH_TEXT", "COLLECTION_PRODUCTS", "PRODUCT_GRID", "PRODUCT_DESCRIPTION"].includes(props.section.type)) return contentSectionSettings(props.section.settings, props.section.type === "RICH_TEXT" ? "center" : "left", storefront.theme.value.layout.sectionSpacing);
   if (props.section.type === "SLIDESHOW") return slideshowSettings(props.section.settings);
   if (props.section.type === "NAVIGATION") {
     const defaults = navigationDefaults();

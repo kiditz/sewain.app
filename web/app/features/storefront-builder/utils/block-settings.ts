@@ -26,11 +26,23 @@ export function getLayoutHeight(layout: SectionLayout): string {
   }
 }
 
+/** Width always includes padding and stays inside the parent, including preview canvases. */
+export function getLayoutWidthStyle(layout: Pick<SectionLayout, "width"> | undefined, theme: StorefrontTheme): CSSProperties {
+  const page = layout?.width === "page";
+  return {
+    width: "100%",
+    maxWidth: page ? `min(100%, ${theme.layout.contentMaxWidth}px)` : "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    marginInline: page ? "auto" : 0,
+  };
+}
+
 export function getLayoutStyle(
-  value: SectionLayout | undefined,
+  value: Partial<SectionLayout> | undefined,
   theme: StorefrontTheme,
 ): CSSProperties {
-  const layout: SectionLayout = value ?? {
+  const layout: SectionLayout = {
     direction: "vertical",
     alignment: "left",
     position: "center",
@@ -39,6 +51,7 @@ export function getLayoutStyle(
     height: "auto",
     customHeight: 0,
     alignTextBaseline: false,
+    ...value,
   };
 
   const horizontal = layout.direction === "horizontal";
@@ -85,13 +98,8 @@ export function getLayoutStyle(
         : "center",
 
     gap: `${layout.gap}px`,
-    width: layout.width === "full" ? "100%" : undefined,
-    maxWidth:
-      layout.width === "page"
-        ? `${theme.layout.contentMaxWidth}px`
-        : undefined,
+    ...getLayoutWidthStyle(layout, theme),
     height: getLayoutHeight(layout),
-    margin: layout.width === "page" ? "0 auto" : undefined,
   };
 }
 

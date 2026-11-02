@@ -3,7 +3,7 @@ import type { SectionLayout, StorefrontPadding, StorefrontBlock, StorefrontProdu
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import { useStorefront } from "../../composables/useStorefront";
 import { imageBannerDefaults } from "../../utils/image-banner";
-import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
+import { getLayoutStyle, getLayoutWidthStyle, getPaddingStyle } from "../../utils/block-settings";
 const props = defineProps<{
   settings: Record<string, unknown>;
   blocks: StorefrontBlock[];
@@ -14,15 +14,14 @@ const props = defineProps<{
 const { theme } = useStorefront();
 const defaults = imageBannerDefaults();
 const layout = computed(() => ({ ...defaults.layout, ...props.settings.layout as Partial<SectionLayout> }));
-const blockLayout = computed<SectionLayout>(() => ({ ...layout.value, height: "auto" }));
+const blockLayout = computed<SectionLayout>(() => ({ ...layout.value, width: "full", height: "auto" }));
 const sectionStyle = computed(() => ({
   background: String(props.settings.background || defaults.background),
-  maxWidth: layout.value.width === "page" ? `${theme.value.layout.contentMaxWidth}px` : undefined,
+  ...getLayoutWidthStyle(layout.value, theme.value),
 }));
 const contentStyle = computed(() => ({
-  ...getLayoutStyle(layout.value, theme.value),
+  ...getLayoutStyle({ ...layout.value, width: "full" }, theme.value),
   ...getPaddingStyle({ ...defaults.padding, ...props.settings.padding as StorefrontPadding }, theme.value),
-  maxWidth: undefined, margin: 0, width: "100%",
 }));
 const image = computed(() => {
   const value = props.settings.image;

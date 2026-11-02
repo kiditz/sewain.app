@@ -3,7 +3,7 @@ import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import type { SectionLayout, StorefrontBlock, StorefrontPadding } from "~/types/storefront";
 import type { Product } from "~/types/product";
 import { useStorefront } from "../../composables/useStorefront";
-import { getPaddingStyle } from "../../utils/block-settings";
+import { getPaddingStyle, getLayoutWidthStyle } from "../../utils/block-settings";
 import { footerDefaults } from "../../utils/footer-section";
 import { storefrontBrandingKey } from "../../utils/storefront-branding";
 const props = defineProps<{ settings: Record<string, unknown>; blocks: StorefrontBlock[]; preview?: boolean; selectedBlockId?: string | null; product?: Product }>();
@@ -15,8 +15,9 @@ const defaults = footerDefaults();
 const layout = computed(() => ({ ...defaults.layout, ...props.settings.layout as Partial<SectionLayout> }));
 const contentStyle = computed(() => ({
   ...getPaddingStyle({ ...defaults.padding, ...props.settings.padding as StorefrontPadding }, theme.value),
-  maxWidth: layout.value.width === "page" ? `${theme.value.layout.contentMaxWidth}px` : undefined,
 }));
+const sectionStyle = computed(() => getLayoutWidthStyle(layout.value, theme.value));
+const blockLayout = computed(() => ({ ...layout.value, width: "full" as const }));
 function escapeText(value: string) { return value.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!); }
 function prepare(blocks: StorefrontBlock[]): StorefrontBlock[] {
   return blocks.map(block => {
@@ -30,11 +31,11 @@ function prepare(blocks: StorefrontBlock[]): StorefrontBlock[] {
 const blocks = computed(() => prepare(props.blocks));
 </script>
 <template>
-  <footer class="footer-section">
+  <footer class="footer-section" :style="sectionStyle">
     <div class="footer-section__inner" :style="contentStyle">
       <BlockRenderer
         :blocks="blocks"
-        :layout="layout"
+        :layout="blockLayout"
         :preview="preview"
         :selected-block-id="selectedBlockId"
         :product-context="product"

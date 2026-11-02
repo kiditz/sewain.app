@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { contentSectionSettings } from "../../utils/content-section-layout";
+import { getLayoutWidthStyle, getPaddingStyle } from "../../utils/block-settings";
 import type { Product } from "~/types/product";
 import type { StorefrontBlock, StorefrontProduct } from "~/types/storefront";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
@@ -14,6 +16,9 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const catalog = useStorefront();
+const normalized = computed(() => contentSectionSettings(props.settings));
+const sectionStyle = computed(() => ({ ...getLayoutWidthStyle(normalized.value.layout, catalog.theme.value), ...getPaddingStyle(normalized.value.padding, catalog.theme.value, true) }));
+const blockLayout = computed(() => ({ ...normalized.value.layout, width: "full" as const }));
 const { regional, loadRegionalSettings } = useSettings();
 await loadRegionalSettings().catch(() => undefined);
 
@@ -108,10 +113,11 @@ const loading = computed(() => requestStatus.value === "pending");
 </script>
 
 <template>
-  <section class="product-grid-section">
+  <section class="product-grid-section" :style="sectionStyle">
     <div class="product-grid-section__inner">
       <BlockRenderer
         :blocks="blocks"
+        :layout="blockLayout"
         :preview="preview"
         :selected-block-id="selectedBlockId"
         :product="product"
@@ -228,8 +234,6 @@ const loading = computed(() => requestStatus.value === "pending");
 
 <style scoped>
 .product-grid-section {
-  max-width: var(--store-width);
-  padding: var(--store-spacing) 24px;
   margin: auto;
 }
 .product-grid-section__inner :deep(.block-heading) {

@@ -1,22 +1,30 @@
 <script setup lang="ts">
+import { useStorefront } from "../../composables/useStorefront";
+import { contentSectionSettings } from "../../utils/content-section-layout";
+import { getLayoutWidthStyle, getPaddingStyle } from "../../utils/block-settings";
 import type { StorefrontBlock, StorefrontProduct } from "~/types/storefront";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
-defineProps<{
-  settings: Record<string, string | number | boolean>;
+const props = defineProps<{
+  settings: Record<string, unknown>;
   blocks: StorefrontBlock[];
   preview?: boolean;
   selectedBlockId?: string | null;
   product?: StorefrontProduct;
 }>();
+const { theme } = useStorefront();
+const normalized = computed(() => contentSectionSettings(props.settings, "center"));
+const sectionStyle = computed(() => ({ ...getLayoutWidthStyle(normalized.value.layout, theme.value), ...getPaddingStyle(normalized.value.padding, theme.value, true) }));
+const blockLayout = computed(() => ({ ...normalized.value.layout, width: "full" as const }));
 </script>
 <template>
-  <section class="rich-text">
+  <section class="rich-text" :style="sectionStyle">
     <div
       class="rich-text__inner"
-      :class="`align-${settings.alignment || 'center'}`"
+      :class="`align-${normalized.layout.alignment}`"
     >
       <BlockRenderer
         :blocks="blocks"
+        :layout="blockLayout"
         :preview="preview"
         :selected-block-id="selectedBlockId"
         :product="product"
@@ -25,11 +33,7 @@ defineProps<{
   </section>
 </template>
 <style scoped>
-.rich-text {
-  padding: var(--store-spacing) 24px;
-}
 .rich-text__inner {
-  max-width: 760px;
   margin: auto;
 }
 .align-center {

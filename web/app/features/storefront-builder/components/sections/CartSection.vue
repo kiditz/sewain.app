@@ -31,8 +31,7 @@ const sectionStyle = computed(() => ({
   ...getPaddingStyle({ ...defaults.padding, ...props.settings.padding as StorefrontPadding }, theme.value),
 }));
 const contentStyle = computed(() => ({
-  ...getLayoutStyle(layout.value, theme.value),
-  width: "100%", maxWidth: undefined, margin: 0, height: "auto",
+  ...getLayoutStyle({ ...layout.value, width: "full", height: "auto" }, theme.value),
 }));
 const blockLayout = computed<SectionLayout>(() => ({
   ...layout.value, direction: "vertical", width: "full", height: "auto",

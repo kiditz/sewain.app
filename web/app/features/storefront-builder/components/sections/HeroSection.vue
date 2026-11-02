@@ -9,7 +9,7 @@ import type {
 import type { Media } from "~/types/theme";
 import BlockRenderer from "~/components/storefront/BlockRenderer.vue";
 import { useStorefront } from "../../composables/useStorefront";
-import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
+import { getLayoutStyle, getLayoutWidthStyle, getPaddingStyle } from "../../utils/block-settings";
 
 const props = defineProps<{
   settings: Record<string, unknown>;
@@ -23,9 +23,12 @@ const storefront = useStorefront();
 
 const layout = computed(() => props.settings.layout as SectionLayout);
 
+const sectionStyle = computed(() => getLayoutWidthStyle(layout.value ?? { width: "page" }, storefront.theme.value));
+const blockLayout = computed(() => ({ ...layout.value, width: "full" as const, height: "auto" as const }));
+
 const padding = computed(() => props.settings.padding as StorefrontPadding);
 const layoutStyle = computed(() =>
-  getLayoutStyle(layout.value, storefront.theme.value),
+  getLayoutStyle({ ...layout.value, width: "full", height: layout.value?.height ?? "auto" }, storefront.theme.value),
 );
 
 const appearance = computed(() => {
@@ -63,7 +66,7 @@ const paddingStyle = computed(() =>
 </script>
 
 <template>
-  <section class="hero-section" :style="backgroundStyle">
+  <section class="hero-section" :style="{ ...backgroundStyle, ...sectionStyle }">
     <div v-if="medias.length" class="hero-section__background">
       <v-img
         v-for="(media, index) in medias"
@@ -84,7 +87,7 @@ const paddingStyle = computed(() =>
 
     <div class="hero-section__inner" :style="{...layoutStyle, ...paddingStyle}">
       <BlockRenderer
-        :layout="layout"
+        :layout="blockLayout"
         :blocks="blocks"
         :preview="preview"
         :selected-block-id="selectedBlockId"
@@ -128,7 +131,6 @@ const paddingStyle = computed(() =>
 
 .hero-section__inner {
   position: relative;
-  max-width: var(--store-width);
   margin: auto;
 }
 </style>

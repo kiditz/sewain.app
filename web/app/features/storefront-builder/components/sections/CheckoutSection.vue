@@ -10,7 +10,7 @@ const { theme } = useStorefront();
 const defaults = checkoutSectionDefaults();
 const layout = computed(() => ({ ...defaults.layout, ...props.settings.layout as Partial<SectionLayout> }));
 const sectionStyle = computed(() => ({ ...getLayoutStyle(layout.value, theme.value), flexDirection: "column" as const, alignItems: "stretch", ...getPaddingStyle({ ...defaults.padding, ...props.settings.padding as StorefrontPadding }, theme.value) }));
-const contentStyle = computed(() => ({ ...getLayoutStyle(layout.value, theme.value), width: "100%", maxWidth: undefined, height: "auto", margin: 0 }));
+const contentStyle = computed(() => ({ ...getLayoutStyle({ ...layout.value, width: "full", height: "auto" }, theme.value) }));
 const blockLayout = computed<SectionLayout>(() => ({ ...layout.value, direction: "vertical", alignment: "left", position: "top", width: "full", height: "auto" }));
 const headers = computed(() => props.blocks.filter(block => block.type === "HEADER"));
 const main = computed(() => props.blocks.filter(block => !["HEADER", "CHECKOUT_SUMMARY", "CHECKOUT_SUBMIT"].includes(block.type)));

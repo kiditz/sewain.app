@@ -24,6 +24,12 @@ export interface BlockDefinition {
 }
 
 export const blockRegistry: Record<BlockType, BlockDefinition> = {
+  FAQ_ITEM: { type: "FAQ_ITEM", label: "Question", description: "An expandable question and answer.", defaults: { question: "How does renting work?", answer: "Choose a product and rental period, then complete checkout.", padding: allPaddingZero } },
+  ICON_TEXT: { type: "ICON_TEXT", label: "Icon with text", description: "A benefit with an icon and description.", defaults: { icon: "SafetyCertificateOutlined", title: "Made for your plans", text: "Reliable products and friendly support.", padding: { top: 16, right: 16, bottom: 16, left: 16 } } },
+  COLUMN: { type: "COLUMN", label: "Column", description: "A column with images, text and links.", defaults: { layout: { direction: "vertical", alignment: "left", position: "top", gap: 16, width: "full", height: "auto", customHeight: 0, alignTextBaseline: false }, padding: allPaddingZero }, allowedChildren: ["IMAGE", "HEADER", "TEXT", "BUTTON", "ICON_TEXT"], defaultChildren: ["IMAGE", "HEADER", "BUTTON"] },
+  DIVIDER: { type: "DIVIDER", label: "Divider", description: "A separator with adjustable thickness and color.", defaults: { color: "", thickness: 1, padding: { top: 16, right: 0, bottom: 16, left: 0 } } },
+  MARQUEE_TEXT: { type: "MARQUEE_TEXT", label: "Marquee text", description: "Scrolling text with reduced-motion support.", defaults: { text: "RENT MORE · OWN LESS · ", speed: 25, reverse: false, padding: { top: 12, right: 0, bottom: 12, left: 0 } } },
+  HOTSPOT: { type: "HOTSPOT", label: "Product hotspot", description: "A product marker on an image.", defaults: { productId: "", x: 50, y: 50 } },
   SLIDE: {
     type: "SLIDE", label: "Slide", description: "Background image, content and call to action.",
     defaults: slideDefaults(), allowedChildren: ["HEADER", "BUTTON"], defaultChildren: ["HEADER", "BUTTON"],
@@ -269,7 +275,7 @@ export function createDefaultBlock(type: BlockType): StorefrontBlock {
       child.settings.label = "View all";
       child.settings.url = "/collections/all";
     }
-    if (type === "SLIDE" && childType === "HEADER") {
+    if (["SLIDE", "COLUMN"].includes(type) && childType === "HEADER") {
       child.settings.layout = { direction: "vertical", alignment: "left", position: "center", gap: 12, width: "full", height: "auto", customHeight: 0, alignTextBaseline: false };
       child.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
       const copy = ["NEW COLLECTION", "Make room for more", "Discover products for your next adventure."];

@@ -42,7 +42,7 @@ const selectedCollections = computed<CollectionSummary[]>(() => {
 });
 const displayType = computed(() => {
   const value = String(props.settings.displayType ?? "grid");
-  return ["carousel", "grid", "editorial"].includes(value) ? value : "grid";
+  return ["carousel", "grid", "editorial", "bento", "spotlight", "text"].includes(value) ? value : "grid";
 });
 const gridStyle = computed(() => ({
   "--collection-list-columns": String(
@@ -72,10 +72,10 @@ const gridStyle = computed(() => ({
         <NuxtLink
           v-for="(collection, index) in selectedCollections"
           :key="collection.id"
-          :to="`/collections/${collection.slug}`"
+          :to="preview ? undefined : `/collections/${collection.slug}`"
           class="collection-list-card"
-          :class="{ 'has-image': collection.imageUrl }"
-          :style="collection.imageUrl ? { backgroundImage: `linear-gradient(0deg, #101816b8, #10181605 75%), url('${collection.imageUrl}')` } : undefined"
+          :class="{ 'has-image': collection.imageUrl && displayType !== 'text' }"
+          :style="collection.imageUrl && displayType !== 'text' ? { backgroundImage: `linear-gradient(0deg, #101816b8, #10181605 75%), url('${collection.imageUrl}')` } : undefined"
         >
           <span class="collection-number">{{ String(index + 1).padStart(2, "0") }}</span>
           <strong>{{ collection.name }}</strong>
@@ -174,4 +174,13 @@ const gridStyle = computed(() => ({
     );
   }
 }
+.collection-list-grid--bento {grid-auto-rows:180px}
+.collection-list-grid--bento .collection-list-card:first-child {grid-column:span 2;grid-row:span 2}
+.collection-list-grid--spotlight {grid-template-columns:repeat(2,minmax(0,1fr))}
+.collection-list-grid--spotlight .collection-list-card {min-height:340px;justify-content:flex-end;gap:12px}
+.collection-list-grid--spotlight strong {font-size:clamp(28px,4vw,54px)}
+.collection-list-grid--text {display:flex;flex-direction:column;gap:0}
+.collection-list-grid--text .collection-list-card {min-height:0;flex-direction:row;align-items:center;padding:24px 0;background:none;border-radius:0;border-bottom:1px solid var(--store-secondary)}
+.collection-list-grid--text strong {font-size:clamp(24px,4vw,48px);flex:1;padding-inline:20px}
+@media(max-width:600px){.collection-list-grid--bento .collection-list-card:first-child{grid-column:auto;grid-row:span 2}.collection-list-grid--spotlight{grid-template-columns:1fr}}
 </style>

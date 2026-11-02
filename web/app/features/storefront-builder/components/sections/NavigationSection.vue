@@ -13,7 +13,7 @@ import type {
   StorefrontPadding,
 } from "~/types/storefront";
 import { useStorefront } from "../../composables/useStorefront";
-import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
+import { getLayoutStyle, getLayoutWidthStyle, getPaddingStyle } from "../../utils/block-settings";
 import {
   navigationDefaults,
   resolveNavigationMenu,
@@ -87,8 +87,10 @@ const navigationLayout = computed(() => ({
   ...defaults.layout,
   ...(props.settings.layout as Partial<SectionLayout>),
 }));
+const sectionWidthStyle = computed(() => getLayoutWidthStyle(navigationLayout.value, storefront.theme.value));
+const blockLayout = computed(() => ({ ...navigationLayout.value, width: "full" as const }));
 const layoutStyle = computed(() => ({
-  ...getLayoutStyle(navigationLayout.value, storefront.theme.value),
+  ...getLayoutStyle({ ...navigationLayout.value, width: "full" }, storefront.theme.value),
   ...getPaddingStyle(
     { ...defaults.padding, ...(props.settings.padding as StorefrontPadding) },
     storefront.theme.value,
@@ -155,7 +157,7 @@ const openSearchDialog = () => {
 
 <template>
   <StorefrontSearchDialog :preview="preview" v-model="searchDialog"/>
-  <component :is="preview ? VSheet : VAppBar" v-bind="appBarProps" tag="header" class="store-header">
+  <component :is="preview ? VSheet : VAppBar" v-bind="appBarProps" tag="header" class="store-header" :style="sectionWidthStyle">
     <div ref="header" class="store-header__inner" :style="layoutStyle">
       <v-btn
         v-if="hasMenu"
@@ -171,7 +173,7 @@ const openSearchDialog = () => {
       <BlockRenderer
         class="store-header__blocks"
         :blocks="navigationBlocks"
-        :layout="navigationLayout"
+        :layout="blockLayout"
         :preview="preview"
         :selected-block-id="selectedBlockId"
       />

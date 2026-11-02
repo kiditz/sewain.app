@@ -12,6 +12,7 @@ import { blockComponentRegistry } from "~/features/storefront-builder/utils/bloc
 import {
   getBorderRadiusStyle,
   getLayoutStyle,
+  getLayoutWidthStyle,
   getPaddingStyle,
 } from "~/features/storefront-builder/utils/block-settings";
 import { productControlTypes, productControlDefaults, objectSettings } from "~/features/storefront-builder/utils/product-information-layout";
@@ -33,29 +34,20 @@ const visibleBlocks = computed(() =>
   props.blocks.filter((block) => block.enabled),
 );
 
-const layout = computed(() => props.layout as SectionLayout);
+const layout = computed(() => props.layout ?? { width: "full" } as SectionLayout);
 
 const layoutStyle = computed(() => ({
   ...getLayoutStyle(layout.value, storefront.theme.value),
-  maxWidth: undefined,
 }));
 
 function blockStyle(block: StorefrontBlock) {
-  if (productControlTypes.includes(block.type)) {
-    const layout = { ...productControlDefaults(block.type).layout, ...objectSettings(block.settings.layout) } as Partial<SectionLayout>;
-    return {
-      width: "100%",
-      maxWidth: layout.width === "page" ? `${storefront.theme.value.layout.contentMaxWidth}px` : undefined,
-      marginInline: layout.width === "page" ? "auto" : undefined,
-      minWidth: 0,
-      boxSizing: "border-box" as const,
-    };
+  const settingsLayout = objectSettings(block.settings.layout);
+  if (block.type !== "SLIDE" && (productControlTypes.includes(block.type) || settingsLayout.width === "page" || settingsLayout.width === "full")) {
+    const defaults = productControlTypes.includes(block.type) ? productControlDefaults(block.type).layout : {};
+    return getLayoutWidthStyle({ ...defaults, ...settingsLayout } as SectionLayout, storefront.theme.value);
   }
   if (["HEADER", "MENU", "SLIDE"].includes(block.type)) {
-    return {
-      width: "100%",
-      flex: "0 1 100%",
-    };
+    return getLayoutWidthStyle({ width: "full" }, storefront.theme.value);
   }
 
   if (block.type !== "PRODUCT_CARD" && block.type !== "IMAGE") return undefined;
@@ -81,8 +73,8 @@ function productControlStyle(block: StorefrontBlock) {
 
 function childLayout(block: StorefrontBlock) {
   if (block.type === "SLIDE") return slideContentLayout(block.settings);
-  return block.type === "HEADER"
-    ? (block.settings.layout as SectionLayout | undefined)
+  return ["HEADER", "COLUMN"].includes(block.type)
+    ? { ...block.settings.layout as SectionLayout, width: "full" as const }
     : layout.value;
 }
 

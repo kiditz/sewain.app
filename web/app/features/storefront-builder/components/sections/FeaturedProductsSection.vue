@@ -11,6 +11,7 @@ import { getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
 
 const props = defineProps<{
   settings: Record<string, unknown>;
+  product?: Product;
   blocks: StorefrontBlock[];
   preview?: boolean;
   selectedBlockId?: string | null;
@@ -30,12 +31,18 @@ const selectedIds = computed(() => [...new Set(String(props.settings.productIds 
 const productCardTemplate = computed(() => props.blocks.find(block => block.type === "PRODUCT_CARD"));
 const contentBlocks = computed(() => props.blocks.filter(block => block.type !== "PRODUCT_CARD"));
 const requestKey = computed(() => storefront.queryKey("featured", {
-  collection: collectionId.value, ids: selectedIds.value, count: count.value, enabled: productCardTemplate.value?.enabled ?? false,
+  recommendation: props.settings.recommendation, currentProduct: props.product?.id, productType: props.product?.type?.id, collection: collectionId.value, ids: selectedIds.value, count: count.value, enabled: productCardTemplate.value?.enabled ?? false,
 }));
 const { data: featuredProducts } = await useAsyncData<Product[]>(requestKey, async () => {
   if (!productCardTemplate.value?.enabled) return [];
   const fetchPage = (query: { page: number; size: number; id?: string }) => collectionId.value
     ? storefront.fetchCollectionProducts(collectionId.value, query) : storefront.fetchProducts(query);
+  if (props.settings.recommendation && !selectedIds.value.length) {
+    const query = { page: 0, size: Math.min(100, count.value + 1), available: true, ...(props.product?.type?.id ? { "type.id": props.product.type.id } : {}) };
+    let items = (await storefront.fetchProducts(query)).items.filter(item => item.id !== props.product?.id);
+    if (!items.length && props.product?.type?.id) items = (await storefront.fetchProducts({ page: 0, size: Math.min(100, count.value + 1), available: true })).items.filter(item => item.id !== props.product?.id);
+    return items.slice(0, count.value);
+  }
   if (!selectedIds.value.length) return (await fetchPage({ page: 0, size: count.value })).items;
   const ordered: Product[] = [];
   // Fetch configured IDs in bounded batches, preserving the merchant's order.

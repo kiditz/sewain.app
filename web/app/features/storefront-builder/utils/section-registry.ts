@@ -1,5 +1,6 @@
 import SlideshowSection from "../components/sections/SlideshowSection.vue";
 import { slideshowDefaults } from "./slideshow";
+import { contentSectionDefaults } from "./content-section-layout";
 import FooterSection from "../components/sections/FooterSection.vue";
 import { footerDefaults } from "./footer-section";
 import { productInformationDefaults } from "./product-information-layout";
@@ -79,7 +80,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     label: "Rich text",
     description: "Editorial content with text and images.",
     component: RichTextSection,
-    defaults: { alignment: "center" },
+    defaults: contentSectionDefaults("center"),
     allowedBlocks: ["HEADING", "TEXT", "IMAGE", "BUTTON"],
     defaultBlocks: ["HEADING", "TEXT"],
   },
@@ -149,7 +150,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     label: "Collections with products",
     description: "Every collection with its available products.",
     component: CollectionProductsSection,
-    defaults: {},
+    defaults: contentSectionDefaults(),
     allowedBlocks: [
       "HEADER",
       "EYEBROW",
@@ -165,6 +166,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     description: "A catalogue-style product listing.",
     component: ProductGridSection,
     defaults: {
+      ...contentSectionDefaults(),
       columns: 3,
       productsPerPage: 12,
       showFilters: true,
@@ -206,7 +208,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     label: "Product description",
     description: "Detailed product description and supporting media.",
     component: ProductDescriptionSection,
-    defaults: { alignment: "left" },
+    defaults: contentSectionDefaults(),
     allowedBlocks: ["HEADING", "TEXT", "IMAGE"],
     defaultBlocks: ["HEADING", "TEXT"],
   },

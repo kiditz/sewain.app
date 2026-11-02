@@ -181,9 +181,9 @@ function addSection() {
 }
 function selectSection(id: string) {
   selectedId.value = id;
-  selectedBlockId.value =
-    props.page.sections.find((section) => section.id === id)?.blocks[0]?.id ??
-    null;
+  // selectedBlockId.value =
+  //   props.page.sections.find((section) => section.id === id)?.blocks[0]?.id ??
+  //   null;
 }
 function openAddBlock(section: StorefrontSection, parent?: StorefrontBlock) {
   selectSection(section.id);
@@ -374,7 +374,7 @@ provide(builderDndKey, {
               :class="{ active: selectedId === section.id }"
               @click="selectSection(section.id)"
             >
-              <v-icon class="drag-handle" size="18">mdi-drag</v-icon>
+              
               <v-btn
                 :icon="collapsedSections[section.id] ? 'mdi-chevron-right' : 'mdi-chevron-down'"
                 size="x-small"
@@ -402,6 +402,7 @@ provide(builderDndKey, {
                   store.touch(page);
                 "
               />
+              <v-icon class="drag-handle" size="18">mdi-drag</v-icon>
             </div>
             <div v-show="!collapsedSections[section.id]" class="section-tree-children">
               <BlockTreeList
@@ -807,7 +808,7 @@ provide(builderDndKey, {
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .section-row__text strong {

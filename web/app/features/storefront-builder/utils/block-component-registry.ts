@@ -1,3 +1,8 @@
+import FaqItemBlock from "../components/blocks/FaqItemBlock.vue";
+import IconTextBlock from "../components/blocks/IconTextBlock.vue";
+import DividerBlock from "../components/blocks/DividerBlock.vue";
+import MarqueeBlock from "../components/blocks/MarqueeBlock.vue";
+import HotspotBlock from "../components/blocks/HotspotBlock.vue";
 import SlideBlock from "../components/blocks/SlideBlock.vue";
 import SocialLinkBlock from "../components/blocks/SocialLinkBlock.vue";
 import CheckoutSubmitBlock from "../components/blocks/CheckoutSubmitBlock.vue";
@@ -30,6 +35,8 @@ import RentalDateRangeBlock from "../components/blocks/RentalDateRangeBlock.vue"
 import PriceSummaryBlock from "../components/blocks/PriceSummaryBlock.vue";
 
 export const blockComponentRegistry = {
+  FAQ_ITEM: FaqItemBlock, ICON_TEXT: IconTextBlock, DIVIDER: DividerBlock,
+  MARQUEE_TEXT: MarqueeBlock, HOTSPOT: HotspotBlock, COLUMN: HeaderBlock,
   SLIDE: SlideBlock,
   SOCIAL_LINK: SocialLinkBlock,
   CHECKOUT_SUBMIT: CheckoutSubmitBlock,

@@ -24,8 +24,7 @@ const blockStyle = computed(() => {
 });
 
 const itemsLayoutStyle = computed(() => ({
-  ...getLayoutStyle({ ...cartBlockDefaults(props.block.type).layout, ...props.block.settings.layout as Partial<SectionLayout> }, theme.value),
-  width: "100%", maxWidth: undefined, margin: 0, height: "auto",
+  ...getLayoutStyle({ ...cartBlockDefaults(props.block.type).layout, ...props.block.settings.layout as Partial<SectionLayout>, width: "full", height: "auto" }, theme.value),
 }));
 
 const settings = computed(() =>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { StorefrontBlock } from "~/types/storefront";
 import { useStorefront } from "../../composables/useStorefront";
-import { getPaddingStyle } from "../../utils/block-settings";
+import { getPaddingStyle, getLayoutWidthStyle } from "../../utils/block-settings";
 import { slideSettings } from "../../utils/slideshow";
 
 const props = defineProps<{ block: StorefrontBlock }>();
@@ -9,7 +9,7 @@ const { theme } = useStorefront();
 const settings = computed(() => slideSettings(props.block.settings));
 const contentStyle = computed(() => ({
   ...getPaddingStyle(settings.value.padding, theme.value),
-  maxWidth: settings.value.layout.width === "page" ? `${theme.value.layout.contentMaxWidth}px` : undefined,
+  ...getLayoutWidthStyle(settings.value.layout, theme.value),
   "--slideshow-content-height": `max(0px, calc(var(--slideshow-slide-height) - ${Number(settings.value.padding.top ?? 0) + Number(settings.value.padding.bottom ?? 0)}px))`,
 }));
 const overlayStyle = computed(() => ({
