@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sectionCategories } from "../utils/section-catalog";
 import { VueDraggable } from "vue-draggable-plus";
 import { watch } from "vue";
 import BlockSettingsPanel from "~/features/storefront-builder/components/blocks/settings/BlockSettingsPanel.vue";
@@ -10,7 +11,6 @@ import BlockTreeList from "./BlockTreeList.vue";
 import { blockRegistry } from "~/features/storefront-builder/utils/block-registry";
 import {
   sectionRegistry,
-  sectionTypes,
 } from "~/features/storefront-builder/utils/section-registry";
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 import {
@@ -129,10 +129,21 @@ const addingBlockType = ref<BlockType | null>(null);
 const showAddBlock = ref(false);
 const addingType = ref<SectionType | null>(null);
 const showAddSection = ref(false);
+const sectionSearch = ref("");
+const { t: translateSection } = useI18n();
+const categorizedSections = computed(() => sectionCategories.map(category => ({
+  ...category,
+  title: translateSection(`sectionCatalog.categories.${category.id}`),
+  entries: category.types.map(type => ({...sectionRegistry[type], title:translateSection(`sectionCatalog.sections.${type}`)})).filter(definition =>
+    (!['NAVIGATION','FOOTER'].includes(definition.type) || !props.page.sections.some(section => section.type === definition.type)) &&
+    `${translateSection(`sectionCatalog.categories.${category.id}`)} ${definition.label} ${definition.title}`.toLowerCase().includes((sectionSearch.value || '').trim().toLowerCase())),
+})).filter(category => category.entries.length));
+watch(sectionSearch, () => { void refreshSectionScrollbar(); });
 const addSectionAfterId = ref<string | null>(null);
 function openAddSection(afterId: string | null = null) {
   addSectionAfterId.value = afterId;
   addingType.value = null;
+  sectionSearch.value = "";
   showAddSection.value = true;
 }
 const sectionScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
@@ -586,34 +597,24 @@ provide(builderDndKey, {
     >
       <v-card rounded="xl" class="add-section-dialog">
         <v-card-title class="pa-5">{{ $t("ui.add_a_section") }}</v-card-title>
+        <v-text-field v-model="sectionSearch" :label="$t('sectionCatalog.search')" prepend-inner-icon="mdi-magnify" clearable hide-details variant="outlined" density="compact" class="mx-5 mb-4" />
         <v-divider />
         <v-card-text class="add-section-dialog__body pa-0">
           <nuxt-scrollbar
             ref="sectionScrollbar"
-            style="position: relative; height: min(60dvh, calc(100dvh - 220px))"
+            style="position: relative; height: min(55dvh, calc(100dvh - 300px))"
             :options="{ suppressScrollX: true, wheelPropagation: false }"
           >
             <div class="pa-5">
               <v-radio-group v-model="addingType" hide-details>
                 <v-list lines="two" select-strategy="single-independent">
-                  <v-list-item
-                    v-for="definition in sectionTypes.filter(
-                      (item) =>
-                        !['NAVIGATION', 'FOOTER'].includes(item.type) ||
-                        !page.sections.some(
-                          (section) => section.type === item.type,
-                        ),
-                    )"
-                    :key="definition.type"
-                    :title="definition.label"
-                    :subtitle="definition.description"
-                    @click="addingType = definition.type"
-                  >
-                    <template #prepend
-                      ><v-radio :value="definition.type"
-                    /></template>
-
-                  </v-list-item>
+                  <template v-for="category in categorizedSections" :key="category.id">
+                    <v-list-subheader class="section-category-title">{{ category.title }}</v-list-subheader>
+                    <v-list-item v-for="definition in category.entries" :key="definition.type" :title="definition.title" @click="addingType = definition.type">
+                      <template #prepend><v-radio :value="definition.type" /></template>
+                    </v-list-item>
+                  </template>
+                  <v-list-item v-if="!categorizedSections.length" :title="$t('sectionCatalog.noResults')" />
                 </v-list>
               </v-radio-group>
             </div>
@@ -1002,4 +1003,8 @@ provide(builderDndKey, {
     display: none;
   }
 }
+</style>
+
+<style scoped>
+.section-category-title { position: sticky; top: 0; z-index: 1; background: rgb(var(--v-theme-surface)); font-weight: 700; }
 </style>

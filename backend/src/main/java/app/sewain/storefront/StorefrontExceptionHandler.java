@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = {ThemeLibraryController.class, StorefrontController.class})
+@RestControllerAdvice(assignableTypes = {ThemeLibraryController.class, StorefrontController.class, StorefrontSubmissionController.class})
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class StorefrontExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)

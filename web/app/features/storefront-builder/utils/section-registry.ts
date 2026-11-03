@@ -1,3 +1,4 @@
+import { createAdditionalSections } from "./additional-sections";
 import SlideshowSection from "../components/sections/SlideshowSection.vue";
 import { slideshowDefaults } from "./slideshow";
 import { contentSectionDefaults } from "./content-section-layout";
@@ -39,9 +40,11 @@ export interface SectionDefinition {
   defaults: StorefrontSection["settings"];
   allowedBlocks: BlockType[];
   defaultBlocks: BlockType[];
+  maxBlocks?: number;
+  content?: { heading?: string; text?: string; eyebrow?: string };
 }
 
-export const sectionRegistry: Record<SectionType, SectionDefinition> = {
+const baseSectionRegistry = {
   FOOTER: {
     type: "FOOTER", label: "Footer", description: "Store branding, links and social accounts.",
     component: FooterSection, defaults: footerDefaults(),
@@ -59,7 +62,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
   },
   HERO: {
     type: "HERO",
-    label: "Hero banner",
+    label: "Hero",
     description: "A prominent introduction with a call to action.",
     component: HeroSection,
     defaults: {
@@ -85,7 +88,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     defaultBlocks: ["HEADING", "TEXT"],
   },
   SLIDESHOW: {
-    type: "SLIDESHOW", label: "Slideshow", description: "Image slides with editable content and navigation.",
+    type: "SLIDESHOW", label: "Slideshow: Full frame", description: "Image slides with editable content and navigation.",
     component: SlideshowSection, defaults: slideshowDefaults(),
     allowedBlocks: ["SLIDE"], defaultBlocks: ["SLIDE", "SLIDE"],
   },
@@ -100,7 +103,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
   },
   FEATURED_PRODUCTS: {
     type: "FEATURED_PRODUCTS",
-    label: "Featured products",
+    label: "Featured Collections: Grid",
     description: "Highlight products from your catalogue.",
     component: FeaturedProductsSection,
     defaults: {
@@ -124,7 +127,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
   },
   COLLECTION_LIST: {
     type: "COLLECTION_LIST",
-    label: "Collection list",
+    label: "Collection List: Grid",
     description: "Show groups of products.",
     component: CollectionListSection,
     defaults: {
@@ -243,6 +246,7 @@ export const sectionRegistry: Record<SectionType, SectionDefinition> = {
     allowedBlocks: ["HEADER", ...checkoutBlockTypes],
     defaultBlocks: ["HEADER", ...checkoutBlockTypes],
   },
-};
+} satisfies Record<string, SectionDefinition>;
 
+export const sectionRegistry: Record<SectionType, SectionDefinition> = { ...baseSectionRegistry, ...createAdditionalSections(baseSectionRegistry) };
 export const sectionTypes = Object.values(sectionRegistry);

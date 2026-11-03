@@ -24,11 +24,21 @@ export function createSection(type: SectionType): StorefrontSection {
   const definition = sectionRegistry[type];
   const blocks = definition.defaultBlocks.map((blockType, index) => {
     const block = createDefaultBlock(blockType);
-    if (type === "SLIDESHOW") block.settings.name = `Slide ${index + 1}`;
+    if (["SLIDESHOW", "SLIDESHOW_INSET", "LAYERED_SLIDESHOW"].includes(type)) block.settings.name = `Slide ${index + 1}`;
     if (["CART", "CHECKOUT"].includes(type) && blockType === "HEADER") {
       block.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
       block.settings = type === "CHECKOUT" ? checkoutBlockDefaults("HEADER") : cartBlockDefaults("HEADER");
     }
+    if (blockType === "LOGO" && type === "LARGE_LOGO") { block.settings.width = 1200; block.settings.height = 280; }
+    if (blockType === "HEADER" && definition.content) {
+      block.settings.layout = { direction: "vertical", alignment: "left", position: "center", gap: 12, width: "full", height: "auto", customHeight: 0, alignTextBaseline: false };
+      block.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
+      for (const child of block.blocks) {
+        child.settings.text = (child.type === "HEADING" ? definition.content.heading : child.type === "TEXT" ? definition.content.text : definition.content.eyebrow) ?? "";
+        if (type === "PULLQUOTE") child.settings.layout = { ...child.settings.layout as object, alignment: "center" };
+      }
+    }
+    if (blockType === "HOTSPOT") { block.settings.x = index % 2 ? 70 : 30; block.settings.y = 50; }
     return block;
   });
   const copyText: Partial<
@@ -80,7 +90,7 @@ export function createSection(type: SectionType): StorefrontSection {
       text: "Enter your details to complete your rental order.",
     },
   };
-  const defaults = copyText[type];
+  const defaults = copyText[type] ?? definition.content;
   const contentBlocks = ["CART", "CHECKOUT"].includes(type) ? blocks.flatMap(block => [block, ...(block.blocks ?? [])]) : blocks;
   for (const block of contentBlocks) {
     if (block.type === "HEADING" && defaults?.heading)
@@ -520,8 +530,8 @@ export function useStorefrontPages() {
     if (!allowedTypes.includes(type)) return;
     const maxChildren = parent
       ? blockRegistry[parent.type].maxChildren
-      : undefined;
-    if (parent && maxChildren && (parent.blocks?.length ?? 0) >= maxChildren)
+      : sectionRegistry[section.type].maxBlocks;
+    if (maxChildren && (parent ? parent.blocks?.length ?? 0 : section.blocks.length) >= maxChildren)
       return;
     const block = createDefaultBlock(type);
     if (["CART", "CHECKOUT"].includes(section.type) && type === "HEADER") {

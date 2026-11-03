@@ -17,13 +17,13 @@ const layout = computed<SectionLayout>(() => ({...normalized.value.layout, width
 </template>
 <style scoped>
 .structured-section { container: structured-section / inline-size; }
-.structured-section--columns :deep(.builder-block), .structured-section--split :deep(.builder-block) { flex: 1 1 0; }
+.structured-section--columns > :deep(.block-renderer > .builder-block), .structured-section--split > :deep(.block-renderer > .builder-block) { flex: 1 1 0; min-width: 0; }
 .structured-section--jumbo :deep(.block-heading) { font-size: clamp(48px, 10cqw, 150px); line-height: 1; }
 .structured-section--pullquote { border-inline-start: 4px solid var(--store-primary); }
 .structured-section--pullquote :deep(.block-heading) { font-family: var(--store-heading-font); font-style: italic; font-size: clamp(28px, 4cqw, 52px); }
-.structured-section--large-logo :deep(.logo-block) { width: 100%; }
+.structured-section--large-logo > :deep(.block-renderer > .builder-block) { width: 100%; min-width: 0; }
 @container structured-section (max-width: 640px) {
   .structured-section--columns > :deep(.block-renderer), .structured-section--split > :deep(.block-renderer) { flex-direction: column !important; }
-  .structured-section--columns :deep(.builder-block), .structured-section--split :deep(.builder-block) { width: 100%; flex-basis: auto; }
+  .structured-section--columns > :deep(.block-renderer > .builder-block), .structured-section--split > :deep(.block-renderer > .builder-block) { width: 100%; flex-basis: auto; }
 }
 </style>

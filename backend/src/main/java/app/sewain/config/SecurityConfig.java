@@ -44,6 +44,7 @@ class SecurityConfig {
 						.requestMatchers("/api/auth/register", "/api/auth/login", "/api/merchants/migrate").permitAll()
 
 						// Public storefront endpoints
+                        .requestMatchers(HttpMethod.POST, "/api/storefront/submissions").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/products/slug/**", "/api/products/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/collections").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/storefront/published", "/api/storefront/branding").permitAll()

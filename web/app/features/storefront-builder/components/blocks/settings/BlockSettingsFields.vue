@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { contentIcons } from "../../../utils/content-icons";
+import ProductSelector from "../../ProductSelector.vue";
 import { slideSettings } from "../../../utils/slideshow";
 import AppearanceField from "../../AppearanceField.vue";
 import { computed } from "vue";
@@ -136,6 +138,7 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string): string {
+  if (['question','title','speed','reverse','thickness'].includes(key)) return t(`sectionCatalog.fields.${key}`);
   if (props.block.type === "SLIDE" && key === "name") return t("storefrontSlideshow.name");
   if (
     props.block.type === "SOCIAL_LINK" &&
@@ -189,7 +192,12 @@ function update(key: string, value: unknown) {
       v-for="{ key, value } in settingFields"
       :key="`${block.id}:${key}`"
     >
-      <div v-if="block.type === 'SLIDE' && key === 'image'">
+      <EditorFieldRow v-if="key === 'productId'" :label="t('sectionCatalog.product')"><ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'ICON_TEXT' && key === 'icon'" :label="t('sectionCatalog.icon')"><v-select :model-value="value" :items="Object.keys(contentIcons).map(value => ({value,title:t(`sectionCatalog.icons.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('icon',$event)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'FAQ_ITEM' && key === 'answer'" :label="t('sectionCatalog.answer')"><v-textarea :model-value="String(value || '')" variant="outlined" density="compact" rows="4" auto-grow hide-details @update:model-value="update('answer',$event)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'HOTSPOT' && ['x','y'].includes(key)" :label="t(`sectionCatalog.fields.${key}`)"><v-slider :model-value="Number(value)" :min="0" :max="100" :step="1" thumb-label hide-details @update:model-value="update(key,$event)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'DIVIDER' && key === 'color'" :label="t('sectionCatalog.fields.color')"><v-color-input :model-value="String(value || storefront.theme.value.colors.secondary)" hide-details variant="outlined" density="compact" @update:model-value="update('color',$event)" /></EditorFieldRow>
+      <div v-else-if="block.type === 'SLIDE' && key === 'image'">
         <ImageField :settings="asSettings(value)" @update="(field, selected) => update('image', { ...asSettings(value), [field]: selected })" />
         <EditorFieldRow :label="t('ui.alt_text')">
           <v-text-field :model-value="String(asSettings(value).alt || '')" variant="outlined" density="compact" hide-details @update:model-value="update('image', { ...asSettings(value), alt: $event })" />
@@ -382,7 +390,7 @@ function update(key: string, value: unknown) {
       <LayoutField
         v-else-if="
           key === 'layout' &&
-          (['HEADER', 'MENU', 'SLIDE'].includes(block.type) || productControlTypes.includes(block.type) ||
+          (['HEADER', 'MENU', 'SLIDE', 'COLUMN'].includes(block.type) || productControlTypes.includes(block.type) ||
             block.type.startsWith('CHECKOUT_'))
         "
         :settings="blockSettings"

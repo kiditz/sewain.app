@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { collectionListTypes, featuredCollectionTypes } from "../../../utils/section-catalog";
 import { contentSectionSettings } from "../../../utils/content-section-layout";
 import { slideshowSettings } from "../../../utils/slideshow";
 import { imageBannerDefaults } from "../../../utils/image-banner";
@@ -20,7 +21,7 @@ const props = defineProps<{
 
 const sectionSettings = computed(() => {
   if (["RICH_TEXT", "COLLECTION_PRODUCTS", "PRODUCT_GRID", "PRODUCT_DESCRIPTION"].includes(props.section.type)) return contentSectionSettings(props.section.settings, props.section.type === "RICH_TEXT" ? "center" : "left", storefront.theme.value.layout.sectionSpacing);
-  if (props.section.type === "SLIDESHOW") return slideshowSettings(props.section.settings);
+  if (["SLIDESHOW", "SLIDESHOW_INSET", "LAYERED_SLIDESHOW"].includes(props.section.type)) return slideshowSettings(props.section.settings);
   if (props.section.type === "NAVIGATION") {
     const defaults = navigationDefaults();
     return { ...defaults, ...props.section.settings,
@@ -59,6 +60,9 @@ const featuredDisplayTypes = computed(() => [
   { title: t("productList.types.carousel"), value: "carousel" },
   { title: t("productList.types.grid"), value: "grid" },
   { title: t("productList.types.editorial"), value: "editorial" },
+  ...(collectionListTypes.includes(props.section.type) ? [
+    {title:'Bento',value:'bento'},{title:'Spotlight',value:'spotlight'},{title:t('sectionCatalog.text'),value:'text'},
+  ] : []),
 ]);
 
 const emit = defineEmits<{
@@ -85,8 +89,10 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string) {
-  if (props.section.type === "SLIDESHOW" && ["autoplay", "interval", "showArrows", "showIndicators"].includes(key)) return t(`storefrontSlideshow.${key}`);
+  if (["SLIDESHOW", "SLIDESHOW_INSET", "LAYERED_SLIDESHOW"].includes(props.section.type) && ["autoplay", "interval", "showArrows", "showIndicators"].includes(key)) return t(`storefrontSlideshow.${key}`);
   if (props.section.type === "NAVIGATION" && key === "sticky") return t("storefrontNavigation.sticky");
+  const catalogFields = ['aspectRatio','beforeLabel','afterLabel','buttonLabel','successMessage','requireConsent'];
+  if (catalogFields.includes(key)) return t(`sectionCatalog.fields.${key}`);
   const labels: Record<string, string> = {
     background: "ui.background",
     alignment: "ui.alignment",
@@ -101,7 +107,7 @@ function labelOf(key: string) {
     };
     if (productGridLabels[key]) return t(productGridLabels[key]!);
   }
-  if (props.section.type === "FEATURED_PRODUCTS") {
+  if (featuredCollectionTypes.includes(props.section.type)) {
     const featuredLabels: Record<string, string> = {
       source: "ui.product_source",
       displayType: "productList.settings.displayType",
@@ -112,7 +118,7 @@ function labelOf(key: string) {
     };
     if (featuredLabels[key]) return t(featuredLabels[key]!);
   }
-  if (props.section.type === "COLLECTION_LIST") {
+  if (collectionListTypes.includes(props.section.type)) {
     const collectionLabels: Record<string, string> = {
       collectionIds: "ui.collections_to_show",
       displayType: "productList.settings.displayType",
@@ -130,8 +136,12 @@ function labelOf(key: string) {
 <template>
   <div class="settings-fields">
     <template v-for="(value, key) in sectionSettings" :key="key">
-      <EditorFieldRow v-if="section.type === 'SLIDESHOW' && key === 'interval'" :label="labelOf(String(key))">
+      <template v-if="['variant','formKind','recommendation'].includes(String(key))" />
+      <EditorFieldRow v-else-if="['SLIDESHOW', 'SLIDESHOW_INSET', 'LAYERED_SLIDESHOW'].includes(section.type) && key === 'interval'" :label="labelOf(String(key))">
         <v-number-input :model-value="Number(value)" :min="2" :max="30" variant="outlined" density="compact" hide-details @update:model-value="update('interval', Math.min(30, Math.max(2, Number($event) || 5)))" />
+      </EditorFieldRow>
+      <EditorFieldRow v-else-if="key === 'productId'" :label="t('sectionCatalog.product')">
+        <ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" />
       </EditorFieldRow>
       <div v-else-if="section.type === 'IMAGE_BANNER' && key === 'image'">
         <ImageField :settings="bannerImage(value)" @update="(field, selected) => update('image', { ...bannerImage(value), [field]: selected })" />
@@ -146,7 +156,7 @@ function labelOf(key: string) {
         <v-select :model-value="value" :items="[{ title: 'Kiri', value: 'left' }, { title: 'Kanan', value: 'right' }]" variant="outlined" density="compact" hide-details @update:model-value="update('summaryPosition', $event)" />
       </EditorFieldRow>
       <EditorFieldRow
-        v-else-if="section.type === 'COLLECTION_LIST' && key === 'collectionIds'"
+        v-else-if="collectionListTypes.includes(section.type) && key === 'collectionIds'"
         :label="labelOf(String(key))"
       >
         <v-autocomplete
@@ -164,7 +174,7 @@ function labelOf(key: string) {
       </EditorFieldRow>
 
       <EditorFieldRow
-        v-else-if="section.type === 'FEATURED_PRODUCTS' && key === 'source'"
+        v-else-if="featuredCollectionTypes.includes(section.type) && key === 'source'"
         :label="labelOf(String(key))"
       >
         <v-select
@@ -185,7 +195,7 @@ function labelOf(key: string) {
 
       <EditorFieldRow
         v-else-if="
-          ['FEATURED_PRODUCTS', 'COLLECTION_LIST'].includes(section.type) && key === 'displayType'
+          [...featuredCollectionTypes, ...collectionListTypes].includes(section.type) && key === 'displayType'
         "
         :label="labelOf(String(key))"
       >
@@ -201,7 +211,7 @@ function labelOf(key: string) {
       </EditorFieldRow>
 
       <EditorFieldRow
-        v-else-if="section.type === 'FEATURED_PRODUCTS' && key === 'productIds'"
+        v-else-if="featuredCollectionTypes.includes(section.type) && key === 'productIds'"
         :label="labelOf(String(key))"
       >
         <ProductSelector
@@ -212,7 +222,7 @@ function labelOf(key: string) {
       </EditorFieldRow>
 
       <EditorFieldRow
-        v-else-if="['FEATURED_PRODUCTS', 'COLLECTION_LIST'].includes(section.type) && key === 'columns'"
+        v-else-if="[...featuredCollectionTypes, ...collectionListTypes].includes(section.type) && key === 'columns'"
         :label="labelOf(String(key))"
       >
         <div class="columns-control">
@@ -243,7 +253,7 @@ function labelOf(key: string) {
 
       <EditorFieldRow
         v-else-if="
-          ['FEATURED_PRODUCTS', 'COLLECTION_LIST'].includes(section.type) && key === 'mobileColumns'
+          [...featuredCollectionTypes, ...collectionListTypes].includes(section.type) && key === 'mobileColumns'
         "
         :label="labelOf(String(key))"
       >
