@@ -1432,7 +1432,7 @@
     },
     "types": {
       "carousel": "Carousel",
-      "editorial": "Editorial / grid bertingkat",
+      "editorial": "Grid Bertingkat",
       "grid": "Grid"
     }
   },
