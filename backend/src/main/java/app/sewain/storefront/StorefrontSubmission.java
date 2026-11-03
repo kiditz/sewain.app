@@ -11,9 +11,10 @@ import java.util.UUID;
 @lombok.NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 class StorefrontSubmission {
     @Id private UUID id;
-    @Column(nullable = false) private String kind;
-    @Column(nullable = false) private String name;
-    @Column(nullable = false) private String email;
+    @Column(name = "customer_id") private UUID customerId;
+    @Column(nullable = false, length = 20) private String kind;
+    @Column(nullable = false, length = 120) private String name;
+    @Column(nullable = false, length = 254) private String email;
     @Column(nullable = false, length = 5000) private String message;
     @Column(nullable = false) private boolean consent;
     @Column(name = "created_at", nullable = false) private OffsetDateTime createdAt;

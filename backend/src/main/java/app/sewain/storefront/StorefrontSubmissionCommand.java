@@ -7,6 +7,6 @@ record StorefrontSubmissionCommand(
     @Size(max = 120) String name,
     @NotBlank @Email @Size(max = 254) String email,
     @Size(max = 5000) String message,
-    boolean consent,
+    Boolean consent,
     @Size(max = 200) String website
 ) {}

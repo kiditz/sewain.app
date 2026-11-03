@@ -13,7 +13,7 @@ class StorefrontSubmissionController {
     private final StorefrontSubmissionQueryService queries;
     @PostMapping @ResponseStatus(HttpStatus.ACCEPTED)
     void submit(@Valid @RequestBody StorefrontSubmissionCommand command) { commands.submit(command); }
-    @GetMapping PageResponse<StorefrontSubmission> list(@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size) { return queries.list(page,size); }
+    @GetMapping PageResponse<StorefrontSubmissionResponse> list(@RequestParam(defaultValue="0") int page,@RequestParam(defaultValue="20") int size,@RequestParam(required=false) UUID customerId) { return queries.list(page,size,customerId); }
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable UUID id) { commands.delete(id); }
 }

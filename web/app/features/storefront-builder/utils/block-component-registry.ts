@@ -1,3 +1,17 @@
+import GroupBlock from "../components/blocks/GroupBlock.vue";
+import IconBlock from "../components/blocks/IconBlock.vue";
+import PageBlock from "../components/blocks/PageBlock.vue";
+import CollectionCardBlock from "../components/blocks/CollectionCardBlock.vue";
+import CollectionTitleBlock from "../components/blocks/CollectionTitleBlock.vue";
+import PaymentIconsBlock from "../components/blocks/PaymentIconsBlock.vue";
+import AccordionBlock from "../components/blocks/AccordionBlock.vue";
+import SpacerBlock from "../components/blocks/SpacerBlock.vue";
+import PopupLinkBlock from "../components/blocks/PopupLinkBlock.vue";
+import PolicyLinkBlock from "../components/blocks/PolicyLinkBlock.vue";
+import BuyButtonsBlock from "../components/blocks/BuyButtonsBlock.vue";
+import DecorativeTextBlock from "../components/blocks/DecorativeTextBlock.vue";
+import ProductDataBlock from "../components/blocks/ProductDataBlock.vue";
+import SectionAdapterBlock from "../components/blocks/SectionAdapterBlock.vue";
 import FaqItemBlock from "../components/blocks/FaqItemBlock.vue";
 import IconTextBlock from "../components/blocks/IconTextBlock.vue";
 import DividerBlock from "../components/blocks/DividerBlock.vue";
@@ -35,6 +49,20 @@ import RentalDateRangeBlock from "../components/blocks/RentalDateRangeBlock.vue"
 import PriceSummaryBlock from "../components/blocks/PriceSummaryBlock.vue";
 
 export const blockComponentRegistry = {
+  ICON: IconBlock,
+  PAGE: PageBlock,
+  COLLECTION_CARD: CollectionCardBlock,
+  COLLECTION_TITLE: CollectionTitleBlock,
+  PAYMENT_ICONS: PaymentIconsBlock,
+  ACCORDION: AccordionBlock,
+  SPACER: SpacerBlock,
+  POPUP_LINK: PopupLinkBlock,
+  POLICY_LINK: PolicyLinkBlock,
+  BUY_BUTTONS: BuyButtonsBlock,
+  GROUP: GroupBlock, COPYRIGHT: DecorativeTextBlock, JUMBO_TEXT: DecorativeTextBlock,
+  PRODUCT_DESCRIPTION: ProductDataBlock, SKU: ProductDataBlock,
+  CONTACT_FORM: SectionAdapterBlock, EMAIL_SIGNUP: SectionAdapterBlock,
+  COMPARISON_SLIDER: SectionAdapterBlock, RECOMMENDED_PRODUCTS: SectionAdapterBlock,
   FAQ_ITEM: FaqItemBlock, ICON_TEXT: IconTextBlock, DIVIDER: DividerBlock,
   MARQUEE_TEXT: MarqueeBlock, HOTSPOT: HotspotBlock, COLUMN: HeaderBlock,
   SLIDE: SlideBlock,

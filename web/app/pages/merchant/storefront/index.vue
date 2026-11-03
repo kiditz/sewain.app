@@ -118,7 +118,7 @@ await load();
     <div class="d-flex align-center justify-space-between flex-wrap ga-3 mb-6">
       <div><h1 class="text-headline-medium">{{ $t('themeLibrary.title') }}</h1><p class="text-medium-emphasis mt-2">{{ $t('themeLibrary.hint') }}</p></div>
       <div class="d-flex ga-2 flex-wrap">
-        <v-btn variant="outlined" to="/merchant/storefront/submissions">{{ $t("storefrontForms.inbox") }}</v-btn>
+        <v-btn variant="outlined" to="/merchant/customers">{{ $t("customers.title") }}</v-btn>
         <input ref="importInput" type="file" accept="application/json,.json" hidden @change="importTheme" />
         <v-btn variant="outlined" :disabled="busy" prepend-icon="mdi-import" @click="importInput?.click()">{{ $t('themeLibrary.import') }}</v-btn>
         <v-btn variant="outlined" to="/merchant/storefront/menus" prepend-icon="mdi-menu">{{ $t('ui.menu') }}</v-btn>

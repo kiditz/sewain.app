@@ -1,3 +1,4 @@
+import {commonBlocks} from "./block-catalog";
 import { slideDefaults } from "./slideshow";
 import { socialLinkDefaults } from "./footer-section";
 import { productControlDefaults } from "./product-information-layout";
@@ -24,6 +25,26 @@ export interface BlockDefinition {
 }
 
 export const blockRegistry: Record<BlockType, BlockDefinition> = {
+  ICON: {type:"ICON",label:"Icon",description:"An icon with editable size and color.",defaults:{icon:"StarOutlined",size:48,color:"",padding:allPaddingZero,layout:defaultTextLayout}},
+  PAGE: {type:"PAGE",label:"Page",description:"Embed a custom page's content.",defaults:{pageId:"",showTitle:true,padding:allPaddingZero}},
+  COLLECTION_CARD: {type:"COLLECTION_CARD",label:"Collection Card",description:"An editable collection card.",defaults:{collectionId:"",padding:allPaddingZero,layout:{...menuLayout,direction:"vertical",width:"full"}},allowedChildren:["IMAGE","COLLECTION_TITLE","TEXT","BUTTON","ICON"],defaultChildren:["IMAGE","COLLECTION_TITLE"]},
+  COLLECTION_TITLE: {type:"COLLECTION_TITLE",label:"Collection Title",description:"The current collection's name.",defaults:{padding:allPaddingZero,layout:defaultTextLayout}},
+  JUMBO_TEXT: {type:"JUMBO_TEXT",label:"Jumbo Text",description:"Oversized decorative text.",defaults:{text:"MAKE ROOM FOR MORE",fontSize:120,style:{color:"",backgroundColor:"#00000000"},padding:allPaddingZero,layout:defaultTextLayout}},
+  COMPARISON_SLIDER: {type:"COMPARISON_SLIDER",label:"Comparison Slider",description:"Compare two images with a slider.",defaults:{layout:{width:"full"},padding:allPaddingZero,aspectRatio:1.6,beforeLabel:"",afterLabel:""},allowedChildren:["IMAGE"],defaultChildren:["IMAGE","IMAGE"],maxChildren:2},
+  COPYRIGHT: {type:"COPYRIGHT",label:"Copyright",description:"Store name and the current year.",defaults:{text:"© {year} {store}",padding:allPaddingZero,layout:defaultTextLayout}},
+  PAYMENT_ICONS: {type:"PAYMENT_ICONS",label:"Payment Icons",description:"The payment methods accepted by your store.",defaults:{methods:[],size:28,padding:allPaddingZero}},
+  POLICY_LINK: {type:"POLICY_LINK",label:"Policy Link",description:"A selected policy page or destination.",defaults:{label:"Policy",url:"",openInNewTab:false,padding:allPaddingZero}},
+  CONTACT_FORM: {type:"CONTACT_FORM",label:"Contact Form",description:"Contact details and a message, saved under Customer.",defaults:{formKind:"CONTACT",layout:{width:"full"},padding:allPaddingZero,buttonLabel:"",successMessage:"",requireConsent:false},allowedChildren:["HEADER","TEXT","IMAGE"],defaultChildren:[]},
+  EMAIL_SIGNUP: {type:"EMAIL_SIGNUP",label:"Email Signup",description:"Customer email signup with consent.",defaults:{formKind:"EMAIL_SIGNUP",layout:{width:"full"},padding:allPaddingZero,buttonLabel:"",successMessage:"",requireConsent:true},allowedChildren:["HEADER","TEXT"],defaultChildren:[]},
+  ACCORDION: {type:"ACCORDION",label:"Accordion",description:"Collapsible editable content.",defaults:{title:"More information",open:false,layout:{...menuLayout,direction:"vertical",width:"full"},padding:allPaddingZero},allowedChildren:commonBlocks.filter(type=>!['CONTACT_FORM','EMAIL_SIGNUP'].includes(type)),defaultChildren:["TEXT"]},
+  GROUP: {type:"GROUP",label:"Group",description:"Arrange nested blocks with layout and padding.",defaults:{layout:{...menuLayout,direction:"vertical",width:"full"},padding:allPaddingZero},allowedChildren:commonBlocks,defaultChildren:[]},
+  SPACER: {type:"SPACER",label:"Spacer",description:"Adjustable empty space.",defaults:{height:32}},
+  POPUP_LINK: {type:"POPUP_LINK",label:"Popup Link",description:"A link that opens editable popup content.",defaults:{label:"Learn more",title:"More information",layout:{...menuLayout,direction:"vertical",width:"full"},padding:allPaddingZero},allowedChildren:commonBlocks.filter(type=>type!=='POPUP_LINK'&&type!=='PAGE'),defaultChildren:["TEXT"]},
+  BUY_BUTTONS: {type:"BUY_BUTTONS",label:"Buy Buttons",description:"Buy or choose options for the current product.",defaults:{label:"",style:"primary",...productControlDefaults("ADD_TO_CART")}},
+  PRODUCT_DESCRIPTION: {type:"PRODUCT_DESCRIPTION",label:"Description",description:"The current product description.",defaults:{padding:allPaddingZero,layout:defaultTextLayout}},
+  RECOMMENDED_PRODUCTS: {type:"RECOMMENDED_PRODUCTS",label:"Recommended Products",description:"Product suggestions with an editable card template.",defaults:{recommendation:true,count:3,columns:3,mobileColumns:1,displayType:"grid",productIds:"",layout:{width:"full"},padding:allPaddingZero},allowedChildren:["HEADER","PRODUCT_CARD"],defaultChildren:["PRODUCT_CARD"]},
+  SKU: {type:"SKU",label:"SKU",description:"The selected product variant SKU.",defaults:{prefix:"SKU",padding:allPaddingZero,layout:defaultTextLayout}},
+
   FAQ_ITEM: { type: "FAQ_ITEM", label: "Question", description: "An expandable question and answer.", defaults: { question: "How does renting work?", answer: "Choose a product and rental period, then complete checkout.", padding: allPaddingZero } },
   ICON_TEXT: { type: "ICON_TEXT", label: "Icon with text", description: "A benefit with an icon and description.", defaults: { icon: "SafetyCertificateOutlined", title: "Made for your plans", text: "Reliable products and friendly support.", padding: { top: 16, right: 16, bottom: 16, left: 16 } } },
   COLUMN: { type: "COLUMN", label: "Column", description: "A column with images, text and links.", defaults: { layout: { direction: "vertical", alignment: "left", position: "top", gap: 16, width: "full", height: "auto", customHeight: 0, alignTextBaseline: false }, padding: allPaddingZero }, allowedChildren: ["IMAGE", "HEADER", "TEXT", "BUTTON", "ICON_TEXT"], defaultChildren: ["IMAGE", "HEADER", "BUTTON"] },
@@ -34,7 +55,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
     type: "SLIDE", label: "Slide", description: "Background image, content and call to action.",
     defaults: slideDefaults(), allowedChildren: ["HEADER", "BUTTON"], defaultChildren: ["HEADER", "BUTTON"],
   },
-  SOCIAL_LINK: { type: "SOCIAL_LINK", label: "Social link", description: "Social account icon and external URL.", defaults: socialLinkDefaults() },
+  SOCIAL_LINK: { type: "SOCIAL_LINK", label: "Social Media Link", description: "Social account icon and external URL.", defaults: socialLinkDefaults() },
   CHECKOUT_CONTACT: { type: "CHECKOUT_CONTACT", label: "Contact", description: "Checkout contact.", defaults: checkoutBlockDefaults("CHECKOUT_CONTACT") },
   CHECKOUT_FULFILLMENT: { type: "CHECKOUT_FULFILLMENT", label: "Fulfillment", description: "Checkout fulfillment.", defaults: checkoutBlockDefaults("CHECKOUT_FULFILLMENT") },
   CHECKOUT_NOTES: { type: "CHECKOUT_NOTES", label: "Order notes", description: "Checkout order notes.", defaults: checkoutBlockDefaults("CHECKOUT_NOTES") },
@@ -177,7 +198,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   },
   PRODUCT_PRICE: {
     type: "PRODUCT_PRICE",
-    label: "Rental price",
+    label: "Price",
     description: "Displays the rental price for the selected plan.",
     defaults: {
       showPeriod: true,
@@ -187,7 +208,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
   },
   VARIANT_SELECTOR: {
     type: "VARIANT_SELECTOR",
-    label: "Variant selector",
+    label: "Variant Picker",
     description: "Lets customers choose a product variant.",
     defaults: { label: "Choose an option", ...productControlDefaults("VARIANT_SELECTOR") },
   },
@@ -271,6 +292,7 @@ export function createDefaultBlock(type: BlockType): StorefrontBlock {
   const definition = blockRegistry[type];
   const blocks = definition.defaultChildren?.map((childType) => {
     const child = createDefaultBlock(childType);
+    if (type === "COLLECTION_CARD" && childType === "IMAGE") { child.settings.aspectRatio = "landscape"; child.settings.alt = ""; }
     if (type === "HEADER" && childType === "BUTTON") {
       child.settings.label = "View all";
       child.settings.url = "/collections/all";

@@ -21,4 +21,11 @@ class StorefrontExceptionHandler {
         return ResponseEntity.status(status).body(new ErrorResponse(LocalDateTime.now(), status.value(),
                 "Storefront error", exception.getReason(), request.getRequestURI(), Map.of()));
     }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    ResponseEntity<ErrorResponse> invalidBody(HttpServletRequest request) {
+        var code = request.getRequestURI().contains("/submissions") ? "storefrontForms.required" : "theme.invalidConfiguration";
+        return ResponseEntity.badRequest().body(new ErrorResponse(LocalDateTime.now(), 400,
+                "Invalid request", code, request.getRequestURI(), Map.of()));
+    }
 }

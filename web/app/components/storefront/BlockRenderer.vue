@@ -6,6 +6,7 @@ import type {
   SectionLayout,
   StorefrontBorderRadius,
 } from "~/types/storefront";
+import type {CollectionSummary} from "~/types/collection";
 import type { Product } from "~/types/product";
 import { blockRegistry } from "~/features/storefront-builder/utils/block-registry";
 import { blockComponentRegistry } from "~/features/storefront-builder/utils/block-component-registry";
@@ -26,6 +27,7 @@ const props = defineProps<{
   selectedBlockId?: string | null;
   productDescription?: boolean;
   productContext?: Product;
+  collectionContext?: CollectionSummary;
 }>();
 
 const storefront = useStorefront();
@@ -73,7 +75,7 @@ function productControlStyle(block: StorefrontBlock) {
 
 function childLayout(block: StorefrontBlock) {
   if (block.type === "SLIDE") return slideContentLayout(block.settings);
-  return ["HEADER", "COLUMN"].includes(block.type)
+  return ["HEADER", "COLUMN", "GROUP", "ACCORDION", "POPUP_LINK", "COLLECTION_CARD"].includes(block.type)
     ? { ...block.settings.layout as SectionLayout, width: "full" as const }
     : layout.value;
 }
@@ -92,7 +94,7 @@ const dragBlocks = computed<StorefrontBlock[]>({
 function isFillTextBlock(block: StorefrontBlock) {
   const layout = block.settings.layout;
   return (
-    ["TEXT", "HEADING", "EYEBROW", "PRODUCT_TITLE", "PRODUCT_PRICE", 'MENU'].includes(block.type) &&
+    ["TEXT", "HEADING", "EYEBROW", "PRODUCT_TITLE", "PRODUCT_PRICE", "COPYRIGHT", "JUMBO_TEXT", "PRODUCT_DESCRIPTION", "COLLECTION_TITLE", "SKU", "ICON", 'MENU'].includes(block.type) &&
     layout !== null &&
     typeof layout === "object" &&
     !Array.isArray(layout) &&
@@ -144,6 +146,7 @@ function isFillTextBlock(block: StorefrontBlock) {
         :selected-block-id="selectedBlockId"
         :product-description="productDescription"
         :product-context="productContext"
+        :collection-context="collectionContext"
       >
         <BlockRenderer
           v-if="block.blocks?.length"
@@ -153,6 +156,7 @@ function isFillTextBlock(block: StorefrontBlock) {
           :selected-block-id="selectedBlockId"
           :product-description="productDescription"
           :product-context="productContext"
+        :collection-context="collectionContext"
         />
       </component>
     </div>

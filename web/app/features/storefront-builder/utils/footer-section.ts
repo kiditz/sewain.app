@@ -17,7 +17,7 @@ export function createFooterSection(): StorefrontSection {
       settings: { padding: padding(), layout: { ...footerDefaults().layout, direction: "vertical", alignment: "left", gap: 8, width: "full" } },
       blocks: [text("HEADING"), text("TEXT")] },
     { id: crypto.randomUUID(), type: "SOCIAL_LINK", enabled: true, settings: socialLinkDefaults() },
-    text("TEXT", "© {year}"),
+    {...text("TEXT", "© {year} {store}"),type:"COPYRIGHT"},
   ] };
 }
 export function ensureFooterSection(page: StorefrontPage): boolean {

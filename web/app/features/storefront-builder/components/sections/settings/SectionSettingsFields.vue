@@ -20,6 +20,7 @@ const props = defineProps<{
 }>();
 
 const sectionSettings = computed(() => {
+  if([...collectionListTypes,...featuredCollectionTypes].includes(props.section.type)) return {...props.section.settings,itemsGap:props.section.settings.itemsGap??(props.section.settings.displayType==='editorial'?32:18)};
   if (["RICH_TEXT", "COLLECTION_PRODUCTS", "PRODUCT_GRID", "PRODUCT_DESCRIPTION"].includes(props.section.type)) return contentSectionSettings(props.section.settings, props.section.type === "RICH_TEXT" ? "center" : "left", storefront.theme.value.layout.sectionSpacing);
   if (["SLIDESHOW", "SLIDESHOW_INSET", "LAYERED_SLIDESHOW"].includes(props.section.type)) return slideshowSettings(props.section.settings);
   if (props.section.type === "NAVIGATION") {
@@ -94,6 +95,7 @@ function labelOf(key: string) {
   const catalogFields = ['aspectRatio','beforeLabel','afterLabel','buttonLabel','successMessage','requireConsent'];
   if (catalogFields.includes(key)) return t(`sectionCatalog.fields.${key}`);
   const labels: Record<string, string> = {
+    itemsGap: "ui.gap",
     background: "ui.background",
     alignment: "ui.alignment",
   };
@@ -136,7 +138,8 @@ function labelOf(key: string) {
 <template>
   <div class="settings-fields">
     <template v-for="(value, key) in sectionSettings" :key="key">
-      <template v-if="['variant','formKind','recommendation'].includes(String(key))" />
+      <template v-if="['variant','formKind','recommendation'].includes(String(key)) || (section.type === 'EMAIL_SIGNUP' && key === 'requireConsent') || (['columns','mobileColumns'].includes(String(key)) && [...collectionListTypes,...featuredCollectionTypes].includes(section.type) && !['grid','carousel'].includes(String(sectionSettings.displayType||'grid')))" />
+      <EditorFieldRow v-else-if="key==='itemsGap'" :label="labelOf(String(key))"><v-number-input :model-value="Number(value)" :min="0" :max="96" variant="outlined" density="compact" hide-details @update:model-value="update('itemsGap',Math.max(0,Math.min(96,Number($event)||0)))" /></EditorFieldRow>
       <EditorFieldRow v-else-if="['SLIDESHOW', 'SLIDESHOW_INSET', 'LAYERED_SLIDESHOW'].includes(section.type) && key === 'interval'" :label="labelOf(String(key))">
         <v-number-input :model-value="Number(value)" :min="2" :max="30" variant="outlined" density="compact" hide-details @update:model-value="update('interval', Math.min(30, Math.max(2, Number($event) || 5)))" />
       </EditorFieldRow>

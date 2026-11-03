@@ -10,8 +10,9 @@ import org.springframework.data.domain.Sort;
 @Transactional(readOnly = true)
 class StorefrontSubmissionQueryService {
     private final StorefrontSubmissionRepository repository;
-    PageResponse<StorefrontSubmission> list(int page,int size) {
-        var result=repository.findAll(PageRequest.of(Math.max(0,page),Math.min(100,Math.max(1,size)),Sort.by(Sort.Direction.DESC,"createdAt")));
-        return new PageResponse<>(result.getContent(),result.getTotalElements());
+    PageResponse<StorefrontSubmissionResponse> list(int page,int size,java.util.UUID customerId) {
+        var pageable=PageRequest.of(Math.max(0,page),Math.min(100,Math.max(1,size)),Sort.by(Sort.Direction.DESC,"createdAt").and(Sort.by(Sort.Direction.DESC,"id")));
+        var result=customerId == null ? repository.findAll(pageable) : repository.findByCustomerId(customerId,pageable);
+        return new PageResponse<>(result.getContent().stream().map(StorefrontSubmissionResponse::from).toList(),result.getTotalElements());
     }
 }

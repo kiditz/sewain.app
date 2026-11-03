@@ -45,6 +45,15 @@ public class Customer {
 	@Column(nullable = false)
 	private boolean enabled = true;
 
+    @Column(nullable = false, length = 30)
+    private String source = "MANUAL";
+
+    @Column(name = "email_subscribed", nullable = false)
+    private boolean emailSubscribed;
+
+    @Column(name = "email_consent_at")
+    private OffsetDateTime emailConsentAt;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private OffsetDateTime createdAt;

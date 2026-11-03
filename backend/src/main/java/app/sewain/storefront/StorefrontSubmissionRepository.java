@@ -12,4 +12,10 @@ interface StorefrontSubmissionRepository extends JpaRepository<StorefrontSubmiss
         """, nativeQuery = true)
     int insert(@Param("id") UUID id, @Param("kind") String kind, @Param("name") String name,
                @Param("email") String email, @Param("message") String message, @Param("consent") boolean consent);
+
+    org.springframework.data.domain.Page<StorefrontSubmission> findByCustomerId(UUID customerId, org.springframework.data.domain.Pageable pageable);
+
+    @Modifying
+    @Query(value = "UPDATE storefront_submissions SET customer_id = :customerId WHERE id = :id", nativeQuery = true)
+    int assignCustomer(@Param("id") UUID id, @Param("customerId") UUID customerId);
 }

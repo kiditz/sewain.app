@@ -7,6 +7,7 @@ import moment from "moment";
 
 const props = defineProps<{
   block: StorefrontBlock;
+  preview?: boolean;
 }>();
 
 const settings = computed(() =>
@@ -22,7 +23,7 @@ const {loading} = storeToRefs(cartStore)
 const { canAddToCart } = storeToRefs(store);
 
 const handleAddToCart = async () => {
-  if (!store.canAddToCart) return;
+  if (props.preview || !store.canAddToCart) return;
   const cart: CartItemCommand = {
     productId: store.product!.id,
     depositSubtotal: store.depositSubtotal,
@@ -42,14 +43,13 @@ const handleAddToCart = async () => {
     variantId: store.selectedVariant!.id,
   };
 
-  console.log(cart);
   await cartStore.addItem(cart);
 };
 </script>
 
 <template>
   <v-btn
-    :disabled="!canAddToCart"
+    :disabled="preview || !canAddToCart"
     @click="handleAddToCart"
     :loading="loading"
     type="button"

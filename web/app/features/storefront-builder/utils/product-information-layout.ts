@@ -2,7 +2,7 @@ import type { BlockType, SectionLayout, StorefrontPadding } from "~/types/storef
 
 export const productControlTypes: BlockType[] = [
   "VARIANT_SELECTOR", "RENTAL_PLAN_SELECTOR", "DEPOSIT_INFO",
-  "QUANTITY_SELECTOR", "PRICE_SUMMARY", "ADD_TO_CART",
+  "QUANTITY_SELECTOR", "PRICE_SUMMARY", "ADD_TO_CART", "BUY_BUTTONS",
 ];
 
 export function productInformationDefaults() {
@@ -14,7 +14,7 @@ export function productInformationDefaults() {
 }
 
 export function productControlDefaults(type: BlockType) {
-  const padding: StorefrontPadding = type === "ADD_TO_CART"
+  const padding: StorefrontPadding = ["ADD_TO_CART", "BUY_BUTTONS"].includes(type)
     ? { top: 13, right: 19, bottom: 13, left: 19 }
     : type === "PRICE_SUMMARY"
       ? { top: 16, right: 16, bottom: 16, left: 16 }

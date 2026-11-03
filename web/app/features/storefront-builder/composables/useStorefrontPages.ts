@@ -35,6 +35,7 @@ export function createSection(type: SectionType): StorefrontSection {
       block.blocks = (["EYEBROW", "HEADING", "TEXT"] as BlockType[]).map(createDefaultBlock);
       for (const child of block.blocks) {
         child.settings.text = (child.type === "HEADING" ? definition.content.heading : child.type === "TEXT" ? definition.content.text : definition.content.eyebrow) ?? "";
+        if (child.type === "EYEBROW" && !definition.content.eyebrow) child.enabled = false;
         if (type === "PULLQUOTE") child.settings.layout = { ...child.settings.layout as object, alignment: "center" };
       }
     }

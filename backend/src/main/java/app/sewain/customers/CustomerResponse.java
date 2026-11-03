@@ -14,5 +14,8 @@ record CustomerResponse(
 		BigDecimal totalSpent,
 		OffsetDateTime lastOrderAt,
 		OffsetDateTime createdAt,
-		boolean enabled
+		boolean enabled,
+        String source,
+        boolean emailSubscribed,
+        OffsetDateTime emailConsentAt
 ) {}

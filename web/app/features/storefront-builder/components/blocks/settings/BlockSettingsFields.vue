@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageAutocomplete from "../../PageAutocomplete.vue";
+import { paymentIcons } from "../../../utils/payment-icons";
 import { contentIcons } from "../../../utils/content-icons";
 import ProductSelector from "../../ProductSelector.vue";
 import { slideSettings } from "../../../utils/slideshow";
@@ -24,6 +26,8 @@ const props = defineProps<{
   block: StorefrontBlock;
   collections: Array<{ id: string; name: string }>;
   productImage?: boolean;
+  collectionCardTemplate?: boolean;
+  resourceCardLayout?: string;
 }>();
 const { t } = useI18n();
 const storefront = useStorefront();
@@ -64,7 +68,8 @@ const editableSettings = computed<Record<string, unknown>>(() =>
   Object.fromEntries(
     Object.entries(asSettings(props.block.settings)).filter(
       ([key]) =>
-        key !== "linkTargets" &&
+        !(props.resourceCardLayout&&props.block.type==='IMAGE'&&key==='aspectRatio') &&
+        key !== "linkTargets" && !['formKind','recommendation'].includes(key) && !(props.block.type==='EMAIL_SIGNUP'&&key==='requireConsent') && !(props.collectionCardTemplate&&key==='collectionId') &&
         !(
           key === "displayType" &&
           props.block.type === "IMAGE" &&
@@ -79,6 +84,10 @@ const editableSettings = computed<Record<string, unknown>>(() =>
 );
 
 const blockSettings = computed<Record<string, unknown>>(() => {
+  if(props.resourceCardLayout&&['COLLECTION_CARD','PRODUCT_CARD'].includes(props.block.type)) {
+    const {height,customHeight,direction,position,alignTextBaseline,...layout}=asSettings(editableSettings.value.layout);
+    return {...editableSettings.value,...(editableSettings.value.layout?{layout}: {})};
+  }
   if (props.block.type === "SLIDE") return slideSettings(editableSettings.value);
   if (productControlTypes.includes(props.block.type)) {
     const defaults = productControlDefaults(props.block.type);
@@ -100,7 +109,7 @@ const blockSettings = computed<Record<string, unknown>>(() => {
     };
   }
 
-  if (!["TEXT", "HEADING", "EYEBROW"].includes(props.block.type))
+  if (!["TEXT", "HEADING", "EYEBROW", "JUMBO_TEXT", "COPYRIGHT", "PRODUCT_DESCRIPTION", "COLLECTION_TITLE"].includes(props.block.type))
     return editableSettings.value;
 
   const { color, backgroundColor, ...textSettings } = editableSettings.value;
@@ -138,6 +147,8 @@ function selectedIds(value: unknown): string[] {
 }
 
 function labelOf(key: string): string {
+  if (['fontSize','height','prefix','open','showTitle','size','openInNewTab'].includes(key)) return t(`blockCatalog.fields.${key}`);
+  if (['aspectRatio','beforeLabel','afterLabel','buttonLabel','successMessage','requireConsent'].includes(key)) return t(`sectionCatalog.fields.${key}`);
   if (['question','title','speed','reverse','thickness'].includes(key)) return t(`sectionCatalog.fields.${key}`);
   if (props.block.type === "SLIDE" && key === "name") return t("storefrontSlideshow.name");
   if (
@@ -166,6 +177,7 @@ function update(key: string, value: unknown) {
 
 <template>
   <div class="settings-fields">
+    <p v-if="resourceCardLayout" class="text-body-small text-medium-emphasis px-4">{{t('sectionCatalog.mediaLayoutHint')}}</p>
     <SocialLinkFields
       v-if="block.type === 'SOCIAL_LINK'"
       :settings="block.settings"
@@ -192,11 +204,14 @@ function update(key: string, value: unknown) {
       v-for="{ key, value } in settingFields"
       :key="`${block.id}:${key}`"
     >
-      <EditorFieldRow v-if="key === 'productId'" :label="t('sectionCatalog.product')"><ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type === 'ICON_TEXT' && key === 'icon'" :label="t('sectionCatalog.icon')"><v-select :model-value="value" :items="Object.keys(contentIcons).map(value => ({value,title:t(`sectionCatalog.icons.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('icon',$event)" /></EditorFieldRow>
+      <EditorFieldRow v-if="key === 'pageId'" :label="t('blockCatalog.page')"><PageAutocomplete :model-value="typeof value==='string'?value:null" :kinds="['CUSTOM']" :label="t('blockCatalog.choosePage')" @select="update('pageId',$event.id)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="key === 'collectionId'" :label="t('blockCatalog.collection')"><v-autocomplete :model-value="value" :items="collectionItems" variant="outlined" density="compact" clearable hide-details @update:model-value="update('collectionId',$event||'')" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type==='PAYMENT_ICONS' && key==='methods'" :label="t('blockCatalog.paymentMethods')"><v-select :model-value="Array.isArray(value)?value:[]" :items="Object.keys(paymentIcons).map(value=>({value,title:t(`blockCatalog.payments.${value}`)}))" multiple chips closable-chips hide-details variant="outlined" density="compact" @update:model-value="update('methods',$event||[])" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="key === 'productId'" :label="t('sectionCatalog.product')"><ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="['ICON_TEXT','ICON'].includes(block.type) && key === 'icon'" :label="t('sectionCatalog.icon')"><v-select :model-value="value" :items="Object.keys(contentIcons).map(value => ({value,title:t(`sectionCatalog.icons.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('icon',$event)" /></EditorFieldRow>
       <EditorFieldRow v-else-if="block.type === 'FAQ_ITEM' && key === 'answer'" :label="t('sectionCatalog.answer')"><v-textarea :model-value="String(value || '')" variant="outlined" density="compact" rows="4" auto-grow hide-details @update:model-value="update('answer',$event)" /></EditorFieldRow>
       <EditorFieldRow v-else-if="block.type === 'HOTSPOT' && ['x','y'].includes(key)" :label="t(`sectionCatalog.fields.${key}`)"><v-slider :model-value="Number(value)" :min="0" :max="100" :step="1" thumb-label hide-details @update:model-value="update(key,$event)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type === 'DIVIDER' && key === 'color'" :label="t('sectionCatalog.fields.color')"><v-color-input :model-value="String(value || storefront.theme.value.colors.secondary)" hide-details variant="outlined" density="compact" @update:model-value="update('color',$event)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="['DIVIDER','ICON'].includes(block.type) && key === 'color'" :label="t('sectionCatalog.fields.color')"><v-color-input :model-value="String(value || (block.type==='ICON'?storefront.theme.value.colors.primary:storefront.theme.value.colors.secondary))" hide-details variant="outlined" density="compact" @update:model-value="update('color',$event)" /></EditorFieldRow>
       <div v-else-if="block.type === 'SLIDE' && key === 'image'">
         <ImageField :settings="asSettings(value)" @update="(field, selected) => update('image', { ...asSettings(value), [field]: selected })" />
         <EditorFieldRow :label="t('ui.alt_text')">
@@ -303,7 +318,7 @@ function update(key: string, value: unknown) {
       <div
         class="d-flex flex-column"
         v-else-if="
-          key === 'style' && ['EYEBROW', 'HEADING', 'TEXT'].includes(block.type)
+          key === 'style' && ['EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(block.type)
         "
       >
         <div class="text-title-medium font-weight-bold px-4 py-2">Style</div>
@@ -390,7 +405,7 @@ function update(key: string, value: unknown) {
       <LayoutField
         v-else-if="
           key === 'layout' &&
-          (['HEADER', 'MENU', 'SLIDE', 'COLUMN'].includes(block.type) || productControlTypes.includes(block.type) ||
+          (['HEADER', 'MENU', 'SLIDE', 'COLUMN', 'GROUP', 'ACCORDION', 'POPUP_LINK', 'COLLECTION_CARD', 'COMPARISON_SLIDER', 'CONTACT_FORM', 'EMAIL_SIGNUP', 'RECOMMENDED_PRODUCTS'].includes(block.type) || productControlTypes.includes(block.type) ||
             block.type.startsWith('CHECKOUT_'))
         "
         :settings="blockSettings"
@@ -404,13 +419,13 @@ function update(key: string, value: unknown) {
       <BorderRadiusField
         v-else-if="
           key === 'borderRadius' &&
-          ['IMAGE', 'PRODUCT_CARD', 'EYEBROW', 'HEADING', 'TEXT'].includes(
+          ['IMAGE', 'PRODUCT_CARD', 'EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(
             block.type,
           )
         "
         :settings="blockSettings"
         :default-value="
-          ['EYEBROW', 'HEADING', 'TEXT'].includes(block.type)
+          ['EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(block.type)
             ? 0
             : storefront.theme.value.layout.borderRadius
         "

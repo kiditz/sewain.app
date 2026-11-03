@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import {resourceCardLayoutForBlock} from "../utils/resource-list-layout";
+import { blockCategories } from "../utils/block-catalog";
+import { collectionListTypes } from "../utils/section-catalog";
 import { sectionCategories } from "../utils/section-catalog";
 import { VueDraggable } from "vue-draggable-plus";
 import { watch } from "vue";
@@ -123,20 +126,35 @@ const availableBlocks = computed(() => {
   const types = addingBlockParent.value
     ? (blockRegistry[addingBlockParent.value.type].allowedChildren ?? [])
     : sectionRegistry[selectedSection.value.type].allowedBlocks;
-  return types.map((type) => blockRegistry[type]);
+  return types.filter(type=>{
+    if(type==='VARIANT_SELECTOR')return props.page.kind==='PRODUCT';
+    if(['BUY_BUTTONS','PRODUCT_DESCRIPTION','PRODUCT_PRICE','SKU'].includes(type))return props.page.kind==='PRODUCT'||['FEATURED_PRODUCT','PRODUCT_HIGHLIGHT'].includes(selectedSection.value!.type)||addingBlockParent.value?.type==='PRODUCT_CARD'||(!!addingBlockParent.value&&hasProductCardAncestor(selectedSection.value!.blocks,addingBlockParent.value.id));
+    return true;
+  }).map((type) => blockRegistry[type]);
 });
 const addingBlockType = ref<BlockType | null>(null);
 const showAddBlock = ref(false);
+const blockSearch = ref("");
+const blockScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
+async function refreshBlockScrollbar() { await nextTick(); blockScrollbar.value?.$refs.el?.update(); }
+watch(blockSearch, () => { addingBlockType.value=null; void refreshBlockScrollbar(); });
+const availableBlockCategories = computed(() => blockCategories.map(category => ({
+  ...category,
+  title: translateCatalog(`blockCatalog.categories.${category.id}`),
+  entries: category.types.flatMap(type => {const definition=availableBlocks.value.find(block=>block.type===type);return definition?[{...definition,title:translateCatalog(`blockCatalog.labels.${type}`)}]:[];}).filter(block=>`${translateCatalog(`blockCatalog.categories.${category.id}`)} ${block.title} ${block.label}`.toLowerCase().includes((blockSearch.value||'').trim().toLowerCase())),
+})).filter(category=>category.entries.length));
+const selectedResourceCardLayout=computed(()=>selectedSection.value&&selectedBlock.value?resourceCardLayoutForBlock(selectedSection.value.blocks,selectedBlock.value.id,String(selectedSection.value.settings.displayType??sectionRegistry[selectedSection.value.type].defaults.displayType??'grid')):undefined);
+const selectedCollectionCardTemplate=computed(()=>selectedBlock.value?.type==='COLLECTION_CARD'&&!!selectedSection.value&&collectionListTypes.includes(selectedSection.value.type));
 const addingType = ref<SectionType | null>(null);
 const showAddSection = ref(false);
 const sectionSearch = ref("");
-const { t: translateSection } = useI18n();
+const { t: translateCatalog } = useI18n();
 const categorizedSections = computed(() => sectionCategories.map(category => ({
   ...category,
-  title: translateSection(`sectionCatalog.categories.${category.id}`),
-  entries: category.types.map(type => ({...sectionRegistry[type], title:translateSection(`sectionCatalog.sections.${type}`)})).filter(definition =>
+  title: translateCatalog(`sectionCatalog.categories.${category.id}`),
+  entries: category.types.map(type => ({...sectionRegistry[type], title:translateCatalog(`sectionCatalog.sections.${type}`)})).filter(definition =>
     (!['NAVIGATION','FOOTER'].includes(definition.type) || !props.page.sections.some(section => section.type === definition.type)) &&
-    `${translateSection(`sectionCatalog.categories.${category.id}`)} ${definition.label} ${definition.title}`.toLowerCase().includes((sectionSearch.value || '').trim().toLowerCase())),
+    `${translateCatalog(`sectionCatalog.categories.${category.id}`)} ${definition.label} ${definition.title}`.toLowerCase().includes((sectionSearch.value || '').trim().toLowerCase())),
 })).filter(category => category.entries.length));
 watch(sectionSearch, () => { void refreshSectionScrollbar(); });
 const addSectionAfterId = ref<string | null>(null);
@@ -196,10 +214,12 @@ function selectSection(id: string) {
   //   props.page.sections.find((section) => section.id === id)?.blocks[0]?.id ??
   //   null;
 }
+function sectionAtBlockLimit(section: StorefrontSection) { const max = sectionRegistry[section.type].maxBlocks; return max != null && section.blocks.length >= max; }
 function openAddBlock(section: StorefrontSection, parent?: StorefrontBlock) {
   selectSection(section.id);
   addingBlockParentId.value = parent?.id ?? null;
   addingBlockType.value = null;
+  blockSearch.value = "";
   showAddBlock.value = true;
 }
 function handlePreviewClick(event: MouseEvent) {
@@ -399,7 +419,7 @@ provide(builderDndKey, {
                 <strong
                   >{{ sectionRegistry[section.type].label }}</strong
                 >
-                <small>{{ section.enabled ? "Visible" : "Hidden" }}</small>
+                <!-- <small>{{ section.enabled ? "Visible" : "Hidden" }}</small> -->
               </div>
               <v-btn
                 :icon="
@@ -453,6 +473,7 @@ provide(builderDndKey, {
                 prepend-icon="mdi-plus"
                 v-if="sectionRegistry[section.type].allowedBlocks.length"
                 class="nested-add-block"
+                :disabled="sectionAtBlockLimit(section)"
                 @click.stop="openAddBlock(section)"
                 >{{ $t("ui.add_block") }}</v-btn
               >
@@ -577,6 +598,8 @@ provide(builderDndKey, {
               :block="selectedBlock"
               :collections="store.collections.value"
               :product-image="selectedBlockIsProductImage"
+              :collection-card-template="selectedCollectionCardTemplate"
+              :resource-card-layout="selectedResourceCardLayout"
               @update="
                 (key, value) => updateBlockSetting(selectedBlock!, key, value)
               "
@@ -632,47 +655,29 @@ provide(builderDndKey, {
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-dialog v-model="showAddBlock" max-width="600">
-      <v-card rounded="xl"
-        ><v-card-title class="pa-5">{{ $t("ui.add_a_block") }}</v-card-title
-        ><v-card-text>
-          <p class="text-body-medium text-medium-emphasis mb-3">
-            {{ $t("ui.available_blocks_for") }}
-            {{
-              selectedSection
-                ? sectionRegistry[selectedSection.type].label
-                : "this section"
-            }}.
-          </p>
-          <v-radio-group v-model="addingBlockType">
-            <v-list lines="two" select-strategy="single-independent">
-              <v-list-item
-                v-for="definition in availableBlocks"
-                :key="definition.type"
-                :title="definition.label"
-                :subtitle="definition.description"
-                @click="addingBlockType = definition.type"
-              >
-                <template #prepend
-                  ><v-radio :value="definition.type" /></template
-                ><template #append
-                  ><v-icon>mdi-plus-circle-outline</v-icon></template
-                >
-              </v-list-item>
-            </v-list>
-          </v-radio-group> </v-card-text
-        ><v-card-actions class="pa-5 pt-0"
-          ><v-spacer /><v-btn variant="text" @click="showAddBlock = false">{{
-            $t("common.cancel")
-          }}</v-btn
-          ><v-btn
-            color="primary"
-            :disabled="!addingBlockType"
-            @click="addBlock"
-            >{{ $t("ui.add_block") }}</v-btn
-          ></v-card-actions
-        ></v-card
-      >
+    <v-dialog v-model="showAddBlock" max-width="680" @after-enter="refreshBlockScrollbar">
+      <v-card rounded="xl" class="add-section-dialog">
+        <v-card-title class="pa-5">{{ $t('ui.add_a_block') }}</v-card-title>
+        <v-text-field v-model="blockSearch" :label="$t('blockCatalog.search')" prepend-inner-icon="mdi-magnify" variant="outlined" density="compact" hide-details clearable class="mx-5 mb-4" />
+        <v-divider />
+        <v-card-text class="add-section-dialog__body pa-0">
+          <nuxt-scrollbar ref="blockScrollbar" style="position:relative;height:min(55dvh,calc(100dvh - 300px))" :options="{suppressScrollX:true,wheelPropagation:false}">
+            <v-radio-group v-model="addingBlockType" hide-details class="pa-5">
+              <v-list lines="two">
+                <template v-for="category in availableBlockCategories" :key="category.id">
+                  <v-list-subheader class="section-category-title">{{category.title}}</v-list-subheader>
+                  <v-list-item v-for="definition in category.entries" :key="definition.type" :title="definition.title" :subtitle="definition.description" @click="addingBlockType=definition.type">
+                    <template #prepend><v-radio :value="definition.type" /></template>
+                  </v-list-item>
+                </template>
+                <v-list-item v-if="!availableBlockCategories.length" :title="$t('blockCatalog.noResults')" />
+              </v-list>
+            </v-radio-group>
+          </nuxt-scrollbar>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-5"><v-spacer/><v-btn variant="text" @click="showAddBlock=false">{{$t('common.cancel')}}</v-btn><v-btn color="primary" :disabled="!addingBlockType" @click="addBlock">{{$t('ui.add_block')}}</v-btn></v-card-actions>
+      </v-card>
     </v-dialog>
   </div>
 </template>

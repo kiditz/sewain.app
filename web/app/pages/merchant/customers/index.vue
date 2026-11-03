@@ -159,12 +159,14 @@ onBeforeUnmount(() => { if (debounceTimer) clearTimeout(debounceTimer); });
             <v-avatar color="primary-lighten-5" size="40"><span class="text-primary font-weight-bold">{{ initials(item.fullName) }}</span></v-avatar>
             <div>
               <div class="font-weight-medium">{{ item.fullName }}</div>
+              <span v-if="item.source && item.source !== 'MANUAL'" class="text-body-small text-medium-emphasis">{{ t(`customerContacts.sources.${item.source}`) }}</span>
               <div class="text-body-small text-medium-emphasis">{{ t("customers.customerSince") }} {{ formatDate(item.createdAt) }}</div>
             </div>
           </div>
         </template>
         <template #item.contact="{ item }">
           <div>{{ item.email }}</div>
+          <v-chip v-if="item.emailSubscribed" size="x-small" color="success" class="my-1">{{ t('customerContacts.subscribed') }}</v-chip>
           <div class="text-body-small text-medium-emphasis">{{ item.phone || "—" }}</div>
         </template>
         <template #item.orderCount="{ item }">{{ t("customers.orderCount", { count: item.orderCount }) }}</template>

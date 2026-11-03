@@ -72,6 +72,26 @@ export type SectionType =
   | "CHECKOUT";
 
 export type BlockType =
+  | "ICON"
+  | "PAGE"
+  | "COLLECTION_CARD"
+  | "COLLECTION_TITLE"
+  | "JUMBO_TEXT"
+  | "COMPARISON_SLIDER"
+  | "COPYRIGHT"
+  | "PAYMENT_ICONS"
+  | "POLICY_LINK"
+  | "CONTACT_FORM"
+  | "EMAIL_SIGNUP"
+  | "ACCORDION"
+  | "GROUP"
+  | "SPACER"
+  | "POPUP_LINK"
+  | "BUY_BUTTONS"
+  | "PRODUCT_DESCRIPTION"
+  | "RECOMMENDED_PRODUCTS"
+  | "SKU"
+
   | "FAQ_ITEM"
   | "ICON_TEXT"
   | "COLUMN"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import StorefrontContactHistory from "~/components/customers/StorefrontContactHistory.vue";
 import type { Customer } from "~/types/customer";
 
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
@@ -80,6 +81,8 @@ onMounted(async () => {
                 <v-col cols="12" sm="6"><div class="text-body-small text-medium-emphasis">{{ t("customers.create.fullName") }}</div><div class="font-weight-medium">{{ customer.fullName }}</div></v-col>
                 <v-col cols="12" sm="6"><div class="text-body-small text-medium-emphasis">{{ t("customers.create.email") }}</div><a :href="`mailto:${customer.email}`">{{ customer.email }}</a></v-col>
                 <v-col cols="12" sm="6"><div class="text-body-small text-medium-emphasis">{{ t("customers.create.phone") }}</div><a v-if="customer.phone" :href="`tel:${customer.phone}`">{{ customer.phone }}</a><span v-else>—</span></v-col>
+                <v-col cols="12" sm="6"><div class="text-body-small text-medium-emphasis">{{ t("customerContacts.sourceLabel") }}</div><div>{{ t(`customerContacts.sources.${customer.source || 'MANUAL'}`) }}</div></v-col>
+                <v-col cols="12" sm="6"><div class="text-body-small text-medium-emphasis">{{ t("customerContacts.emailStatus") }}</div><v-chip size="small" :color="customer.emailSubscribed ? 'success' : 'default'">{{ t(customer.emailSubscribed ? 'customerContacts.subscribed' : 'customerContacts.notSubscribed') }}</v-chip><div v-if="customer.emailConsentAt" class="text-body-small mt-1">{{ formatDate(customer.emailConsentAt) }}</div></v-col>
                 <v-col cols="12"><div class="text-body-small text-medium-emphasis">{{ t("customers.create.notes") }}</div><div class="text-pre-wrap">{{ customer.notes || "—" }}</div></v-col>
               </v-row>
             </v-card-text>
@@ -101,6 +104,7 @@ onMounted(async () => {
           </v-card>
         </v-col>
       </v-row>
+      <StorefrontContactHistory :customer-id="customer.id" class="mt-6" />
     </template>
   </v-container>
 </template>

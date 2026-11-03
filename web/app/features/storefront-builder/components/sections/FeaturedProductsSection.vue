@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ResourceListLayout from "../ResourceListLayout.vue";
+import {resourceListItemStyles} from "../../utils/resource-list-layout";
 import type { Product } from "~/types/product";
 import type {
   SectionLayout,
@@ -59,34 +61,30 @@ const displayType = computed(() => {
   const value = String(props.settings.displayType ?? "grid");
   return ["carousel", "grid", "editorial"].includes(value) ? value : "grid";
 });
-const gridStyle = computed(() => ({
-  "--product-list-columns": String(
-    Math.max(1, Math.min(8, Number(props.settings.columns) || 3)),
-  ),
-  "--product-list-mobile-columns": String(
-    Number(props.settings.mobileColumns) === 2 ? 2 : 1,
-  ),
-}));
+const itemStyles = computed(() => resourceListItemStyles(displayType.value, visibleProducts.value.length, 'products'));
 </script>
 
 <template>
-  <section :style="sectionStyle">
+  <section class="featured-products-section" :style="sectionStyle">
     <div class="products-inner" >
       <BlockRenderer
         :blocks="contentBlocks"
         :preview="preview"
         :selected-block-id="selectedBlockId"
       />
-      <div
+      <ResourceListLayout
         v-if="productCardTemplate && visibleProducts.length"
         class="product-list-grid"
-        :class="`product-list-grid--${displayType}`"
-        :style="gridStyle"
+        :layout="displayType"
+        :columns="Number(settings.columns) || 3"
+        :mobile-columns="Number(settings.mobileColumns) || 1"
+        :gap="Number(settings.itemsGap ?? (displayType === 'editorial' ? 32 : 18))"
       >
         <div
-          v-for="item in visibleProducts"
+          v-for="(item, index) in visibleProducts"
           :key="item.id"
-          class="product-list-card"
+          class="resource-layout__item product-list-card"
+          :style="itemStyles[index]"
         >
           <BlockRenderer
             :blocks="productCardTemplate ? [productCardTemplate] : []"
@@ -95,8 +93,8 @@ const gridStyle = computed(() => ({
             :product-context="item"
           />
         </div>
-      </div>
-      <p v-else-if="productCardTemplate" class="empty-catalog">
+      </ResourceListLayout>
+      <p v-else-if="productCardTemplate?.enabled" class="empty-catalog">
         {{ $t("ui.no_active_products_to_display") }}
       </p>
     </div>
@@ -104,6 +102,7 @@ const gridStyle = computed(() => ({
 </template>
 
 <style scoped>
+.featured-products-section { container: featured-products / inline-size; }
 .products-inner {
   width: 100%;
   min-width: 0;
@@ -118,51 +117,12 @@ const gridStyle = computed(() => ({
 .products-inner :deep(.product-list-grid) {
   margin-top: 10px;
 }
-.product-list-grid {
-  --product-list-current-columns: var(--product-list-columns, 3);
-  display: grid;
-  grid-template-columns: repeat(
-    var(--product-list-current-columns, 3),
-    minmax(0, 1fr)
-  );
-  gap: 18px;
-  width: 100%;
-}
-.product-list-grid--carousel {
-  display: flex;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: thin;
-}
-.product-list-grid--carousel .product-list-card {
-  flex: 0 0 calc(100% / var(--product-list-current-columns, 3));
-  scroll-snap-align: start;
-}
-.product-list-grid--editorial {
-  grid-auto-rows: 110px;
-  align-items: stretch;
-}
-.product-list-grid--editorial .product-list-card:nth-child(5n + 1) {
-  grid-row: span 3;
-}
-.product-list-grid--editorial .product-list-card:nth-child(5n + 3) {
-  grid-row: span 2;
-}
+.product-list-grid { width:100%;min-width:0; }
 .product-list-card {
   min-width: 0;
 }
 .empty-catalog {
   color: var(--store-text);
   opacity: 0.65;
-}
-@media (max-width: 600px) {
-  .product-list-grid {
-    --product-list-current-columns: var(--product-list-mobile-columns, 1);
-    grid-template-columns: repeat(
-      var(--product-list-current-columns),
-      minmax(0, 1fr)
-    );
-  }
 }
 </style>

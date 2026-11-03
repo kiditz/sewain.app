@@ -13,6 +13,9 @@ import java.time.OffsetDateTime;
 interface CustomerMapper {
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "source", ignore = true)
+    @Mapping(target = "emailSubscribed", ignore = true)
+    @Mapping(target = "emailConsentAt", ignore = true)
 	@Mapping(target = "enabled", constant = "true")
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
@@ -20,14 +23,20 @@ interface CustomerMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "emailSubscribed", ignore = true)
+    @Mapping(target = "emailConsentAt", ignore = true)
 	@Mapping(target = "enabled", constant = "true")
 	@Mapping(target = "notes", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "source", constant = "ORDER")
 	Customer toEntity(CustomerOrderCreatedEvent event);
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "source", ignore = true)
+    @Mapping(target = "emailSubscribed", ignore = true)
+    @Mapping(target = "emailConsentAt", ignore = true)
 	@Mapping(target = "enabled", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)
 	@Mapping(target = "updatedAt", ignore = true)
@@ -35,6 +44,9 @@ interface CustomerMapper {
 
 	@Mapping(target = "id", ignore = true)
 	@Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "source", ignore = true)
+    @Mapping(target = "emailSubscribed", ignore = true)
+    @Mapping(target = "emailConsentAt", ignore = true)
 	@Mapping(target = "notes", ignore = true)
 	@Mapping(target = "enabled", ignore = true)
 	@Mapping(target = "createdAt", ignore = true)

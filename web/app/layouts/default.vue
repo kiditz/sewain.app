@@ -1,5 +1,6 @@
 <template>
   <VApp>
+    <Snackbar />
     <VMain>
       <slot />
     </VMain>

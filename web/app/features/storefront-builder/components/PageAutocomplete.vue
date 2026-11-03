@@ -15,6 +15,7 @@ import { useStorefront } from "../composables/useStorefront";
 const props = defineProps<{
   modelValue: string | null;
   label?: string;
+  kinds?: string[];
 }>();
 
 const { pages } = useStorefront();
@@ -22,6 +23,7 @@ const emit = defineEmits<{
   select: [page: (typeof pages.value)[number]];
 }>();
 
+const availablePages = computed(() => pages.value.filter(page => !props.kinds || props.kinds.includes(page.kind)));
 const selectedPage = computed(() =>
   pages.value.find((page) => page.id === props.modelValue),
 );
@@ -53,7 +55,7 @@ function iconFor(name?: string): Component {
 
     <v-list min-width="240" density="compact">
       <v-list-item
-        v-for="page in pages"
+        v-for="page in availablePages"
         :key="page.id"
         :active="page.id === modelValue"
         :title="page.title"

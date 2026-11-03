@@ -1,3 +1,4 @@
+import { commonBlocks } from "./block-catalog";
 import { createAdditionalSections } from "./additional-sections";
 import SlideshowSection from "../components/sections/SlideshowSection.vue";
 import { slideshowDefaults } from "./slideshow";
@@ -110,6 +111,7 @@ const baseSectionRegistry = {
       source: null,
       displayType: "grid",
       count: 3,
+      itemsGap: 18,
       columns: 3,
       mobileColumns: 1,
       productIds: "",
@@ -134,6 +136,7 @@ const baseSectionRegistry = {
       collectionIds: "",
       displayType: "grid",
       count: 3,
+      itemsGap: 18,
       columns: 3,
       mobileColumns: 1,
       padding: {
@@ -145,8 +148,9 @@ const baseSectionRegistry = {
         width: "page",
       } as SectionLayout,
     },
-    allowedBlocks: ["HEADER", "HEADING", "TEXT"],
-    defaultBlocks: ["HEADING", "TEXT"],
+    allowedBlocks: ["HEADER", "HEADING", "TEXT", "COLLECTION_CARD"],
+    defaultBlocks: ["HEADER", "COLLECTION_CARD"],
+    content: {heading:"Explore our collections",text:"Discover products by collection."},
   },
   COLLECTION_PRODUCTS: {
     type: "COLLECTION_PRODUCTS",
@@ -249,4 +253,11 @@ const baseSectionRegistry = {
 } satisfies Record<string, SectionDefinition>;
 
 export const sectionRegistry: Record<SectionType, SectionDefinition> = { ...baseSectionRegistry, ...createAdditionalSections(baseSectionRegistry) };
+for (const type of ["CUSTOM_SECTION","RICH_TEXT","HERO","HERO_BOTTOM","HERO_MARQUEE","IMAGE_BANNER","SPLIT_SHOWCASE","IMAGE_WITH_TEXT","EDITORIAL","EDITORIAL_JUMBO","PULLQUOTE"] as SectionType[]) {
+  sectionRegistry[type].allowedBlocks = [...new Set([...sectionRegistry[type].allowedBlocks,...commonBlocks])];
+}
+sectionRegistry.PRODUCT_INFORMATION.allowedBlocks.push("BUY_BUTTONS","PRODUCT_DESCRIPTION","SKU","RECOMMENDED_PRODUCTS","GROUP","ACCORDION","SPACER","DIVIDER");
+sectionRegistry.FOOTER.allowedBlocks.push("COPYRIGHT","PAYMENT_ICONS","POLICY_LINK","GROUP","SPACER");
+sectionRegistry.POLICIES_LINKS.allowedBlocks.push("COPYRIGHT","PAYMENT_ICONS","POLICY_LINK");
+for(const type of ["FEATURED_PRODUCT","PRODUCT_HIGHLIGHT"] as SectionType[]) sectionRegistry[type].allowedBlocks.push("BUY_BUTTONS","SKU","PRODUCT_DESCRIPTION","GROUP","DIVIDER","SPACER");
 export const sectionTypes = Object.values(sectionRegistry);

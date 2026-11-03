@@ -9,6 +9,9 @@ export interface Customer {
   lastOrderAt: string | null;
   createdAt: string;
   enabled: boolean;
+  source: string;
+  emailSubscribed: boolean;
+  emailConsentAt: string | null;
 }
 
 export interface CustomerCommand {

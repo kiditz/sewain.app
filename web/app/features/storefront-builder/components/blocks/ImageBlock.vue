@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import {resourceCardLayoutKey} from "../../utils/resource-list-layout";
+import {collectionBlockContext} from "../../utils/block-context";
+import type {CollectionSummary} from "~/types/collection";
 import {
   getBlockSettings,
   getBorderRadiusStyle,
@@ -15,6 +18,7 @@ import { useStorefront } from "../../composables/useStorefront";
 const props = defineProps<{
   block: StorefrontBlock;
   productContext?: Product;
+  collectionContext?: CollectionSummary;
   preview?: boolean;
   selectedBlockId?: string | null;
   productDescription?: boolean;
@@ -30,6 +34,10 @@ const settings = computed(() =>
     borderRadius?: StorefrontBorderRadius;
   }>(props.block),
 );
+const inheritedCollection=inject(collectionBlockContext,null);
+const collection=computed(()=>props.collectionContext??inheritedCollection?.value);
+const imageSrc=computed(()=>settings.value.src||collection.value?.imageUrl||productImage.value);
+const imageAlt=computed(()=>collection.value&&(!settings.value.alt||settings.value.alt==='Store image')?collection.value.name:settings.value.alt||props.productContext?.name||'');
 const productImage = computed(
   () => productImages.value[0] ?? "",
 );
@@ -49,7 +57,9 @@ const isProductCarousel = computed(
     settings.value.displayType === "carousel" &&
     productImages.value.length > 1,
 );
+const resourceLayout=inject(resourceCardLayoutKey,null);
 const aspectRatio = computed(() => {
+  if (["bento","editorial"].includes(resourceLayout?.value??"")) return "auto";
   const value = settings.value.aspectRatio || "auto";
   const ratios: Record<string, string> = {
     auto: "auto",
@@ -86,9 +96,9 @@ const paddingStyle = computed(() =>
     }"
   >
     <img
-      v-if="settings.src"
-      :src="settings.src || productImage"
-      :alt="settings.alt || props?.productContext?.name || ''"
+      v-if="imageSrc"
+      :src="imageSrc"
+      :alt="imageAlt"
       :style="{ ...borderRadiusStyle, ...paddingStyle }"
     />
   </a>
@@ -118,9 +128,9 @@ const paddingStyle = computed(() =>
       </v-carousel-item>
     </v-carousel>
     <img
-      v-else-if="settings.src || productImage"
-      :src="settings.src || productImage"
-      :alt="settings.alt || props?.productContext?.name || ''"
+      v-else-if="imageSrc"
+      :src="imageSrc"
+      :alt="imageAlt"
       :style="{ ...borderRadiusStyle, ...paddingStyle }"
     />
     <div v-else class="block-block-image-placeholder">
