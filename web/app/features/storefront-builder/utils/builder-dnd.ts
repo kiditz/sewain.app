@@ -17,7 +17,7 @@ export interface BuilderDnd {
   reorderBlocks(orderedIds: string[]): void;
 }
 
-export const builderDndKey: InjectionKey<BuilderDnd> = Symbol(
+export const builderDndKey: InjectionKey<BuilderDnd | null> = Symbol(
   "storefront-builder-dnd",
 );
 

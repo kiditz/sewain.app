@@ -59,7 +59,7 @@ const { data: featuredProducts } = await useAsyncData<Product[]>(requestKey, asy
 const visibleProducts = computed(() => featuredProducts.value ?? []);
 const displayType = computed(() => {
   const value = String(props.settings.displayType ?? "grid");
-  return ["carousel", "grid", "editorial"].includes(value) ? value : "grid";
+  return ["carousel", "grid", "editorial", "bento"].includes(value) ? value : "grid";
 });
 const itemStyles = computed(() => resourceListItemStyles(displayType.value, visibleProducts.value.length, 'products'));
 </script>

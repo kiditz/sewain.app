@@ -9,6 +9,8 @@ import BlockSettingsPanel from "~/features/storefront-builder/components/blocks/
 import BlockSettingsFields from "~/features/storefront-builder/components/blocks/settings/BlockSettingsFields.vue";
 import SectionSettingsPanel from "~/features/storefront-builder/components/sections/settings/SectionSettingsPanel.vue";
 import SectionSettingsFields from "~/features/storefront-builder/components/sections/settings/SectionSettingsFields.vue";
+import CatalogPicker from "./CatalogPicker.vue";
+import CatalogEntryPreview from "./CatalogEntryPreview.vue";
 import PageAutocomplete from "./PageAutocomplete.vue";
 import BlockTreeList from "./BlockTreeList.vue";
 import { blockRegistry } from "~/features/storefront-builder/utils/block-registry";
@@ -135,9 +137,7 @@ const availableBlocks = computed(() => {
 const addingBlockType = ref<BlockType | null>(null);
 const showAddBlock = ref(false);
 const blockSearch = ref("");
-const blockScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
-async function refreshBlockScrollbar() { await nextTick(); blockScrollbar.value?.$refs.el?.update(); }
-watch(blockSearch, () => { addingBlockType.value=null; void refreshBlockScrollbar(); });
+watch(blockSearch, () => { addingBlockType.value=null; });
 const availableBlockCategories = computed(() => blockCategories.map(category => ({
   ...category,
   title: translateCatalog(`blockCatalog.categories.${category.id}`),
@@ -156,18 +156,15 @@ const categorizedSections = computed(() => sectionCategories.map(category => ({
     (!['NAVIGATION','FOOTER'].includes(definition.type) || !props.page.sections.some(section => section.type === definition.type)) &&
     `${translateCatalog(`sectionCatalog.categories.${category.id}`)} ${definition.label} ${definition.title}`.toLowerCase().includes((sectionSearch.value || '').trim().toLowerCase())),
 })).filter(category => category.entries.length));
-watch(sectionSearch, () => { void refreshSectionScrollbar(); });
+watch(sectionSearch, () => { addingType.value=null; });
 const addSectionAfterId = ref<string | null>(null);
-function openAddSection(afterId: string | null = null) {
+const pickerTarget=ref<HTMLElement>();
+function openAddSection(afterId: string | null = null,event?:MouseEvent) {
+  pickerTarget.value=event?.currentTarget instanceof HTMLElement?event.currentTarget:undefined;
   addSectionAfterId.value = afterId;
   addingType.value = null;
   sectionSearch.value = "";
   showAddSection.value = true;
-}
-const sectionScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
-async function refreshSectionScrollbar() {
-  await nextTick();
-  sectionScrollbar.value?.$refs.el?.update();
 }
 const previewDevice = ref<"desktop" | "mobile">("desktop");
 const previewScrollbar = ref<{ $refs: { el?: { update: () => void } } }>();
@@ -215,7 +212,8 @@ function selectSection(id: string) {
   //   null;
 }
 function sectionAtBlockLimit(section: StorefrontSection) { const max = sectionRegistry[section.type].maxBlocks; return max != null && section.blocks.length >= max; }
-function openAddBlock(section: StorefrontSection, parent?: StorefrontBlock) {
+function openAddBlock(section: StorefrontSection, parent?: StorefrontBlock,event?:MouseEvent) {
+  pickerTarget.value=event?.currentTarget instanceof HTMLElement?event.currentTarget:undefined;
   selectSection(section.id);
   addingBlockParentId.value = parent?.id ?? null;
   addingBlockType.value = null;
@@ -384,7 +382,7 @@ provide(builderDndKey, {
             size="small"
             variant="tonal"
             :aria-label="$t('ui.add_section')"
-            @click="openAddSection()"
+            @click="openAddSection(null,$event)"
           />
         </div>
         <VueDraggable
@@ -421,19 +419,24 @@ provide(builderDndKey, {
                 >
                 <!-- <small>{{ section.enabled ? "Visible" : "Hidden" }}</small> -->
               </div>
+              <div class="tree-row-action">
               <v-btn
-                :icon="
-                  section.enabled ? 'mdi-eye-outline' : 'mdi-eye-off-outline'
-                "
+                class="tree-visibility"
+                :icon="section.enabled ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
                 size="x-small"
                 variant="text"
-                :aria-label="section.enabled ? 'Hide section' : 'Show section'"
-                @click.stop="
-                  section.enabled = !section.enabled;
-                  store.touch(page);
-                "
+                :aria-label="section.enabled ? 'Hide' : 'Show'"
+                @click.stop="section.enabled = !section.enabled; store.touch(page)"
               />
-              <v-icon class="drag-handle" size="18">mdi-drag</v-icon>
+              <v-btn
+                class="drag-handle"
+                icon="mdi-drag"
+                size="x-small"
+                variant="text"
+                :aria-label="$t('ui.drag_to_reorder')"
+                @click.stop
+              />
+              </div>
             </div>
             <div v-show="!collapsedSections[section.id]" class="section-tree-children">
               <BlockTreeList
@@ -453,7 +456,7 @@ provide(builderDndKey, {
                     store.touch(page);
                   }
                 "
-                @add-child="(block) => openAddBlock(section, block)"
+                @add-child="(block,event) => openAddBlock(section, block,event)"
                 @reorder="
                   (blocks) => {
                     section.blocks = blocks;
@@ -474,7 +477,7 @@ provide(builderDndKey, {
                 v-if="sectionRegistry[section.type].allowedBlocks.length"
                 class="nested-add-block"
                 :disabled="sectionAtBlockLimit(section)"
-                @click.stop="openAddBlock(section)"
+                @click.stop="openAddBlock(section,undefined,$event)"
                 >{{ $t("ui.add_block") }}</v-btn
               >
             </div>
@@ -483,7 +486,7 @@ provide(builderDndKey, {
               size="x-small"
               variant="text"
               prepend-icon="mdi-plus"
-              @click.stop="openAddSection(section.id)"
+              @click.stop="openAddSection(section.id,$event)"
             >{{ $t('ui.add_section') }}</v-btn>
           </div>
         </VueDraggable>
@@ -492,7 +495,7 @@ provide(builderDndKey, {
           prepend-icon="mdi-plus"
           variant="tonal"
           class="add-section-button"
-          @click="openAddSection()"
+          @click="openAddSection(null,$event)"
           >{{ $t("ui.add_section") }}</v-btn
         >
         <div class="page-settings">
@@ -613,88 +616,17 @@ provide(builderDndKey, {
         </div> -->
       </aside>
     </div>
-    <v-dialog
-      v-model="showAddSection"
-      max-width="680"
-      @after-enter="refreshSectionScrollbar"
-    >
-      <v-card rounded="xl" class="add-section-dialog">
-        <v-card-title class="pa-5">{{ $t("ui.add_a_section") }}</v-card-title>
-        <v-text-field v-model="sectionSearch" :label="$t('sectionCatalog.search')" prepend-inner-icon="mdi-magnify" clearable hide-details variant="outlined" density="compact" class="mx-5 mb-4" />
-        <v-divider />
-        <v-card-text class="add-section-dialog__body pa-0">
-          <nuxt-scrollbar
-            ref="sectionScrollbar"
-            style="position: relative; height: min(55dvh, calc(100dvh - 300px))"
-            :options="{ suppressScrollX: true, wheelPropagation: false }"
-          >
-            <div class="pa-5">
-              <v-radio-group v-model="addingType" hide-details>
-                <v-list lines="two" select-strategy="single-independent">
-                  <template v-for="category in categorizedSections" :key="category.id">
-                    <v-list-subheader class="section-category-title">{{ category.title }}</v-list-subheader>
-                    <v-list-item v-for="definition in category.entries" :key="definition.type" :title="definition.title" @click="addingType = definition.type">
-                      <template #prepend><v-radio :value="definition.type" /></template>
-                    </v-list-item>
-                  </template>
-                  <v-list-item v-if="!categorizedSections.length" :title="$t('sectionCatalog.noResults')" />
-                </v-list>
-              </v-radio-group>
-            </div>
-          </nuxt-scrollbar>
-        </v-card-text>
-        <v-divider />
-        <v-card-actions class="pa-5">
-          <v-spacer />
-          <v-btn variant="text" @click="showAddSection = false">{{
-            $t("common.cancel")
-          }}</v-btn>
-          <v-btn color="primary" :disabled="!addingType" @click="addSection">{{
-            $t("ui.add_section")
-          }}</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-    <v-dialog v-model="showAddBlock" max-width="680" @after-enter="refreshBlockScrollbar">
-      <v-card rounded="xl" class="add-section-dialog">
-        <v-card-title class="pa-5">{{ $t('ui.add_a_block') }}</v-card-title>
-        <v-text-field v-model="blockSearch" :label="$t('blockCatalog.search')" prepend-inner-icon="mdi-magnify" variant="outlined" density="compact" hide-details clearable class="mx-5 mb-4" />
-        <v-divider />
-        <v-card-text class="add-section-dialog__body pa-0">
-          <nuxt-scrollbar ref="blockScrollbar" style="position:relative;height:min(55dvh,calc(100dvh - 300px))" :options="{suppressScrollX:true,wheelPropagation:false}">
-            <v-radio-group v-model="addingBlockType" hide-details class="pa-5">
-              <v-list lines="two">
-                <template v-for="category in availableBlockCategories" :key="category.id">
-                  <v-list-subheader class="section-category-title">{{category.title}}</v-list-subheader>
-                  <v-list-item v-for="definition in category.entries" :key="definition.type" :title="definition.title" :subtitle="definition.description" @click="addingBlockType=definition.type">
-                    <template #prepend><v-radio :value="definition.type" /></template>
-                  </v-list-item>
-                </template>
-                <v-list-item v-if="!availableBlockCategories.length" :title="$t('blockCatalog.noResults')" />
-              </v-list>
-            </v-radio-group>
-          </nuxt-scrollbar>
-        </v-card-text>
-        <v-divider />
-        <v-card-actions class="pa-5"><v-spacer/><v-btn variant="text" @click="showAddBlock=false">{{$t('common.cancel')}}</v-btn><v-btn color="primary" :disabled="!addingBlockType" @click="addBlock">{{$t('ui.add_block')}}</v-btn></v-card-actions>
-      </v-card>
-    </v-dialog>
+    <CatalogPicker v-model="showAddSection" :target="pickerTarget" :title="$t('ui.add_a_section')" v-model:search="sectionSearch" :selected="addingType" :categories="categorizedSections" :search-label="$t('sectionCatalog.search')" :empty-label="$t('sectionCatalog.noResults')" :add-label="$t('ui.add_section')" @update:selected="addingType=$event as SectionType" @add="addSection">
+      <CatalogEntryPreview v-if="addingType" kind="section" :type="addingType" :title="$t(`sectionCatalog.sections.${addingType}`)" />
+    </CatalogPicker>
+    <CatalogPicker v-model="showAddBlock" :target="pickerTarget" :title="$t('ui.add_a_block')" v-model:search="blockSearch" :selected="addingBlockType" :categories="availableBlockCategories" :search-label="$t('blockCatalog.search')" :empty-label="$t('blockCatalog.noResults')" :add-label="$t('ui.add_block')" @update:selected="addingBlockType=$event as BlockType" @add="addBlock">
+      <CatalogEntryPreview v-if="addingBlockType" kind="block" :type="addingBlockType" :title="$t(`blockCatalog.labels.${addingBlockType}`)" />
+    </CatalogPicker>
   </div>
 </template>
 
 <style scoped>
-.add-section-dialog {
-  max-height: calc(100dvh - 48px);
-  overflow: hidden;
-}
-.add-section-dialog__body {
-  min-height: 0;
-  overflow: hidden;
-}
-.add-section-dialog > .v-card-title,
-.add-section-dialog > .v-card-actions {
-  flex-shrink: 0;
-}
+
 
 .builder {
   height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
@@ -804,9 +736,18 @@ provide(builderDndKey, {
   background: rgba(var(--v-theme-primary), 0.07);
 }
 
-.drag-handle {
-  cursor: grab;
-  color: #858b94;
+.tree-row-action { display: grid; flex-shrink: 0; }
+.tree-row-action > * { grid-area: 1 / 1; }
+.drag-handle { cursor: grab; opacity: 0; pointer-events: none; }
+.tree-visibility { opacity: 1; }
+.section-row:hover > .tree-row-action > .drag-handle,
+.tree-row-action:has(.drag-handle:focus-visible) > .drag-handle { opacity: 1; pointer-events: auto; }
+.section-row:hover > .tree-row-action > .tree-visibility,
+.tree-row-action:has(.drag-handle:focus-visible) > .tree-visibility { opacity: 0; pointer-events: none; }
+.drag-handle:active { cursor: grabbing; }
+@media (hover: none) {
+  .tree-row-action { display: flex; }
+  .tree-row-action > .drag-handle, .section-row:hover > .tree-row-action > .tree-visibility { opacity: 1; pointer-events: auto; }
 }
 
 .section-row__text {

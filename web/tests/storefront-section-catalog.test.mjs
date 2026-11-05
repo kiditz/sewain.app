@@ -32,6 +32,8 @@ test('every section is categorized once and all presets create serializable edit
 test('presets have distinct configurations and independent defaults',()=>{
  assert.equal(createSection('HERO_BOTTOM').settings.layout.position,'bottom');
  assert.equal(createSection('COLLECTION_BENTO').settings.displayType,'bento');
+ assert.equal(createSection('FEATURED_COLLECTION_BENTO').settings.displayType,'bento');
+ assert.ok(createSection('FEATURED_COLLECTION_BENTO').blocks.some(block=>block.type==='PRODUCT_CARD'));
  assert.equal(createSection('SLIDESHOW_INSET').settings.variant,'inset');
  assert.equal(createSection('RECOMMENDED_PRODUCTS').settings.recommendation,true);
  assert.equal(createSection('IMAGE_COMPARE').blocks.filter(block=>block.type==='IMAGE').length,2);

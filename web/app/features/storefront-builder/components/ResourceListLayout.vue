@@ -25,7 +25,7 @@ const style=computed(()=>({
 .resource-layout--bento :deep(.block-image img),.resource-layout--editorial :deep(.block-image img) {width:100%;height:100%;object-fit:cover}
 .resource-layout--bento :deep(.block-block-image-placeholder),.resource-layout--editorial :deep(.block-block-image-placeholder) {height:100%;display:grid;place-items:center}
 .resource-layout--editorial :deep(.resource-layout__item > .block-renderer),.resource-layout--editorial :deep(.resource-layout__item > .block-renderer > .builder-block),.resource-layout--editorial :deep(.collection-card-block),.resource-layout--editorial :deep(.product-card-template),.resource-layout--editorial :deep(.collection-card-block > .block-renderer),.resource-layout--editorial :deep(.product-card-template > .block-renderer) {height:100%!important;min-height:0}
-.resource-layout--editorial :deep(.collection-card-block > .block-renderer),.resource-layout--editorial :deep(.product-card-template > .block-renderer) {justify-content:flex-start!important}
+.resource-layout--editorial :deep(.collection-card-block > .block-renderer),.resource-layout--editorial :deep(.product-card-template > .block-renderer) {justify-content:flex-start!important;flex-direction:column!important}
 .resource-layout--editorial :deep(.builder-block[data-block-type="IMAGE"]) {flex:1 1 0;min-height:0}
 .resource-layout--editorial :deep(.builder-block:not([data-block-type="IMAGE"])) {flex-shrink:0}
 .resource-layout--editorial :deep(.block-image) {height:100%!important;max-height:none!important;aspect-ratio:auto!important}

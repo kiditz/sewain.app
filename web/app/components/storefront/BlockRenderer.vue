@@ -201,11 +201,22 @@ function isFillTextBlock(block: StorefrontBlock) {
   z-index: 2;
   border-radius: 4px;
 }
-.builder-block.is-selected.is-product-card {
-  border-radius: inherit;
-}
+/* Cards and images can sit flush against a clipped card or carousel edge.
+   Draw their selection inside the wrapper so every side stays visible. */
+.builder-block.is-selected.is-product-card,
 .builder-block.is-selected.is-image-block {
+  outline: none;
+}
+.builder-block.is-selected.is-product-card::after,
+.builder-block.is-selected.is-image-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border: 2px solid #2563eb;
   border-radius: inherit;
+  box-sizing: border-box;
+  pointer-events: none;
 }
 .block-renderer {
   display: flex;

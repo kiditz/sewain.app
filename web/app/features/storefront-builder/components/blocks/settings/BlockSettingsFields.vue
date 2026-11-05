@@ -69,6 +69,7 @@ const editableSettings = computed<Record<string, unknown>>(() =>
     Object.entries(asSettings(props.block.settings)).filter(
       ([key]) =>
         !(props.resourceCardLayout&&props.block.type==='IMAGE'&&key==='aspectRatio') &&
+        !(props.block.type==='RECOMMENDED_PRODUCTS'&&props.block.settings.displayType==='editorial'&&['columns','mobileColumns'].includes(key)) &&
         key !== "linkTargets" && !['formKind','recommendation'].includes(key) && !(props.block.type==='EMAIL_SIGNUP'&&key==='requireConsent') && !(props.collectionCardTemplate&&key==='collectionId') &&
         !(
           key === "displayType" &&
@@ -88,6 +89,7 @@ const blockSettings = computed<Record<string, unknown>>(() => {
     const {height,customHeight,direction,position,alignTextBaseline,...layout}=asSettings(editableSettings.value.layout);
     return {...editableSettings.value,...(editableSettings.value.layout?{layout}: {})};
   }
+  if (props.block.type === "RECOMMENDED_PRODUCTS") return {...editableSettings.value,itemsGap:editableSettings.value.itemsGap??18};
   if (props.block.type === "SLIDE") return slideSettings(editableSettings.value);
   if (productControlTypes.includes(props.block.type)) {
     const defaults = productControlDefaults(props.block.type);
@@ -205,6 +207,8 @@ function update(key: string, value: unknown) {
       :key="`${block.id}:${key}`"
     >
       <EditorFieldRow v-if="key === 'pageId'" :label="t('blockCatalog.page')"><PageAutocomplete :model-value="typeof value==='string'?value:null" :kinds="['CUSTOM']" :label="t('blockCatalog.choosePage')" @select="update('pageId',$event.id)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'RECOMMENDED_PRODUCTS' && key === 'displayType'" :label="t('ui.layout')"><v-select :model-value="value" :items="['grid','carousel','editorial'].map(value=>({value,title:t(`productList.types.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('displayType',$event)" /></EditorFieldRow>
+      <EditorFieldRow v-else-if="block.type === 'RECOMMENDED_PRODUCTS' && key === 'itemsGap'" :label="t('ui.gap')"><v-number-input :model-value="Number(value)" :min="0" :max="96" variant="outlined" density="compact" hide-details @update:model-value="update('itemsGap',$event??18)" /></EditorFieldRow>
       <EditorFieldRow v-else-if="key === 'collectionId'" :label="t('blockCatalog.collection')"><v-autocomplete :model-value="value" :items="collectionItems" variant="outlined" density="compact" clearable hide-details @update:model-value="update('collectionId',$event||'')" /></EditorFieldRow>
       <EditorFieldRow v-else-if="block.type==='PAYMENT_ICONS' && key==='methods'" :label="t('blockCatalog.paymentMethods')"><v-select :model-value="Array.isArray(value)?value:[]" :items="Object.keys(paymentIcons).map(value=>({value,title:t(`blockCatalog.payments.${value}`)}))" multiple chips closable-chips hide-details variant="outlined" density="compact" @update:model-value="update('methods',$event||[])" /></EditorFieldRow>
       <EditorFieldRow v-else-if="key === 'productId'" :label="t('sectionCatalog.product')"><ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" /></EditorFieldRow>

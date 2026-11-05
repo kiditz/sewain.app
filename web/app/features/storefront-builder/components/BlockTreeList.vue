@@ -12,7 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [id: string];
   toggle: [block: StorefrontBlock];
-  addChild: [block: StorefrontBlock];
+  addChild: [block: StorefrontBlock,event:MouseEvent];
   reorder: [blocks: StorefrontBlock[]];
   reorderChildren: [value: { parent: StorefrontBlock; blocks: StorefrontBlock[] }];
 }>();
@@ -61,7 +61,6 @@ function canAddChild(block: StorefrontBlock) {
         :class="{ active: selectedBlockId === block.id, 'is-hidden': !block.enabled }"
         @click.stop="emit('select', block.id)"
       >
-        <v-icon class="block-drag-handle" size="15">mdi-drag</v-icon>
         <v-btn
           v-if="block.blocks?.length"
           :icon="collapsedBlocks[block.id] ? 'mdi-chevron-right' : 'mdi-chevron-down'"
@@ -79,15 +78,26 @@ function canAddChild(block: StorefrontBlock) {
           size="x-small"
           variant="text"
           :aria-label="$t('ui.add_nested_block')"
-          @click.stop="collapsedBlocks[block.id] = false; emit('addChild', block)"
+          @click.stop="collapsedBlocks[block.id] = false; emit('addChild', block,$event)"
         />
+        <div class="tree-row-action">
         <v-btn
+          class="tree-visibility"
           :icon="block.enabled ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
           size="x-small"
           variant="text"
-          :aria-label="block.enabled ? 'Hide block' : 'Show block'"
+          :aria-label="block.enabled ? 'Hide' : 'Show'"
           @click.stop="emit('toggle', block)"
         />
+        <v-btn
+          class="block-drag-handle"
+          icon="mdi-drag"
+          size="x-small"
+          variant="text"
+          :aria-label="$t('ui.drag_to_reorder')"
+          @click.stop
+        />
+        </div>
       </div>
       <BlockTreeList
         v-if="block.blocks?.length"
@@ -96,7 +106,7 @@ function canAddChild(block: StorefrontBlock) {
         :selected-block-id="selectedBlockId"
         @select="emit('select', $event)"
         @toggle="emit('toggle', $event)"
-        @add-child="emit('addChild', $event)"
+        @add-child="(block,event)=>emit('addChild',block,event)"
         @reorder="emit('reorderChildren', { parent: block, blocks: $event })"
         @reorder-children="emit('reorderChildren', $event)"
       />
@@ -155,9 +165,18 @@ function canAddChild(block: StorefrontBlock) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.block-drag-handle {
-  cursor: grab;
-  color: rgba(var(--v-theme-on-surface), 0.4);
+.tree-row-action { display: grid; flex-shrink: 0; }
+.tree-row-action > * { grid-area: 1 / 1; }
+.block-drag-handle { cursor: grab; opacity: 0; pointer-events: none; }
+.tree-visibility { opacity: 1; }
+.nested-block-row:hover > .tree-row-action > .block-drag-handle,
+.tree-row-action:has(.block-drag-handle:focus-visible) > .block-drag-handle { opacity: 1; pointer-events: auto; }
+.nested-block-row:hover > .tree-row-action > .tree-visibility,
+.tree-row-action:has(.block-drag-handle:focus-visible) > .tree-visibility { opacity: 0; pointer-events: none; }
+.block-drag-handle:active { cursor: grabbing; }
+@media (hover: none) {
+  .tree-row-action { display: flex; }
+  .tree-row-action > .block-drag-handle, .nested-block-row:hover > .tree-row-action > .tree-visibility { opacity: 1; pointer-events: auto; }
 }
 .block-leaf-icon {
   color: rgba(var(--v-theme-on-surface), 0.6);

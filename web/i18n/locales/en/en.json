@@ -1433,6 +1433,7 @@
     "types": {
       "carousel": "Carousel",
       "editorial": "Editorial / staggered grid",
+      "bento": "Bento",
       "grid": "Grid"
     }
   },
@@ -2183,6 +2184,7 @@
       "CHECKOUT": "Checkout",
       "FEATURED_COLLECTION_CAROUSEL": "Featured Collections: Carousel",
       "FEATURED_COLLECTION_EDITORIAL": "Featured Collections: Editorial",
+      "FEATURED_COLLECTION_BENTO": "Featured Collections: Bento",
       "FEATURED_PRODUCTS": "Featured Collections: Grid",
       "FEATURED_PRODUCT": "Featured Product",
       "PRODUCT_HIGHLIGHT": "Product highlight",

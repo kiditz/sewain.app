@@ -22,3 +22,11 @@ The public `POST /api/storefront/submissions` validates kind, UUID request ID, n
 Authenticated `GET /api/storefront/submissions?customerId=<id>&page=0&size=10` returns bounded paginated Customer contact history; `DELETE /api/storefront/submissions/{id}` removes a submission. Commands and queries use separate services. Existing tenant routing and authentication scope these operations.
 
 Customer resolution preserves existing names, notes, passwords and enabled status. New email-only contacts use the email as their display name until a merchant updates the profile. Only email-signup consent marks `emailSubscribed`; a contact-form message alone does not opt a Customer into marketing. Creating a Customer contact does not sign the visitor in or issue an account token.
+
+### Bento and Editorial resource layouts
+
+Collection Bento uses a twelve-track composition that adapts to the number of cards, including balanced final groups. Mobile uses two tracks with alternating paired and wide cards. Editorial collections and products each use an asymmetric eight-card cycle with intentional empty space; mobile uses alternating widths and alignment instead of shrinking the desktop grid. Both respond to their container width, including the builder preview.
+
+`ResourceListLayout.vue` owns the shared geometry. Cards retain editable content, padding and styling; Bento/Editorial own image dimensions, and Editorial owns the card's vertical arrangement. The editor hides conflicting card direction/height and image aspect-ratio controls while these layouts are selected. Item spacing remains editable. Ordinary Grid and Carousel retain their column controls.
+
+Design reference: [Shopify Horizon resource layouts](https://github.com/Shopify/horizon/tree/main/snippets), specifically the Bento grid and the separate Editorial collection/product compositions. These are built into the existing JSON section/block renderer and require no backend migration.

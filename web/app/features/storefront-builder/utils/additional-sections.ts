@@ -39,6 +39,7 @@ export function createAdditionalSections(base: Record<string,SectionDefinition>)
     DIVIDER: {...structured('DIVIDER','Divider','divider',['DIVIDER']),allowedBlocks:['DIVIDER'] as BlockType[]},
     CUSTOM_SECTION: structured('CUSTOM_SECTION','Custom Section','custom',[]),
     FEATURED_COLLECTION_CAROUSEL: featured('FEATURED_COLLECTION_CAROUSEL','Featured Collections: Carousel','carousel'),
+    FEATURED_COLLECTION_BENTO: featured('FEATURED_COLLECTION_BENTO','Featured Collections: Bento','bento'),
     FEATURED_COLLECTION_EDITORIAL: featured('FEATURED_COLLECTION_EDITORIAL','Featured Collections: Editorial','editorial'),
     FEATURED_PRODUCT: product('FEATURED_PRODUCT','Featured Product','featured'),
     PRODUCT_HIGHLIGHT: product('PRODUCT_HIGHLIGHT','Product highlight','highlight'),

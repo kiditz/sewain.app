@@ -1433,6 +1433,7 @@
     "types": {
       "carousel": "Carousel",
       "editorial": "Grid Bertingkat",
+      "bento": "Bento",
       "grid": "Grid"
     }
   },
@@ -2183,6 +2184,7 @@
       "CHECKOUT": "Checkout",
       "FEATURED_COLLECTION_CAROUSEL": "Koleksi Unggulan: Carousel",
       "FEATURED_COLLECTION_EDITORIAL": "Koleksi Unggulan: Editorial",
+      "FEATURED_COLLECTION_BENTO": "Koleksi Unggulan: Bento",
       "FEATURED_PRODUCTS": "Koleksi Unggulan: Grid",
       "FEATURED_PRODUCT": "Produk Unggulan",
       "PRODUCT_HIGHLIGHT": "Sorotan Produk",

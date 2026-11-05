@@ -61,8 +61,9 @@ const featuredDisplayTypes = computed(() => [
   { title: t("productList.types.carousel"), value: "carousel" },
   { title: t("productList.types.grid"), value: "grid" },
   { title: t("productList.types.editorial"), value: "editorial" },
+  {title:t("productList.types.bento"),value:"bento"},
   ...(collectionListTypes.includes(props.section.type) ? [
-    {title:'Bento',value:'bento'},{title:'Spotlight',value:'spotlight'},{title:t('sectionCatalog.text'),value:'text'},
+    {title:'Spotlight',value:'spotlight'},{title:t('sectionCatalog.text'),value:'text'},
   ] : []),
 ]);
 
