@@ -603,6 +603,7 @@ provide(builderDndKey, {
               :product-image="selectedBlockIsProductImage"
               :collection-card-template="selectedCollectionCardTemplate"
               :resource-card-layout="selectedResourceCardLayout"
+              @visibility="selectedBlock!.enabled=$event;store.touch(page)"
               @update="
                 (key, value) => updateBlockSetting(selectedBlock!, key, value)
               "

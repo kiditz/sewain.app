@@ -2,7 +2,11 @@
 import type { Product } from "~/types/product";
 import { useStorefrontCatalog } from "../composables/useStorefrontCatalog";
 const model = defineModel<string[]>({ default: () => [] });
-defineProps<{ label: string }>();
+const props=withDefaults(defineProps<{label:string;multiple?:boolean}>(),{multiple:true});
+const selection=computed<string[]|string|null>({
+  get:()=>props.multiple?model.value:model.value.at(-1)??null,
+  set:value=>{model.value=Array.isArray(value)?value:value?[value]:[];},
+});
 const catalog = useStorefrontCatalog();
 const { t } = useI18n();
 const cache = ref<Record<string, Product>>({});
@@ -54,8 +58,8 @@ onMounted(() => { void fetchPage(); });
 onBeforeUnmount(() => { disposed = true; ++sequence; if (timer) clearTimeout(timer); });
 </script>
 <template>
-  <v-autocomplete v-model="model" v-model:search="search" :items="options" :label="label" :aria-label="label" :loading="loading"
-    :error-messages="error ? [t('productGrid.loadFailed')] : []" multiple chips closable-chips no-filter hide-details="auto" variant="outlined" density="compact">
+  <v-autocomplete v-model="selection" v-model:search="search" :items="options" :label="label" :aria-label="label" :loading="loading"
+    :error-messages="error ? [t('productGrid.loadFailed')] : []" :multiple="multiple" :clearable="!multiple" :chips="multiple" :closable-chips="multiple" no-filter hide-details="auto" variant="outlined" density="compact">
     <template #append-item>
       <v-list-item v-if="resultIds.length < total">
         <v-btn variant="text" :loading="loading" :disabled="loading" @click.stop="fetchPage(page + 1)">{{ t('ui.load_more') }}</v-btn>

@@ -8,6 +8,7 @@ import type {
 } from "~/types/storefront";
 
 const props = defineProps<{
+  hideHeading?: boolean;
   settings: Record<string, unknown>;
 }>();
 
@@ -30,10 +31,10 @@ function updateLayout<K extends keyof TextLayout>(
 
 <template>
   <div class="d-flex flex-column">
-    <div class="text-title-medium font-weight-bold px-4 py-2">
+    <div v-if="!hideHeading" class="text-title-medium font-weight-bold px-4 py-2">
       {{ $t("ui.layout") }}
     </div>
-    <v-divider />
+    <v-divider v-if="!hideHeading" />
     <div class="d-flex flex-column px-4 py-4 ga-2">
       <div class="editor-row">
         <div class="text-body-medium">{{ $t("ui.width") }}</div>

@@ -17,7 +17,7 @@ async function refresh(){await nextTick();scrollbar.value?.$refs.el?.update();}
       <div class="catalog-picker__heading"><strong>{{title}}</strong><v-btn icon="mdi-close" size="x-small" variant="text" :aria-label="$t('common.cancel')" @click="emit('update:modelValue',false)" /></div>
       <div class="catalog-picker__body">
         <div class="catalog-picker__list">
-          <v-text-field :model-value="search" :label="searchLabel" prepend-inner-icon="mdi-magnify" clearable hide-details variant="outlined" density="compact" class="ma-3" @update:model-value="emit('update:search',$event||'');refresh()" />
+          <v-text-field :model-value="search" :label="searchLabel" prepend-inner-icon="mdi-magnify" clearable hide-details variant="outlined" density="compact" class="catalog-picker__search ma-3" @update:model-value="emit('update:search',$event||'');refresh()" />
           <nuxt-scrollbar ref="scrollbar" class="catalog-picker__scroll" :options="{suppressScrollX:true,wheelPropagation:false}">
             <v-list density="compact" class="py-0">
               <template v-for="category in categories" :key="category.id">
@@ -38,12 +38,14 @@ async function refresh(){await nextTick();scrollbar.value?.$refs.el?.update();}
   </v-menu>
 </template>
 <style scoped>
-.catalog-picker {display:flex;flex-direction:column;max-height:calc(100dvh - 32px);overflow:hidden}
-.catalog-picker__heading {display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
-.catalog-picker__body {display:grid;grid-template-columns:280px minmax(0,1fr);min-height:0;height:min(500px,calc(100dvh - 180px))}
-.catalog-picker__list {display:flex;flex-direction:column;min-height:0;border-inline-end:1px solid rgba(var(--v-theme-on-surface),.12)}
-.catalog-picker__scroll {position:relative;flex:1;min-height:0}
-.catalog-picker__preview {min-width:0;overflow:auto;background:rgba(var(--v-theme-on-surface),.04);padding:16px}
+.catalog-picker {display:flex;flex-direction:column;height:min(620px,calc(100dvh - 32px));max-height:100%;overflow:hidden}
+.catalog-picker__heading {flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.catalog-picker__body {display:grid;grid-template-columns:280px minmax(0,1fr);grid-template-rows:minmax(0,1fr);flex:1 1 0;min-height:0;overflow:hidden}
+.catalog-picker__list {display:grid;grid-template-rows:64px minmax(0,1fr);min-width:0;min-height:0;overflow:hidden;border-inline-end:1px solid rgba(var(--v-theme-on-surface),.12)}
+.catalog-picker__search {flex:none;min-width:0}
+.catalog-picker__scroll {position:relative;height:100%;min-height:0;min-width:0;overflow:hidden}
+.catalog-picker > .v-card-actions,.catalog-picker > .v-divider {flex-shrink:0}
+.catalog-picker__preview {min-width:0;min-height:0;overflow:auto;background:rgba(var(--v-theme-on-surface),.04);padding:16px}
 .catalog-picker__empty {display:flex;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:12px;opacity:.6}
 @media(max-width:600px){.catalog-picker__body{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.catalog-picker__preview{padding:8px}}
 </style>

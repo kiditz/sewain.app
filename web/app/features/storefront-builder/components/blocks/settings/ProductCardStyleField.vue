@@ -4,6 +4,7 @@ import type { StorefrontProductCardStyle } from "~/types/storefront";
 import EditorFieldRow from "../../EditorFieldRow.vue";
 
 const props = defineProps<{
+  hideHeading?: boolean;
   value: unknown;
 }>();
 
@@ -70,10 +71,10 @@ function update(key: keyof StorefrontProductCardStyle, value: string) {
 
 <template>
   <div class="product-card-style">
-    <div class="text-title-medium font-weight-bold px-4 py-2">
+    <div v-if="!hideHeading" class="text-title-medium font-weight-bold px-4 py-2">
       {{ $t("ui.product_card_style") }}
     </div>
-    <v-divider />
+    <v-divider v-if="!hideHeading" />
     <div class="d-flex flex-column ga-2 py-2">
       <EditorFieldRow :label="$t('ui.variant')">
         <v-select

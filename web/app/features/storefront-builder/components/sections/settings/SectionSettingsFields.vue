@@ -145,7 +145,7 @@ function labelOf(key: string) {
         <v-number-input :model-value="Number(value)" :min="2" :max="30" variant="outlined" density="compact" hide-details @update:model-value="update('interval', Math.min(30, Math.max(2, Number($event) || 5)))" />
       </EditorFieldRow>
       <EditorFieldRow v-else-if="key === 'productId'" :label="t('sectionCatalog.product')">
-        <ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" />
+        <ProductSelector :multiple="false" :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" />
       </EditorFieldRow>
       <div v-else-if="section.type === 'IMAGE_BANNER' && key === 'image'">
         <ImageField :settings="bannerImage(value)" @update="(field, selected) => update('image', { ...bannerImage(value), [field]: selected })" />

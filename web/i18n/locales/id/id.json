@@ -1,4 +1,14 @@
 {
+  "blockSettingsGroups": {
+    "content": "Konten",
+    "typography": "Tipografi",
+    "links": "Link & Aksi",
+    "style": "Style",
+    "padding": "Padding",
+    "layout": "Tata Letak",
+    "visibility": "Visibilitas",
+    "textColor": "Warna teks"
+  },
   "storefrontTheme": {
     "mode": "Mode tampilan",
     "light": "Terang",
@@ -2113,7 +2123,14 @@
     "catalog": {
       "everyday": "Layout yang nyaman untuk berbagai kebutuhan sewa.",
       "studio": "Tipografi bersih, slideshow, dan layout minimal.",
-      "sunrise": "Warna hangat, sudut membulat, dan koleksi sebagai fokus."
+      "sunrise": "Warna hangat, sudut membulat, dan koleksi sebagai fokus.",
+      "trail": "Nuansa hijau outdoor, hero tegas, dan koleksi Bento.",
+      "coast": "Biru yang lapang, slideshow inset, dan susunan produk yang santai.",
+      "atelier": "Komposisi editorial dengan tipografi serif dan ruang yang lega.",
+      "bloom": "Nuansa pink lembut, sudut membulat, dan layout untuk momen spesial.",
+      "mono": "Gaya monokrom tegas, grid ringkas, dan judul berjalan.",
+      "midnight": "Palet gelap, slideshow berlapis, dan produk dalam susunan Bento.",
+      "terra": "Warna bumi, tipografi hangat, dan susunan editorial yang bercerita."
     }
   },
   "theme": {
@@ -2137,6 +2154,7 @@
     "mediaLayoutHint": "Dimensi gambar mengikuti komposisi Bento atau Editorial pada section.",
     "search": "Cari section",
     "noResults": "Tidak ada section yang cocok.",
+    "chooseSectionProduct": "Pilih produk di pengaturan section.",
     "chooseProduct": "Pilih produk melalui pengaturan block.",
     "viewProduct": "Lihat produk",
     "product": "Produk",

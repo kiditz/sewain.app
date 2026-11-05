@@ -2,6 +2,7 @@
 import type { StorefrontAppearance } from "~/types/storefront";
 
 const props = defineProps<{
+  hideHeading?: boolean;
   settings: Record<string, unknown>;
 }>();
 
@@ -23,10 +24,10 @@ function updateSetting(key: string, value: unknown) {
 
 <template>
   <div class="d-flex flex-column py-2">
-    <div class="text-title-medium font-weight-bold px-4 py-2">
+    <div v-if="!hideHeading" class="text-title-medium font-weight-bold px-4 py-2">
       {{ $t("ui.appearance") }}
     </div>
-    <v-divider />
+    <v-divider v-if="!hideHeading" />
     <div class="d-flex flex-column px-4 py-4 ga-4">
       <div v-if="appearance.backgroundColor != null" class="editor-row">
         <div class="text-body-medium">{{ $t("ui.background_color") }}</div>

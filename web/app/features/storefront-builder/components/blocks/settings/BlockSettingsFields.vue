@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {blockFieldGroups,blockFieldGroup} from "../../../utils/block-field-groups";
 import PageAutocomplete from "../../PageAutocomplete.vue";
 import { paymentIcons } from "../../../utils/payment-icons";
 import { contentIcons } from "../../../utils/content-icons";
@@ -34,6 +35,7 @@ const storefront = useStorefront();
 
 const emit = defineEmits<{
   update: [key: string, value: unknown];
+  visibility: [value:boolean];
 }>();
 
 const collectionItems = computed(() =>
@@ -138,9 +140,16 @@ const blockSettings = computed<Record<string, unknown>>(() => {
   };
 });
 
-const settingFields = computed<Array<{ key: string; value: unknown }>>(() =>
-  Object.entries(blockSettings.value).map(([key, value]) => ({ key, value })),
-);
+const settingGroups = computed(() => {
+  const fields = Object.entries(blockSettings.value).map(([key,value])=>({key,value}));
+  if(props.block.type==='SOCIAL_LINK')fields.unshift({key:'__socialLink',value:null});
+  if(props.block.type==='IMAGE'&&props.productImage)fields.unshift({key:'__productImageDisplay',value:null});
+  fields.push({key:'__visibility',value:props.block.enabled});
+  // Keep content first even when persisted JSON has a different property order.
+  const priority:Record<string,number>={text:0,label:1,title:2,level:0,fontSize:1,style:0,appearance:1,borderRadius:2};
+  return blockFieldGroups.map(id=>({id,fields:fields.filter(field=>blockFieldGroup(field.key)===id)
+    .sort((a,b)=>(priority[a.key]??10)-(priority[b.key]??10))})).filter(group=>group.fields.length);
+});
 
 function selectedIds(value: unknown): string[] {
   return String(value ?? "")
@@ -180,272 +189,278 @@ function update(key: string, value: unknown) {
 <template>
   <div class="settings-fields">
     <p v-if="resourceCardLayout" class="text-body-small text-medium-emphasis px-4">{{t('sectionCatalog.mediaLayoutHint')}}</p>
-    <SocialLinkFields
-      v-if="block.type === 'SOCIAL_LINK'"
-      :settings="block.settings"
-      @update="update"
-    />
-    <EditorFieldRow
-      v-if="block.type === 'IMAGE' && productImage"
-      :label="t('ui.image_display_type')"
-    >
-      <v-select
-        :model-value="String(block.settings.displayType ?? 'single')"
-        :items="[
-          { title: t('ui.single_image'), value: 'single' },
-          { title: t('productList.types.carousel'), value: 'carousel' },
-        ]"
-        variant="outlined"
-        density="compact"
-        hide-details
-        @update:model-value="update('displayType', String($event ?? 'single'))"
-      />
-    </EditorFieldRow>
-
-    <template
-      v-for="{ key, value } in settingFields"
-      :key="`${block.id}:${key}`"
-    >
-      <EditorFieldRow v-if="key === 'pageId'" :label="t('blockCatalog.page')"><PageAutocomplete :model-value="typeof value==='string'?value:null" :kinds="['CUSTOM']" :label="t('blockCatalog.choosePage')" @select="update('pageId',$event.id)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type === 'RECOMMENDED_PRODUCTS' && key === 'displayType'" :label="t('ui.layout')"><v-select :model-value="value" :items="['grid','carousel','editorial'].map(value=>({value,title:t(`productList.types.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('displayType',$event)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type === 'RECOMMENDED_PRODUCTS' && key === 'itemsGap'" :label="t('ui.gap')"><v-number-input :model-value="Number(value)" :min="0" :max="96" variant="outlined" density="compact" hide-details @update:model-value="update('itemsGap',$event??18)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="key === 'collectionId'" :label="t('blockCatalog.collection')"><v-autocomplete :model-value="value" :items="collectionItems" variant="outlined" density="compact" clearable hide-details @update:model-value="update('collectionId',$event||'')" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type==='PAYMENT_ICONS' && key==='methods'" :label="t('blockCatalog.paymentMethods')"><v-select :model-value="Array.isArray(value)?value:[]" :items="Object.keys(paymentIcons).map(value=>({value,title:t(`blockCatalog.payments.${value}`)}))" multiple chips closable-chips hide-details variant="outlined" density="compact" @update:model-value="update('methods',$event||[])" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="key === 'productId'" :label="t('sectionCatalog.product')"><ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="['ICON_TEXT','ICON'].includes(block.type) && key === 'icon'" :label="t('sectionCatalog.icon')"><v-select :model-value="value" :items="Object.keys(contentIcons).map(value => ({value,title:t(`sectionCatalog.icons.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('icon',$event)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type === 'FAQ_ITEM' && key === 'answer'" :label="t('sectionCatalog.answer')"><v-textarea :model-value="String(value || '')" variant="outlined" density="compact" rows="4" auto-grow hide-details @update:model-value="update('answer',$event)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="block.type === 'HOTSPOT' && ['x','y'].includes(key)" :label="t(`sectionCatalog.fields.${key}`)"><v-slider :model-value="Number(value)" :min="0" :max="100" :step="1" thumb-label hide-details @update:model-value="update(key,$event)" /></EditorFieldRow>
-      <EditorFieldRow v-else-if="['DIVIDER','ICON'].includes(block.type) && key === 'color'" :label="t('sectionCatalog.fields.color')"><v-color-input :model-value="String(value || (block.type==='ICON'?storefront.theme.value.colors.primary:storefront.theme.value.colors.secondary))" hide-details variant="outlined" density="compact" @update:model-value="update('color',$event)" /></EditorFieldRow>
-      <div v-else-if="block.type === 'SLIDE' && key === 'image'">
-        <ImageField :settings="asSettings(value)" @update="(field, selected) => update('image', { ...asSettings(value), [field]: selected })" />
-        <EditorFieldRow :label="t('ui.alt_text')">
-          <v-text-field :model-value="String(asSettings(value).alt || '')" variant="outlined" density="compact" hide-details @update:model-value="update('image', { ...asSettings(value), alt: $event })" />
+    <section v-for="group in settingGroups" :key="`${block.id}:${group.id}`" class="settings-group">
+      <h3 class="text-title-medium font-weight-bold px-4 py-2">{{t(`blockSettingsGroups.${group.id}`)}}</h3>
+      <v-divider />
+      <div class="settings-group__fields">
+      <template v-for="{key,value} in group.fields" :key="`${block.id}:${key}`">
+        <SocialLinkFields
+          v-if="key === '__socialLink'"
+          :settings="block.settings"
+          @update="update"
+        />
+        <EditorFieldRow
+          v-else-if="key === '__productImageDisplay'"
+          :label="t('ui.image_display_type')"
+        >
+          <v-select
+            :model-value="String(block.settings.displayType ?? 'single')"
+            :items="[
+              { title: t('ui.single_image'), value: 'single' },
+              { title: t('productList.types.carousel'), value: 'carousel' },
+            ]"
+            variant="outlined"
+            density="compact"
+            hide-details
+            @update:model-value="update('displayType', String($event ?? 'single'))"
+          />
         </EditorFieldRow>
-      </div>
-      <AppearanceField v-else-if="block.type === 'SLIDE' && key === 'appearance'" :settings="blockSettings" @update="update" />
-      <EditorFieldRow
-        v-else-if="key === 'collectionIds'"
-        :label="labelOf(String(key))"
-      >
-        <v-autocomplete
-          :model-value="selectedIds(value)"
-          :items="collectionItems"
-          variant="outlined"
-          density="compact"
-          chips
-          closable-chips
-          multiple
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="
-            update(key, Array.isArray($event) ? $event.join(',') : '')
-          "
-        />
-      </EditorFieldRow>
 
-      <EditorFieldRow
-        v-else-if="isBlockLinkField(String(key), value)"
-        :label="labelOf(String(key)).replace(/url|href/gi, 'Link')"
-      >
-        <BlockLinkField
-          :settings="block.settings"
-          :field-key="String(key)"
-          :label="labelOf(String(key)).replace(/url|href/gi, 'Link')"
-          @update="update"
-        />
-      </EditorFieldRow>
-
-      <!-- <EditorFieldRow v-else-if="block.type === 'MENU' && key === 'menuId'" label="Menu">
-        <v-select :model-value="value ?? null" :items="[
-          ...storefront.MenuItems.value.map(menu => ({ title: menu.name, value: menu.id })),
-        ]" variant="outlined" density="compact" hide-details aria-label="Navigation menu" @update:model-value="update('menuId', $event)" />
-      </EditorFieldRow> -->
-      <MenuField
-        v-else-if="block.type === 'MENU' && key === 'menuId'"
-        :model-value="typeof value === 'string' ? value : null"
-        @update="update"
-      />
-
-      <EditorFieldRow
-        v-else-if="key === 'aspectRatio'"
-        :label="labelOf(String(key))"
-      >
-        <v-select
-          :model-value="selectedAspectRatio(value)"
-          :items="aspectRatioItems"
-          variant="outlined"
-          density="compact"
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="update(String(key), String($event ?? 'auto'))"
-        />
-      </EditorFieldRow>
-
-      <!-- <LogoField v-else-if="key === 'src' && block.type === 'LOGO'" :settings="block.settings" @update="update" /> -->
-
-      <template v-else-if="key === 'src' && block.type === 'IMAGE'">
-        <ImageField
-          v-if="!productImage"
-          :settings="block.settings"
-          @update="update"
-        />
-      </template>
-
-      <EditorFieldRow
-        v-else-if="typeof value === 'boolean'"
-        :label="labelOf(String(key))"
-      >
-        <v-switch
-          :model-value="value"
-          color="primary"
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="update(String(key), $event)"
-        />
-      </EditorFieldRow>
-
-      <EditorFieldRow
-        v-else-if="typeof value === 'number'"
-        :label="labelOf(String(key))"
-      >
-        <v-number-input
-          :model-value="value"
-          variant="outlined"
-          density="compact"
-          control-variant="stacked"
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="update(String(key), Number($event))"
-        />
-      </EditorFieldRow>
-
-      <div
-        class="d-flex flex-column"
-        v-else-if="
-          key === 'style' && ['EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(block.type)
-        "
-      >
-        <div class="text-title-medium font-weight-bold px-4 py-2">Style</div>
-        <v-divider />
-        <div class="d-flex flex-column py-2 ga-2">
+          <EditorFieldRow v-else-if="key==='__visibility'" :label="t('ui.show_block')"><v-switch :model-value="block.enabled" color="primary" hide-details :aria-label="t('ui.show_block')" @update:model-value="emit('visibility',!!$event)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="key === 'pageId'" :label="t('blockCatalog.page')"><PageAutocomplete :model-value="typeof value==='string'?value:null" :kinds="['CUSTOM']" :label="t('blockCatalog.choosePage')" @select="update('pageId',$event.id)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="block.type === 'RECOMMENDED_PRODUCTS' && key === 'displayType'" :label="t('ui.layout')"><v-select :model-value="value" :items="['grid','carousel','editorial'].map(value=>({value,title:t(`productList.types.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('displayType',$event)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="block.type === 'RECOMMENDED_PRODUCTS' && key === 'itemsGap'" :label="t('ui.gap')"><v-number-input :model-value="Number(value)" :min="0" :max="96" variant="outlined" density="compact" hide-details @update:model-value="update('itemsGap',$event??18)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="key === 'collectionId'" :label="t('blockCatalog.collection')"><v-autocomplete :model-value="value" :items="collectionItems" variant="outlined" density="compact" clearable hide-details @update:model-value="update('collectionId',$event||'')" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="block.type==='PAYMENT_ICONS' && key==='methods'" :label="t('blockCatalog.paymentMethods')"><v-select :model-value="Array.isArray(value)?value:[]" :items="Object.keys(paymentIcons).map(value=>({value,title:t(`blockCatalog.payments.${value}`)}))" multiple chips closable-chips hide-details variant="outlined" density="compact" @update:model-value="update('methods',$event||[])" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="key === 'productId'" :label="t('sectionCatalog.product')"><ProductSelector :model-value="value ? [String(value)] : []" :label="t('sectionCatalog.product')" @update:model-value="update('productId', $event.at(-1) || '')" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="['ICON_TEXT','ICON'].includes(block.type) && key === 'icon'" :label="t('sectionCatalog.icon')"><v-select :model-value="value" :items="Object.keys(contentIcons).map(value => ({value,title:t(`sectionCatalog.icons.${value}`)}))" variant="outlined" density="compact" hide-details @update:model-value="update('icon',$event)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="block.type === 'FAQ_ITEM' && key === 'answer'" :label="t('sectionCatalog.answer')"><v-textarea :model-value="String(value || '')" variant="outlined" density="compact" rows="4" auto-grow hide-details @update:model-value="update('answer',$event)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="block.type === 'HOTSPOT' && ['x','y'].includes(key)" :label="t(`sectionCatalog.fields.${key}`)"><v-slider :model-value="Number(value)" :min="0" :max="100" :step="1" thumb-label hide-details @update:model-value="update(key,$event)" /></EditorFieldRow>
+          <EditorFieldRow v-else-if="['DIVIDER','ICON'].includes(block.type) && key === 'color'" :label="t('sectionCatalog.fields.color')"><v-color-input :model-value="String(value || (block.type==='ICON'?storefront.theme.value.colors.primary:storefront.theme.value.colors.secondary))" hide-details variant="outlined" density="compact" @update:model-value="update('color',$event)" /></EditorFieldRow>
+          <div v-else-if="block.type === 'SLIDE' && key === 'image'">
+            <ImageField :settings="asSettings(value)" @update="(field, selected) => update('image', { ...asSettings(value), [field]: selected })" />
+            <EditorFieldRow :label="t('ui.alt_text')">
+              <v-text-field :model-value="String(asSettings(value).alt || '')" variant="outlined" density="compact" hide-details @update:model-value="update('image', { ...asSettings(value), alt: $event })" />
+            </EditorFieldRow>
+          </div>
+          <AppearanceField hide-heading v-else-if="block.type === 'SLIDE' && key === 'appearance'" :settings="blockSettings" @update="update" />
           <EditorFieldRow
-            v-for="styleKey in ['color', 'backgroundColor']"
-            :key="styleKey"
-            :label="
-              styleKey === 'color' ? 'Warna teks' : t('ui.background_color')
-            "
+            v-else-if="key === 'collectionIds'"
+            :label="labelOf(String(key))"
           >
-            <v-color-input
-              :model-value="
-                String(
-                  asSettings(value)[styleKey] ||
-                    (styleKey === 'backgroundColor'
-                      ? '#00000000'
-                      : block.type === 'EYEBROW'
-                        ? storefront.theme.value.colors.primary
-                        : storefront.theme.value.colors.text),
-                )
-              "
-              color-format="hexa"
+            <v-autocomplete
+              :model-value="selectedIds(value)"
+              :items="collectionItems"
               variant="outlined"
               density="compact"
+              chips
+              closable-chips
+              multiple
               hide-details
-              color-pip
-              :aria-label="
-                styleKey === 'color' ? 'Warna teks' : t('ui.background_color')
-              "
+              :aria-label="labelOf(String(key))"
               @update:model-value="
-                update('style', {
-                  ...asSettings(value),
-                  [styleKey]: $event ?? '',
-                })
+                update(key, Array.isArray($event) ? $event.join(',') : '')
               "
             />
           </EditorFieldRow>
-        </div>
-      </div>
 
-      <TextField
-        v-else-if="key === 'text' || key === 'label'"
-        :block="block"
-        :field-key="key === 'label' ? 'label' : 'text'"
-        @update="update"
-      />
+          <EditorFieldRow
+            v-else-if="isBlockLinkField(String(key), value)"
+            :label="labelOf(String(key)).replace(/url|href/gi, 'Link')"
+          >
+            <BlockLinkField
+              :settings="block.settings"
+              :field-key="String(key)"
+              :label="labelOf(String(key)).replace(/url|href/gi, 'Link')"
+              @update="update"
+            />
+          </EditorFieldRow>
 
-      <EditorFieldRow v-else-if="key === 'level'" :label="labelOf(String(key))">
-        <v-select
-          :model-value="String(value ?? '')"
-          :items="['h1', 'h2', 'h3']"
-          variant="outlined"
-          density="compact"
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="update(String(key), String($event))"
-        />
-      </EditorFieldRow>
+          <!-- <EditorFieldRow v-else-if="block.type === 'MENU' && key === 'menuId'" label="Menu">
+            <v-select :model-value="value ?? null" :items="[
+              ...storefront.MenuItems.value.map(menu => ({ title: menu.name, value: menu.id })),
+            ]" variant="outlined" density="compact" hide-details aria-label="Navigation menu" @update:model-value="update('menuId', $event)" />
+          </EditorFieldRow> -->
+          <MenuField
+            v-else-if="block.type === 'MENU' && key === 'menuId'"
+            :model-value="typeof value === 'string' ? value : null"
+            @update="update"
+          />
 
-      <ProductCardStyleField
-        v-else-if="key === 'style' && block.type === 'PRODUCT_CARD'"
-        :value="value"
-        @update="update('style', $event)"
-      />
-      <EditorFieldRow v-else-if="key === 'style'" :label="labelOf(String(key))">
-        <v-select
-          :model-value="String(value ?? '')"
-          :items="['primary', 'secondary', 'outline']"
-          variant="outlined"
-          density="compact"
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="update(String(key), String($event))"
-        />
-      </EditorFieldRow>
+          <EditorFieldRow
+            v-else-if="key === 'aspectRatio'"
+            :label="labelOf(String(key))"
+          >
+            <v-select
+              :model-value="selectedAspectRatio(value)"
+              :items="aspectRatioItems"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :aria-label="labelOf(String(key))"
+              @update:model-value="update(String(key), String($event ?? 'auto'))"
+            />
+          </EditorFieldRow>
 
-      <PaddingField
-        v-else-if="key === 'padding'"
-        :settings="blockSettings"
-        @update="update"
-      />
-      <LayoutField
-        v-else-if="
-          key === 'layout' &&
-          (['HEADER', 'MENU', 'SLIDE', 'COLUMN', 'GROUP', 'ACCORDION', 'POPUP_LINK', 'COLLECTION_CARD', 'COMPARISON_SLIDER', 'CONTACT_FORM', 'EMAIL_SIGNUP', 'RECOMMENDED_PRODUCTS'].includes(block.type) || productControlTypes.includes(block.type) ||
-            block.type.startsWith('CHECKOUT_'))
-        "
-        :settings="blockSettings"
-        @update="update"
-      />
-      <TextLayoutField
-        v-else-if="key === 'layout'"
-        :settings="blockSettings"
-        @update="update"
-      />
-      <BorderRadiusField
-        v-else-if="
-          key === 'borderRadius' &&
-          ['IMAGE', 'PRODUCT_CARD', 'EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(
-            block.type,
-          )
-        "
-        :settings="blockSettings"
-        :default-value="
-          ['EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(block.type)
-            ? 0
-            : storefront.theme.value.layout.borderRadius
-        "
-        @update="update"
-      />
-      <EditorFieldRow v-else :label="labelOf(String(key))">
-        <v-text-field
-          :model-value="String(value ?? '')"
-          variant="outlined"
-          density="compact"
-          hide-details
-          :aria-label="labelOf(String(key))"
-          @update:model-value="update(String(key), String($event ?? ''))"
-        />
-      </EditorFieldRow>
+          <!-- <LogoField v-else-if="key === 'src' && block.type === 'LOGO'" :settings="block.settings" @update="update" /> -->
+
+          <template v-else-if="key === 'src' && block.type === 'IMAGE'">
+            <ImageField
+              v-if="!productImage"
+              :settings="block.settings"
+              @update="update"
+            />
+          </template>
+
+          <EditorFieldRow
+            v-else-if="typeof value === 'boolean'"
+            :label="labelOf(String(key))"
+          >
+            <v-switch
+              :model-value="value"
+              color="primary"
+              hide-details
+              :aria-label="labelOf(String(key))"
+              @update:model-value="update(String(key), $event)"
+            />
+          </EditorFieldRow>
+
+          <EditorFieldRow
+            v-else-if="typeof value === 'number'"
+            :label="labelOf(String(key))"
+          >
+            <v-number-input
+              :model-value="value"
+              variant="outlined"
+              density="compact"
+              control-variant="stacked"
+              hide-details
+              :aria-label="labelOf(String(key))"
+              @update:model-value="update(String(key), Number($event))"
+            />
+          </EditorFieldRow>
+
+          <div
+            class="d-flex flex-column"
+            v-else-if="
+              key === 'style' && ['EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(block.type)
+            "
+          >
+            <div class="d-flex flex-column py-2 ga-2">
+              <EditorFieldRow
+                v-for="styleKey in ['color', 'backgroundColor']"
+                :key="styleKey"
+                :label="
+                  styleKey === 'color' ? t('blockSettingsGroups.textColor') : t('ui.background_color')
+                "
+              >
+                <v-color-input
+                  :model-value="
+                    String(
+                      asSettings(value)[styleKey] ||
+                        (styleKey === 'backgroundColor'
+                          ? '#00000000'
+                          : block.type === 'EYEBROW'
+                            ? storefront.theme.value.colors.primary
+                            : storefront.theme.value.colors.text),
+                    )
+                  "
+                  color-format="hexa"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  color-pip
+                  :aria-label="
+                    styleKey === 'color' ? t('blockSettingsGroups.textColor') : t('ui.background_color')
+                  "
+                  @update:model-value="
+                    update('style', {
+                      ...asSettings(value),
+                      [styleKey]: $event ?? '',
+                    })
+                  "
+                />
+              </EditorFieldRow>
+            </div>
+          </div>
+
+          <TextField
+            v-else-if="key === 'text' || key === 'label'"
+            :block="block"
+            :field-key="key === 'label' ? 'label' : 'text'"
+            @update="update"
+          />
+
+          <EditorFieldRow v-else-if="key === 'level'" :label="labelOf(String(key))">
+            <v-select
+              :model-value="String(value ?? '')"
+              :items="['h1', 'h2', 'h3']"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :aria-label="labelOf(String(key))"
+              @update:model-value="update(String(key), String($event))"
+            />
+          </EditorFieldRow>
+
+          <ProductCardStyleField
+            hide-heading
+            v-else-if="key === 'style' && block.type === 'PRODUCT_CARD'"
+            :value="value"
+            @update="update('style', $event)"
+          />
+          <EditorFieldRow v-else-if="key === 'style'" :label="labelOf(String(key))">
+            <v-select
+              :model-value="String(value ?? '')"
+              :items="['primary', 'secondary', 'outline']"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :aria-label="labelOf(String(key))"
+              @update:model-value="update(String(key), String($event))"
+            />
+          </EditorFieldRow>
+
+          <PaddingField
+            hide-heading
+            v-else-if="key === 'padding'"
+            :settings="blockSettings"
+            @update="update"
+          />
+          <LayoutField
+            hide-heading
+            v-else-if="
+              key === 'layout' &&
+              (['HEADER', 'MENU', 'SLIDE', 'COLUMN', 'GROUP', 'ACCORDION', 'POPUP_LINK', 'COLLECTION_CARD', 'COMPARISON_SLIDER', 'CONTACT_FORM', 'EMAIL_SIGNUP', 'RECOMMENDED_PRODUCTS'].includes(block.type) || productControlTypes.includes(block.type) ||
+                block.type.startsWith('CHECKOUT_'))
+            "
+            :settings="blockSettings"
+            @update="update"
+          />
+          <TextLayoutField
+            hide-heading
+            v-else-if="key === 'layout'"
+            :settings="blockSettings"
+            @update="update"
+          />
+          <BorderRadiusField
+            v-else-if="
+              key === 'borderRadius' &&
+              ['IMAGE', 'PRODUCT_CARD', 'EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(
+                block.type,
+              )
+            "
+            :settings="blockSettings"
+            :default-value="
+              ['EYEBROW', 'HEADING', 'TEXT', 'JUMBO_TEXT', 'COPYRIGHT', 'PRODUCT_DESCRIPTION', 'COLLECTION_TITLE'].includes(block.type)
+                ? 0
+                : storefront.theme.value.layout.borderRadius
+            "
+            @update="update"
+          />
+          <EditorFieldRow v-else :label="labelOf(String(key))">
+            <v-text-field
+              :model-value="String(value ?? '')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :aria-label="labelOf(String(key))"
+              @update:model-value="update(String(key), String($event ?? ''))"
+            />
+          </EditorFieldRow>
     </template>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -455,4 +470,7 @@ function update(key: string, value: unknown) {
   flex-direction: column;
   gap: 12px;
 }
+.settings-group {min-width:0}
+.settings-group h3 {margin:0}
+.settings-group__fields {display:flex;flex-direction:column;gap:12px;padding-block:8px}
 </style>

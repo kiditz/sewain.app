@@ -1,4 +1,14 @@
 {
+  "blockSettingsGroups": {
+    "content": "Content",
+    "typography": "Typography",
+    "links": "Links & actions",
+    "style": "Style",
+    "padding": "Padding",
+    "layout": "Layout",
+    "visibility": "Visibility",
+    "textColor": "Text color"
+  },
   "storefrontTheme": {
     "mode": "Appearance",
     "light": "Light",
@@ -2113,7 +2123,14 @@
     "catalog": {
       "everyday": "A welcoming layout for everyday rentals.",
       "studio": "Clean typography, a slideshow, and a minimal layout.",
-      "sunrise": "Warm colors, rounded corners, and a collection-first layout."
+      "sunrise": "Warm colors, rounded corners, and a collection-first layout.",
+      "trail": "Outdoor-inspired greens, a bold hero, and Bento collections.",
+      "coast": "Airy blues, an inset slideshow, and a relaxed product showcase.",
+      "atelier": "An editorial composition with serif typography and generous space.",
+      "bloom": "Soft pink tones, rounded shapes, and a celebration-ready layout.",
+      "mono": "Sharp monochrome styling, compact grids, and a scrolling headline.",
+      "midnight": "A dark palette, layered slideshow, and Bento product highlights.",
+      "terra": "Earthy colors, warm typography, and a story-led editorial layout."
     }
   },
   "theme": {
@@ -2137,6 +2154,7 @@
     "mediaLayoutHint": "Image dimensions follow the section’s Bento or Editorial composition.",
     "search": "Search sections",
     "noResults": "No matching sections.",
+    "chooseSectionProduct": "Choose a product in section settings.",
     "chooseProduct": "Choose a product in block settings.",
     "viewProduct": "View product",
     "product": "Product",

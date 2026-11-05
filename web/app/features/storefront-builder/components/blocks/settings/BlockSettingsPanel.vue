@@ -29,17 +29,7 @@ const emit = defineEmits<{
     />
   </div>
   <v-divider />
-  <div class="d-flex align-center px-4">
-    <div class="text-body-medium">{{ $t("ui.show_block") }}</div>
-    <v-switch
-      v-model="block.enabled"
-      class="ml-auto"
-      color="primary"
-      hide-details
-      @update:model-value="emit('touch')"
-    />
-  </div>
-  <v-divider />
+
 </template>
 <style scoped>
 .sidebar-title {
