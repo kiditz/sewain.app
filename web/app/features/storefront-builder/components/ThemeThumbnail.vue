@@ -1,12 +1,20 @@
 <script setup lang="ts">
+import {storefrontPresets} from '../utils/storefront-theme';
 import type { StorefrontTheme } from '~/types/storefront';
-defineProps<{ name: string; colors?: StorefrontTheme['colors'] }>();
+const props=defineProps<{name:string;source?:string;colors?:StorefrontTheme['colors']}>();
+const presetId=computed(()=>props.source??props.name.toLowerCase());
+const failed=ref(false);
+watch(presetId,()=>{failed.value=false;});
+const screenshot=computed(()=>!failed.value&&storefrontPresets.some(name=>name.toLowerCase()===presetId.value)?`/themes/previews/${presetId.value}.png`:null);
 </script>
 <template>
-  <div class="theme-thumbnail" :class="`theme-thumbnail--${name.toLowerCase()}`" :style="{ background: colors?.background, color: colors?.text, '--theme-primary': colors?.primary, '--theme-secondary': colors?.secondary, '--theme-surface': colors?.surface }" aria-hidden="true">
+  <div class="theme-thumbnail" :class="[`theme-thumbnail--${presetId}`, {'theme-thumbnail--screenshot':screenshot}]" :style="{ background: colors?.background, color: colors?.text, '--theme-primary': colors?.primary, '--theme-secondary': colors?.secondary, '--theme-surface': colors?.surface }" aria-hidden="true">
+    <img v-if="screenshot" :src="screenshot" alt="" loading="lazy" class="theme-thumbnail__screenshot" @error="failed=true" />
+    <template v-else>
     <div class="theme-thumbnail__navigation"><strong>{{ name }}</strong><span>☰</span></div>
     <div class="theme-thumbnail__hero"><span>{{ name }}</span><div class="theme-thumbnail__line" /><div class="theme-thumbnail__button" /></div>
     <div class="theme-thumbnail__grid"><div v-for="n in 3" :key="n"><div class="theme-thumbnail__product" /><div class="theme-thumbnail__line" /></div></div>
+    </template>
   </div>
 </template>
 <style scoped>
@@ -18,6 +26,9 @@ defineProps<{ name: string; colors?: StorefrontTheme['colors'] }>();
 .theme-thumbnail__button { width: 64px; height: 17px; background: var(--theme-primary, #315c4c); border-radius: 4px; }
 .theme-thumbnail__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
 .theme-thumbnail__product { aspect-ratio: 1; margin-bottom: 10px; border-radius: 6px; background: var(--theme-surface, white); border: 1px solid color-mix(in srgb, currentColor 10%, transparent); }
+.theme-thumbnail--screenshot {padding:0}
+.theme-thumbnail__screenshot {display:block;width:100%;height:100%;position:absolute;inset:0;object-fit:cover;object-position:top}
+.theme-thumbnail {position:relative}
 /* Schematic cards reflect each preset's composition without remote assets. */
 .theme-thumbnail--trail .theme-thumbnail__hero {min-height:150px;justify-content:flex-end;border-radius:2px}
 .theme-thumbnail--trail .theme-thumbnail__grid {grid-template-columns:1fr 2fr 1fr}

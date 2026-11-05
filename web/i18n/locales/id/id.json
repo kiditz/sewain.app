@@ -2082,6 +2082,11 @@
     "name": "Nama slide"
   },
   "themeLibrary": {
+    "demo": "Demo",
+    "demoHint": "Produk demo dan ilustrasi lokal. Toko serta tema yang dipublikasikan tetap seperti semula. Ganti gambar demo setelah menambahkan tema.",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "demoPages": {"HOME": "Beranda", "PRODUCT": "Produk", "COLLECTIONS": "Koleksi", "PRODUCT_GRID": "Semua produk", "CART": "Keranjang", "CHECKOUT": "Checkout"},
     "import": "Import JSON",
     "export": "Export JSON",
     "pageReady": "Siap dipublish",

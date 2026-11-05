@@ -2082,6 +2082,11 @@
     "name": "Slide name"
   },
   "themeLibrary": {
+    "demo": "Demo",
+    "demoHint": "Demo products and local illustrations. Your store and published theme stay unchanged. Replace demo images after adding the theme.",
+    "desktop": "Desktop",
+    "mobile": "Mobile",
+    "demoPages": {"HOME": "Home", "PRODUCT": "Product", "COLLECTIONS": "Collections", "PRODUCT_GRID": "All products", "CART": "Cart", "CHECKOUT": "Checkout"},
     "import": "Import JSON",
     "export": "Export JSON",
     "pageReady": "Ready to publish",

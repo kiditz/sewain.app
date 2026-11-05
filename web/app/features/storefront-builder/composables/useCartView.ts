@@ -1,5 +1,6 @@
-import { computed, toValue, type MaybeRefOrGetter } from "vue";
+import {computed,toValue,getCurrentInstance,inject,type MaybeRefOrGetter} from "vue";
 import { storeToRefs } from "pinia";
+import {themeDemoCatalogKey} from "../utils/catalog-demo";
 import type { CartItemResponse } from "~/types/cart";
 
 /**
@@ -41,6 +42,7 @@ function createSampleItems(): CartItemResponse[] {
  * sehingga block tidak tampil kosong dan tidak memanggil API.
  */
 export function useCartView(preview?: MaybeRefOrGetter<boolean | undefined>) {
+  const demo=getCurrentInstance()?inject(themeDemoCatalogKey,null):null;
   const cartStore = useCartStore();
   const {
     items: cartItems,
@@ -50,10 +52,12 @@ export function useCartView(preview?: MaybeRefOrGetter<boolean | undefined>) {
 
   const isPreview = computed(() => !!toValue(preview));
   const usingSample = computed(
-    () => isPreview.value && cartItems.value.length === 0,
+    () => isPreview.value && (!!demo || cartItems.value.length === 0),
   );
 
   const sampleItems = createSampleItems();
+  const product=demo?.products[0];
+  if(product)for(const item of sampleItems){item.productId=product.id;item.productName=product.name;item.productSlug=product.slug;item.variantName=product.variants[0]?.name??'';item.mediaList=[product.media];}
 
   const items = computed<CartItemResponse[]>(() =>
     usingSample.value ? sampleItems : cartItems.value,

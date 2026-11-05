@@ -7,6 +7,7 @@ import type { StorefrontTheme } from "~/types/storefront";
 const props = defineProps<{
   theme: StorefrontTheme;
   preview?: boolean;
+  demo?: boolean;
 }>();
 const layoutId = `storefront-layout-${useId()}`;
 const vuetify = useTheme();
@@ -17,6 +18,7 @@ watchEffect(() => {
   vuetify.themes.value[vuetifyThemeName] = {
     dark: mode.value === "dark",
     colors: {
+      ...vuetify.themes.value[mode.value]!.colors,
       primary: colors.primary, secondary: colors.secondary,
       background: colors.background, surface: colors.surface,
       "surface-bright": colors.surface, "surface-light": colors.secondary,
@@ -34,7 +36,7 @@ const { host } = useSiteContext();
 const api = useApi();
 const { data: branding } = await useAsyncData(
   `storefront-branding:${host}:${merchant.value?.slug ?? "guest"}`,
-  () => api<{ name: string; logoUrl: string | null; faviconUrl: string | null }>("/storefront/branding"),
+  () => props.demo?Promise.resolve({name:"Sewain",logoUrl:null,faviconUrl:null}):api<{ name: string; logoUrl: string | null; faviconUrl: string | null }>("/storefront/branding"),
 );
 const merchantName = computed(() => branding.value?.name || merchant.value?.name || "Your Store");
 const logoUrl = computed(() => branding.value ? branding.value.logoUrl : merchant.value?.storeInformation?.logoUrl);
@@ -67,7 +69,7 @@ const style = computed(() => ({
 }));
 
 const cartStore = useCartStore();
-await cartStore.getCart().catch(() => undefined);
+if(!props.demo)await cartStore.getCart().catch(() => undefined);
 </script>
 
 <template>

@@ -25,7 +25,7 @@ export interface CartItemResponse extends CartItemCommand {
   productName: string;
   productSlug: string;
   variantName: string;
-  mediaList: [];
+  mediaList: string[];
   createdAt: string;
   updatedAt: string;
 }
