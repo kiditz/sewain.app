@@ -1,2 +1,9 @@
-import {CreditCardOutlined,BankOutlined,QrcodeOutlined,DollarOutlined,AlipayOutlined,WechatOutlined} from '@ant-design/icons-vue';
-export const paymentIcons={visa:CreditCardOutlined,mastercard:CreditCardOutlined,bank_transfer:BankOutlined,qris:QrcodeOutlined,cash:DollarOutlined,alipay:AlipayOutlined,wechat:WechatOutlined};
+export const paymentIcons = {
+  visa: "/images/payments/visa.svg",
+  mastercard: "/images/payments/mastercard.svg",
+  bank_transfer: "/images/payments/bank-transfer.svg",
+  qris: "/images/payments/qris.svg",
+  cash: "/images/payments/cash.svg",
+  alipay: "/images/payments/alipay.svg",
+  wechat: "/images/payments/wechat.svg",
+} as const;

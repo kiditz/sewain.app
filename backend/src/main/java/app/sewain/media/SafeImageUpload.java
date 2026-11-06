@@ -10,8 +10,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 
-/** Decode and re-encode untrusted uploads; neither MIME nor filenames choose executable output. */
-final class SafeRasterUpload {
+/** Decode raster uploads or validate static SVG; filenames and MIME never determine the format. */
+final class SafeImageUpload {
     private static final int MAX_INPUT=5*1024*1024,MAX_OUTPUT=20*1024*1024;
     static MultipartFile normalize(MultipartFile file,boolean pngOnly) {
         if(file==null||file.isEmpty())throw new ValidationException(ErrorCode.MEDIA_EMPTY);
@@ -21,7 +21,10 @@ final class SafeRasterUpload {
             if(bytes.length>MAX_INPUT)throw invalid();
             try(var imageInput=new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))){
                 var readers=ImageIO.getImageReaders(imageInput);
-                if(!readers.hasNext())throw invalid();
+                if(!readers.hasNext()){
+                    if(pngOnly)throw invalid();
+                    return new Image(file.getName(),safeFilename(file)+".svg","image/svg+xml",SafeSvgUpload.normalize(bytes));
+                }
                 var reader=readers.next();
                 try{
                     var format=reader.getFormatName().toLowerCase(Locale.ROOT);
@@ -35,18 +38,20 @@ final class SafeRasterUpload {
                     var outputFormat=Set.of("jpeg","jpg").contains(format)?"jpeg":"png";
                     if(!ImageIO.write(image,outputFormat,output))throw invalid();
                     if(output.size()>MAX_OUTPUT)throw invalid();
-                    var original=Optional.ofNullable(file.getOriginalFilename()).orElse("image").replace('\\','/');
-                    original=original.substring(original.lastIndexOf('/')+1).replaceFirst("\\.[^.]*$","");
-                    original=original.replaceAll("[^\\p{L}\\p{N} ._-]","_");
-                    if(original.isBlank())original="image";
-                    original=original.substring(0,Math.min(240,original.length()));
-                    return new Raster(file.getName(),original+(outputFormat.equals("jpeg")?".jpg":".png"),"image/"+outputFormat,output.toByteArray());
+                    return new Image(file.getName(),safeFilename(file)+(outputFormat.equals("jpeg")?".jpg":".png"),"image/"+outputFormat,output.toByteArray());
                 }finally{reader.dispose();}
             }
         }catch(IOException|IllegalArgumentException error){throw invalid();}
     }
+    private static String safeFilename(MultipartFile file) {
+        var original=Optional.ofNullable(file.getOriginalFilename()).orElse("image").replace('\\','/');
+        original=original.substring(original.lastIndexOf('/')+1).replaceFirst("\\.[^.]*$","");
+        original=original.replaceAll("[^\\p{L}\\p{N} ._-]","_");
+        if(original.isBlank())original="image";
+        return original.substring(0,Math.min(240,original.length()));
+    }
     private static ValidationException invalid(){return new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);}
-    private record Raster(String name,String originalFilename,String contentType,byte[] bytes) implements MultipartFile {
+    private record Image(String name,String originalFilename,String contentType,byte[] bytes) implements MultipartFile {
         public String getName(){return name;}public String getOriginalFilename(){return originalFilename;}public String getContentType(){return contentType;}
         public boolean isEmpty(){return bytes.length==0;}public long getSize(){return bytes.length;}public byte[] getBytes(){return bytes.clone();}
         public InputStream getInputStream(){return new ByteArrayInputStream(bytes);}

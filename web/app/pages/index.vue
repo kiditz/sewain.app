@@ -1,8 +1,10 @@
 <script setup lang="ts">
-const { isMerchant, merchantSlug } = useSiteContext();
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 import type { StorefrontPage } from "~/types/storefront";
 
+definePageMeta({ layout: "default" });
+
+const { isMerchant, merchantSlug } = useSiteContext();
 const storefront = useStorefront();
 const { theme } = storefront;
 const { data: homePage } = await useAsyncData<StorefrontPage | null>(

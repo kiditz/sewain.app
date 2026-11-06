@@ -45,7 +45,7 @@ class MediaCommandServiceImpl implements MediaCommandService {
         var normalized = new ArrayList<MultipartFile>();
         long totalBytes=0;
         for(int index=0;index<files.size();index++){
-            var file=SafeRasterUpload.normalize(files.get(index),processed.contains(index));
+            var file=SafeImageUpload.normalize(files.get(index),processed.contains(index));
             totalBytes+=file.getSize();
             if(totalBytes>20L*1024*1024)throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
             normalized.add(file);
@@ -113,7 +113,7 @@ class MediaCommandServiceImpl implements MediaCommandService {
         var media = repository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MEDIA_NOT_FOUND));
         if (media.isBackgroundRemoved()) return mapper.toResponse(media);
-        file=SafeRasterUpload.normalize(file,true);
+        file=SafeImageUpload.normalize(file,true);
         var replacement = storage.replace(file, media.getObjectKey());
         boolean registered = false;
         try {

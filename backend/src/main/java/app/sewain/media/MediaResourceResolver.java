@@ -15,6 +15,17 @@ class MediaResourceResolver extends PathResourceResolver {
         if (resource == null) return null;
         var extension=org.springframework.util.StringUtils.getFilenameExtension(resourcePath);
         boolean rasterExtension=extension!=null&&java.util.Set.of("png","jpg","jpeg","webp","gif").contains(extension.toLowerCase(java.util.Locale.ROOT));
+        if ("svg".equalsIgnoreCase(extension)) {
+            try (var input = resource.getInputStream()) {
+                var bytes = SafeSvgUpload.normalize(input.readNBytes(5 * 1024 * 1024 + 1));
+                return new org.springframework.core.io.ByteArrayResource(bytes) {
+                    @Override public String getFilename() { return resource.getFilename(); }
+                    @Override public long lastModified() throws IOException { return resource.lastModified(); }
+                };
+            } catch (app.sewain.exception.ValidationException error) {
+                return null;
+            }
+        }
         try (var input = resource.getInputStream()) {
             var png = new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 };
             if (!Arrays.equals(png, input.readNBytes(8))) return rasterExtension?resource:null;
