@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {safeNavigationUrl} from "~/utils/content-security";
 import BlockLabel from "./BlockLabel.vue";
 import { getBlockSettings } from "../../utils/block-settings";
 import type { StorefrontBlock } from "~/types/storefront";
@@ -19,7 +20,7 @@ const settings = computed(() =>
     class="block-button"
     variant="outlined"
     :class="`button-${settings.style || 'primary'}`"
-    :href="String(settings.url || '#')"
+    :href="safeNavigationUrl(settings.url) || undefined"
     ><BlockLabel :value="settings.label" /> <span aria-hidden="true">↗</span></v-btn
   >
 </template>

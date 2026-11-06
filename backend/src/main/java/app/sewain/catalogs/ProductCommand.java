@@ -31,6 +31,7 @@ record ProductCommand(
 
 ) {
 	public ProductCommand {
+        description = app.sewain.shared.ContentSecurity.cleanHtml(description);
 		variants = variants == null ? List.of() : variants;
 	}
 }

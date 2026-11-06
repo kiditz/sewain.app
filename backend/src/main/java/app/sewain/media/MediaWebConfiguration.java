@@ -16,13 +16,13 @@ class MediaWebConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/**")
+        registry.addResourceHandler("/media/**")
                 .addResourceLocations(
                         "file:"
                                 + Path.of(properties.storagePath())
                                 .toAbsolutePath()
                                 .normalize()
-                                + "/"
+                                + "/media/"
                 )
                 .setCacheControl(CacheControl.noCache())
                 .resourceChain(false)

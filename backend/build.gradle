@@ -41,6 +41,8 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 	implementation 'com.github.ben-manes.caffeine:caffeine'
 	implementation 'commons-io:commons-io:2.22.0'
+	implementation 'org.jsoup:jsoup:1.24.1'
+	implementation 'com.twelvemonkeys.imageio:imageio-webp:3.15.3'
 	compileOnly 'org.projectlombok:lombok'
 	implementation "org.mapstruct:mapstruct:${mapstructVersion}"
 	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"

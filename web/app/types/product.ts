@@ -67,6 +67,7 @@ export interface ProductVariantSelection {
 }
 
 export interface ProductVariant {
+  inventoryQuantity?: number;
   id: string;
   name: string;
   sku: string;
@@ -75,14 +76,14 @@ export interface ProductVariant {
   depositAmount: number;
   active: boolean;
   attributeValueIds: string[];
-  values: AttributeValue[];
+  values: ProductAttributeValue[];
   rentalPlans: RentalPlan[];
   inventoryUnits: InventoryUnit[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface AttributeValue {
+export interface ProductAttributeValue {
   attributeId: string;
   attributeName: string;
   attributeSlug: string;

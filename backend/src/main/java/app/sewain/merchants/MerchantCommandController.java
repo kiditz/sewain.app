@@ -15,7 +15,6 @@ import java.util.UUID;
 @Tag(name = "Merchant")
 class MerchantCommandController {
 	private final MerchantCommandService commandService;
-	private final MerchantSchemaService schemaService;
 
 
 	@PostMapping
@@ -30,9 +29,5 @@ class MerchantCommandController {
 		return commandService.updateMerchant(userId, id, command);
 	}
 
-	@PostMapping("migrate")
-	void migrateSchema() {
-		schemaService.migrateAllTenantSchemas();
-	}
 
 }

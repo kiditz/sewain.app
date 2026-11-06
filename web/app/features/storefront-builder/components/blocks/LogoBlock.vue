@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {safeNavigationUrl} from "~/utils/content-security";
 import type { StorefrontBlock, StorefrontPadding } from "~/types/storefront";
 import { storefrontBrandingKey } from "../../utils/storefront-branding";
 import { getPaddingStyle } from "../../utils/block-settings";
@@ -35,7 +36,7 @@ const style = computed(() => ({
 <template>
   <a
     v-if="src || preview"
-    :href="url"
+    :href="safeNavigationUrl(url) || undefined"
     class="block-logo"
     :style="style"
     @click="preview && $event.preventDefault()"

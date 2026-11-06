@@ -18,7 +18,7 @@ export const useCollection = () => {
   };
 
   const findCollectionBySlug = (slug: string) => {
-    return api<Collection>(`/collections/${slug}`);
+    return api<Pick<Collection,"id"|"name"|"slug"|"imageUrl"|"parentId"|"description">>(`/storefront/collections/${encodeURIComponent(slug)}`);
   };
 
   const createCollection = (command: CollectionCommand) => {

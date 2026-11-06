@@ -30,5 +30,6 @@ interface ProductMapper extends GlobalMapper<Product, ProductResponse, ProductCo
 	void update(ProductCommand command, @MappingTarget Product entity);
 
 	@Override
+	@Mapping(target = "description", expression = "java(app.sewain.shared.ContentSecurity.cleanHtml(entity.getDescription()))")
 	ProductResponse toResponse(Product entity);
 }

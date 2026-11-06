@@ -90,7 +90,7 @@ export const useStorefrontProductStore = defineStore(
 
     const availableQuantity = computed(
       () =>
-        selectedVariant.value?.inventoryUnits.filter(
+        selectedVariant.value?.inventoryQuantity ?? selectedVariant.value?.inventoryUnits?.filter(
           (unit) => unit.status === "AVAILABLE",
         ).length ?? 0,
     );

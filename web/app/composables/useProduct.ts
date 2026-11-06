@@ -1,3 +1,4 @@
+import {storefrontProduct,type PublicProduct} from '~/utils/storefront-product';
 import type { PageQuery, PageResponse } from "~/types/pagination";
 import type { Product, ProductCommand, ProductStatus } from "~/types/product";
 
@@ -29,7 +30,7 @@ export const useProduct = () => {
   };
 
   const findProductBySlug = (slug: string) => {
-    return api<Product>(`/products/slug/${slug}`);
+    return api<PublicProduct>(`/storefront/products/slug/${encodeURIComponent(slug)}`).then(storefrontProduct);
   };
 
   const createProduct = (data: ProductCommand) => {

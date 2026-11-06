@@ -55,7 +55,7 @@ class ThemeLibraryService {
         var document = instance.path("draft").deepCopy().asObject();
         var pages = json.createArrayNode();
         document.path("pages").asArray().valueStream().filter(page -> !"CUSTOM".equals(page.path("kind").asString())).forEach(pages::add);
-        content.forEach(row -> pages.add(json.readTree(row.getConfiguration())));
+        content.forEach(row -> pages.add(app.sewain.shared.ContentSecurity.cleanConfiguration(json.readTree(row.getConfiguration()))));
         document.set("pages", pages);
         normalizeGlobals(pages, pages.valueStream().filter(page -> "HOME".equals(page.path("kind").asString())).findFirst().orElse(null));
         return document;
@@ -275,10 +275,10 @@ class ThemeLibraryService {
     private StorefrontConfiguration row(String id) { return repository.findByKey(key(id)).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "theme.notFound")); }
     private ObjectNode instance(String id) { return parse(row(id)); }
     private String key(String id) { return StorefrontService.resourceKey("THM:", id); }
-    private ObjectNode parse(StorefrontConfiguration row) { return json.readTree(row.getConfiguration()).deepCopy().asObject(); }
+    private ObjectNode parse(StorefrontConfiguration row) { return app.sewain.shared.ContentSecurity.cleanConfiguration(json.readTree(row.getConfiguration())).asObject(); }
     private void write(String key, JsonNode configuration) {
         var row = repository.findByKey(key).orElseGet(StorefrontConfiguration::new);
-        row.setKey(key); row.setConfiguration(configuration.toString()); repository.save(row);
+        row.setKey(key); row.setConfiguration(app.sewain.shared.ContentSecurity.cleanConfiguration(configuration).toString()); repository.save(row);
     }
     private String name(String value) { require(!value.isBlank() && value.trim().length() <= 100, "theme.invalidName"); return value.trim(); }
     private static void require(boolean condition, String reason) { if (!condition) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, reason); }

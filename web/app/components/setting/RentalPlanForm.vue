@@ -5,9 +5,6 @@ import { z } from "zod";
 
 import type { SettingCommand } from "~/types/settings";
 
-definePageMeta({
-  middleware: ["merchant"],
-});
 
 const SETTING_KEY = "RENTAL_PLAN" as const;
 

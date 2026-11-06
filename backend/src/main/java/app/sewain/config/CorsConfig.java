@@ -17,7 +17,7 @@ class CorsConfig {
 		config.setAllowedOriginPatterns(List.of(
 				"http://*.localhost:3000",
 				"http://sewain.app:3000",
-				"http://*.sewain.app:3000"
+					"http://*.sewain.app:3000"
 		));
 		config.setAllowedMethods(List.of(
 				"GET",

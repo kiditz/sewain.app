@@ -39,6 +39,21 @@ class ThemeLibraryServiceTest {
           ]}}
           """.formatted(name));
     }
+    @Test void sanitizesImportedStoredAndLegacyPublishedBlockContent() {
+        var sections=json.readTree("""
+          [{"id":"rich","type":"RICH_TEXT","enabled":true,"settings":{},"blocks":[
+            {"id":"text","type":"TEXT","enabled":true,"settings":{"text":"<p onclick='attack()'>Keep <strong>format</strong></p><img src=x onerror='attack()'>"}},
+            {"id":"button","type":"BUTTON","enabled":true,"settings":{"url":"javascript:attack()","label":"<p>Go</p>"}}
+          ]}]
+          """);
+        var input=request("Imported").deepCopy().asObject();input.path("configuration").path("pages").get(0).asObject().set("sections",sections);
+        var id=service.install(input).path("id").asString();
+        var stored=records.get("THM:"+id).getConfiguration();assertFalse(stored.contains("onclick"));assertFalse(stored.contains("onerror"));assertFalse(stored.contains("javascript:"));assertTrue(stored.contains("<strong>format</strong>"));
+        var legacy=json.readTree(records.get("THM:original").getConfiguration()).asObject();legacy.path("published").path("pages").get(0).asObject().set("sections",sections);
+        records.get("THM:original").setConfiguration(legacy.toString());
+        var live=service.live().toString();assertFalse(live.contains("onclick"));assertFalse(live.contains("javascript:"));assertTrue(live.contains("<strong>format</strong>"));
+    }
+
     @Test void draftEditsStayPrivateUntilPublishAndCustomDraftPagesRemainPrivate() {
         var settings = json.readTree("{\"colors\":{\"primary\":\"#ffffff\"},\"layout\":{},\"typography\":{}}");
         service.saveResource("original", "theme", settings);

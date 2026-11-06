@@ -16,7 +16,8 @@ export function createThemeDemoCatalog(locale:string):ThemeDemoCatalog {
  return {products,collections};
 }
 export function createThemeDemoDocument(preset:string,locale:string):ThemeDocument {
- const pages:StorefrontPage[]=(['HOME','PRODUCT','COLLECTIONS','PRODUCT_GRID','CART','CHECKOUT'] as PageKind[]).map(kind=>({id:kind,title:kind,slug:kind.toLowerCase(),kind,status:'PUBLISHED',targetUrl:'/',icon:'HomeOutlined',updatedAt:'',sections:kind==='HOME'?[createSection('NAVIGATION'),createSection('HERO'),createSection('FOOTER')]:[]}));
+ const targets:Partial<Record<PageKind,string>>={HOME:'/',PRODUCT:'/products/:slug',COLLECTIONS:'/collections',PRODUCT_GRID:'/collections/all',CART:'/cart',CHECKOUT:'/checkout'};
+ const pages:StorefrontPage[]=(['HOME','PRODUCT','COLLECTIONS','PRODUCT_GRID','CART','CHECKOUT'] as PageKind[]).map(kind=>({id:kind,title:kind,slug:kind.toLowerCase(),kind,status:'PUBLISHED',targetUrl:targets[kind]??'/',icon:'HomeOutlined',updatedAt:'',sections:kind==='HOME'?[createSection('NAVIGATION'),createSection('HERO'),createSection('FOOTER')]:[]}));
  const document=createThemeDocument({theme:structuredClone(initialTheme),pages},preset,locale);
  for(const page of document.pages)for(const section of page.sections)if(section.type==='NAVIGATION')for(const block of section.blocks)if(block.type==='LOGO'){block.type='HEADING';block.settings={text:'Sewain',style:{color:'',backgroundColor:'#00000000'},padding:{top:0,right:0,bottom:0,left:0},layout:{width:'match',maxWidth:'normal'}};}
  return document;

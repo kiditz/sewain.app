@@ -115,18 +115,20 @@ class MediaFileReplacementTest {
     @Test
     void servesTransparentPngAtTheOriginalJpegUrlWithTheCorrectContentType() throws Exception {
         var bytes = transparentPng();
-        Files.write(directory.resolve("legacy.jpg"), bytes);
-        var handler = new ResourceHttpRequestHandler();
-        handler.setServletContext(new MockServletContext());
-        handler.setLocations(List.of(new UrlResource(directory.toUri())));
-        handler.setResourceResolvers(List.of(new MediaResourceResolver()));
-        handler.afterPropertiesSet();
-        var request = new MockHttpServletRequest("GET", "/legacy.jpg");
-        request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, "legacy.jpg");
-        var response = new MockHttpServletResponse();
-        handler.handleRequest(request, response);
-        assertEquals("image/png", response.getContentType());
-        assertArrayEquals(bytes, response.getContentAsByteArray());
+        for(var filename:List.of("legacy.jpg","legacy.svg","legacy.html")){
+            Files.write(directory.resolve(filename), bytes);
+            var handler = new ResourceHttpRequestHandler();
+            handler.setServletContext(new MockServletContext());
+            handler.setLocations(List.of(new UrlResource(directory.toUri())));
+            handler.setResourceResolvers(List.of(new MediaResourceResolver()));
+            handler.afterPropertiesSet();
+            var request = new MockHttpServletRequest("GET", "/"+filename);
+            request.setAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE, filename);
+            var response = new MockHttpServletResponse();
+            handler.handleRequest(request, response);
+            assertEquals("image/png", response.getContentType());
+            assertArrayEquals(bytes, response.getContentAsByteArray());
+        }
     }
 
     @Test

@@ -14,7 +14,7 @@ const allProductsPage = computed(() =>
   slug === "all" ? getPageByKind("PRODUCT_GRID") : undefined,
 );
 
-const { data: collection } = await useAsyncData<Collection | null>(
+const { data: collection } = await useAsyncData<Pick<Collection,"id"|"name"|"slug"|"imageUrl"|"parentId"|"description"> | null>(
   `storefront-collection-${slug}`,
   () => (slug === "all" ? Promise.resolve(null) : findCollectionBySlug(slug)),
 );

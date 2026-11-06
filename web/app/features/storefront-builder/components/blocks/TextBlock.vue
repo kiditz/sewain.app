@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {sanitizeRichText} from "~/utils/content-security";
 import { useStorefront } from "../../composables/useStorefront";
 import { getBlockSettings, getPaddingStyle, getBorderRadiusStyle } from "../../utils/block-settings";
 import type { StorefrontBlock, StorefrontPadding, StorefrontBorderRadius } from "~/types/storefront";
@@ -56,14 +57,14 @@ const textStyle = computed(() => {
     class="block-text ql-editor"
     :class="{ 'block-text--fill': width === 'fill' }"
     :style="textStyle"
-    v-html="product?.description"
+    v-html="sanitizeRichText(product?.description)"
   />
   <div
     v-else
     class="block-text ql-editor"
     :class="{ 'block-text--fill': width === 'fill' }"
     :style="textStyle"
-    v-html="text"
+    v-html="sanitizeRichText(text)"
   />
 </template>
 <style scoped>

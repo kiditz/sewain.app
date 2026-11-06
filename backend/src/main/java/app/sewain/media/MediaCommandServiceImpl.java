@@ -21,8 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.io.IOException;
-import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -41,12 +39,19 @@ class MediaCommandServiceImpl implements MediaCommandService {
         var processed = new java.util.HashSet<>(backgroundRemoved == null ? List.<Integer>of() : backgroundRemoved);
         for (var index : processed) {
             if (index == null || index < 0 || index >= files.size()) throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
-            validateReplacement(files.get(index));
+
         }
 
-        for (int index = 0; index < files.size(); index++) {
-            var file = files.get(index);
-            validate(file);
+        var normalized = new ArrayList<MultipartFile>();
+        long totalBytes=0;
+        for(int index=0;index<files.size();index++){
+            var file=SafeRasterUpload.normalize(files.get(index),processed.contains(index));
+            totalBytes+=file.getSize();
+            if(totalBytes>20L*1024*1024)throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
+            normalized.add(file);
+        }
+        for (int index = 0; index < normalized.size(); index++) {
+            var file = normalized.get(index);
 
             var objectKey = generateObjectKey(file, tenantSchema);
 
@@ -102,27 +107,13 @@ class MediaCommandServiceImpl implements MediaCommandService {
         return mapper.toResponse(repository.save(media));
     }
 
-    private void validate(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new ValidationException(
-                  ErrorCode.MEDIA_EMPTY
-            );
-        }
-
-        if (!isImage(file)) {
-            throw new ValidationException(
-                  ErrorCode.MEDIA_INVALID_TYPE
-            );
-        }
-    }
-
     @Override
     @Transactional
     public MediaResponse replaceFile(UUID id, MultipartFile file) {
         var media = repository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MEDIA_NOT_FOUND));
         if (media.isBackgroundRemoved()) return mapper.toResponse(media);
-        validateReplacement(file);
+        file=SafeRasterUpload.normalize(file,true);
         var replacement = storage.replace(file, media.getObjectKey());
         boolean registered = false;
         try {
@@ -147,27 +138,6 @@ class MediaCommandServiceImpl implements MediaCommandService {
         } finally {
             if (!registered) replacement.complete(false);
         }
-    }
-
-    private void validateReplacement(MultipartFile file) {
-        validate(file);
-        // Background removal always produces PNG; retain the object key and public URL.
-        try (var input = file.getInputStream()) {
-            var signature = new byte[] { (byte) 137, 80, 78, 71, 13, 10, 26, 10 };
-            if (!MediaType.IMAGE_PNG_VALUE.equalsIgnoreCase(file.getContentType())
-                    || !Arrays.equals(signature, input.readNBytes(8))) {
-                throw new ValidationException(ErrorCode.MEDIA_INVALID_TYPE);
-            }
-        } catch (IOException error) {
-            throw new app.sewain.exception.MediaStorageException("Failed to read replacement image", error);
-        }
-    }
-
-    private boolean isImage(MultipartFile file) {
-        return StringUtils.startsWithIgnoreCase(
-                file.getContentType(),
-                "image/"
-        );
     }
 
     private String generateObjectKey(MultipartFile file, String tenantSchema) {

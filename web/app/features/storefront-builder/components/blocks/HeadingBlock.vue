@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {sanitizeRichText} from "~/utils/content-security";
 import { useStorefront } from "../../composables/useStorefront";
 import { getBlockSettings, getPaddingStyle, getBorderRadiusStyle } from "../../utils/block-settings";
 import type { StorefrontBlock, StorefrontPadding, StorefrontBorderRadius } from "~/types/storefront";
@@ -41,7 +42,7 @@ const textStyle = computed(() => {
     :style="textStyle"
     :class="{ 'block-heading--fill': width === 'fill' }"
     class="ql-editor block-heading"
-    v-html="settings.text"
+    v-html="sanitizeRichText(settings.text)"
   ></div>
 </template>
 <style scoped>

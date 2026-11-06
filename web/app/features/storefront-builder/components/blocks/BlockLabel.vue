@@ -1,10 +1,7 @@
 <script setup lang="ts">
+import {sanitizeRichText} from "~/utils/content-security";
 const props = defineProps<{ value?: string }>();
-const html = computed(() => {
-  const value = props.value ?? "";
-  if (/<\/?(?:p|h[1-6]|strong|b|em|i|u|ol|ul|li|blockquote|pre|code|br|span)\b/i.test(value)) return value;
-  return value.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
-});
+const html=computed(()=>sanitizeRichText(props.value));
 </script>
 <template><span class="block-label ql-editor" v-html="html" /></template>
 <style scoped>

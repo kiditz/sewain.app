@@ -1,3 +1,4 @@
+import {storefrontProducts,type PublicProduct} from '~/utils/storefront-product';
 import {getCurrentInstance,inject} from 'vue';
 import {themeDemoCatalogKey} from '../utils/catalog-demo';
 import { useStorefrontState as useState } from "./useStorefrontState";
@@ -43,12 +44,12 @@ export function useStorefrontCatalog() {
       const items=demo.products.filter(product=>(!ids||ids.includes(product.id))&&(!query.keyword||product.name.toLowerCase().includes(query.keyword.toLowerCase())));
       return Promise.resolve({items:items.slice(normalized.page*normalized.size,(normalized.page+1)*normalized.size),totalItems:items.length});
     }
-    return dedupe(queryKey("products", normalized), () => api<PageResponse<Product>>("/products", { query: normalized }));
+    return dedupe(queryKey("products", normalized), () => api<PageResponse<PublicProduct>>("/storefront/products", { query: normalized }).then(storefrontProducts));
   }
   function fetchCollectionProducts(id: string, query: ProductSearchQuery = {}) {
     if(demo)return fetchProducts(query);
     const normalized = pageQuery(query);
-    return dedupe(queryKey(`collections/${id}/products`, normalized), () => api<PageResponse<Product>>(`/collections/${id}/products`, { query: normalized }));
+    return dedupe(queryKey(`collections/${id}/products`, normalized), () => api<PageResponse<PublicProduct>>(`/storefront/collections/${id}/products`, { query: normalized }).then(storefrontProducts));
   }
   async function loadProducts(query: ProductSearchQuery = {}) {
     const result = await fetchProducts(query);
@@ -60,7 +61,7 @@ export function useStorefrontCatalog() {
     if(demo){collections.value=demo.collections;return demo.collections;}
     if (collectionsLoaded.value) return collections.value;
     return dedupe(queryKey("collections"), async () => {
-      collections.value = await api<CollectionSummary[]>("/collections");
+      collections.value = await api<CollectionSummary[]>("/storefront/collections");
       collectionsLoaded.value = true;
       return collections.value;
     });
@@ -69,7 +70,7 @@ export function useStorefrontCatalog() {
     if(demo)return [];
     if (typesLoaded.value) return productTypes.value;
     return dedupe(queryKey("product-types"), async () => {
-      productTypes.value = await api<ProductType[]>("/products/types");
+      productTypes.value = await api<ProductType[]>("/storefront/products/types");
       typesLoaded.value = true;
       return productTypes.value;
     });

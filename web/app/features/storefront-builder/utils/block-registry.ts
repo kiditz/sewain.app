@@ -12,7 +12,6 @@ import {
   type SectionLayout,
   type StorefrontBlock,
 } from "~/types/storefront";
-import { defaultPadding } from "~/types/theme";
 
 export interface BlockDefinition {
   type: BlockType;
@@ -187,7 +186,7 @@ export const blockRegistry: Record<BlockType, BlockDefinition> = {
         bottomRight: null,
         bottomLeft: null,
       },
-      padding: defaultPadding,
+      padding: allPaddingZero,
     },
   },
   PRODUCT_TITLE: {

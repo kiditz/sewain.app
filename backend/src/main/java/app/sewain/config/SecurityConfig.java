@@ -41,16 +41,16 @@ class SecurityConfig {
 						)
 				)
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/register", "/api/auth/login", "/api/merchants/migrate").permitAll()
+						.requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+
+						// Operational migrations are only available through the maintenance runner.
+                        .requestMatchers("/api/merchants/migrate").denyAll()
 
 						// Public storefront endpoints
                         .requestMatchers(HttpMethod.POST, "/api/storefront/submissions").permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/products/slug/**", "/api/products/**").permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/collections").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/storefront/products", "/api/storefront/products/**", "/api/storefront/collections", "/api/storefront/collections/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/storefront/published", "/api/storefront/branding").permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/merchants").permitAll()
 						.requestMatchers("/api/cart", "/api/cart/**").permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/merchants").permitAll()
 
 						// All other API endpoints require authentication
 						.requestMatchers("/api/**").authenticated()

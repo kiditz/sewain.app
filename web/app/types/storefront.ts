@@ -1,4 +1,3 @@
-import type { Product } from "~/types/product";
 
 export interface StorefrontMenuItem {
   id: string;

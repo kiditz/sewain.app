@@ -30,6 +30,7 @@ class CartServiceImpl implements CartService {
 	@Override
 	@Transactional(readOnly = true)
 	public CartResponse getCart(CartCommand command) {
+		validateOwner(command);
 		Cart cart = findExistingActiveCart(command).orElse(new Cart());
 		List<CartItemResponse> items = itemMapper.toResponses(
 				itemRepository.findProjectionsByCartId(cart.getId())
@@ -149,6 +150,8 @@ class CartServiceImpl implements CartService {
 	}
 
 	private void validateOwner(CartCommand command) {
+        // Customer UUIDs supplied by a caller are not authenticated customer identities.
+        if (command != null && command.customerId() != null) throw new org.springframework.security.access.AccessDeniedException(ErrorCode.CART_OWNER_INVALID);
 		if (command == null
 				|| (command.customerId() != null)
 				== (command.guestToken() != null)) {

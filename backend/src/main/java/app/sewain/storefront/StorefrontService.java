@@ -50,14 +50,14 @@ class StorefrontService {
     StorefrontResponse getResource(String key) {
         ensureMigrated();
         return repository.findByKey(key)
-                .map(entity -> new StorefrontResponse(json.readTree(entity.getConfiguration()), entity.getUpdatedAt()))
+                .map(entity -> new StorefrontResponse(app.sewain.shared.ContentSecurity.cleanConfiguration(json.readTree(entity.getConfiguration())), entity.getUpdatedAt()))
                 .orElseGet(() -> new StorefrontResponse(json.createObjectNode(), null));
     }
 
     private ArrayNode list(String prefix) {
         var result = json.createArrayNode();
         repository.findAllByKeyStartingWithOrderByCreatedAtAsc(prefix)
-                .forEach(entity -> result.add(json.readTree(entity.getConfiguration())));
+                .forEach(entity -> result.add(app.sewain.shared.ContentSecurity.cleanConfiguration(json.readTree(entity.getConfiguration()))));
         return result;
     }
 
@@ -84,7 +84,7 @@ class StorefrontService {
     void deletePage(String id) {
         var key = resourceKey("PAGE:", id);
         var entity = repository.findByKey(key).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        require("CUSTOM".equals(json.readTree(entity.getConfiguration()).path("kind").asString()));
+        require("CUSTOM".equals(app.sewain.shared.ContentSecurity.cleanConfiguration(json.readTree(entity.getConfiguration())).path("kind").asString()));
         repository.delete(entity);
         for (var menu : repository.findAllByKeyStartingWithOrderByCreatedAtAsc("MENU:")) {
             var config = json.readTree(menu.getConfiguration()).asObject();

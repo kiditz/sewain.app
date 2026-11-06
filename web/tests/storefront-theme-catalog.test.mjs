@@ -36,8 +36,20 @@ test('theme installation creates independent compositions while preserving navig
    assert.ok(page.sections.some(section=>section.type==={PRODUCT:'PRODUCT_INFORMATION',COLLECTIONS:preset.id==='atelier'?'COLLECTION_EDITORIAL':['trail','coast','bloom','midnight','terra'].includes(preset.id)?'COLLECTION_BENTO':'COLLECTION_LIST',PRODUCT_GRID:'PRODUCT_GRID',CART:'CART',CHECKOUT:'CHECKOUT'}[page.kind]));
   }
   const indonesian=createThemeDemoDocument(preset.id,'id');
+  const english=createThemeDemoDocument(preset.id,'en');
   const allBlocks=blocks=>blocks.flatMap(block=>[block,...allBlocks(block.blocks??[])]);
   const texts=indonesian.pages.flatMap(page=>page.sections.flatMap(section=>allBlocks(section.blocks))).map(block=>block.settings.text).filter(value=>typeof value==='string');
+  for(const [document,expected] of [[indonesian,['Barang sewaan','Subtotal sewa','Lanjut ke checkout','Jumlah','Sewa Sekarang']],[english,['Rental items','Rental subtotal','Proceed to checkout','Quantity','Rent now']]]){
+   const cart=document.pages.find(page=>page.kind==='CART').sections.flatMap(section=>allBlocks(section.blocks));
+   const product=document.pages.find(page=>page.kind==='PRODUCT').sections.flatMap(section=>allBlocks(section.blocks));
+   assert.equal(cart.find(block=>block.type==='CART_ITEMS').settings.title,expected[0]);
+   assert.equal(cart.find(block=>block.type==='CART_SUMMARY').settings.rentalLabel,expected[1]);
+   assert.equal(cart.find(block=>block.type==='CART_CHECKOUT').settings.label,expected[2]);
+   assert.equal(product.find(block=>block.type==='QUANTITY_SELECTOR').settings.label,expected[3]);
+   assert.equal(product.find(block=>block.type==='ADD_TO_CART').settings.label,expected[4]);
+   assert.equal(document.pages.find(page=>page.kind==='PRODUCT_GRID').targetUrl,'/collections/all');
+   assert.equal(document.pages.find(page=>page.kind==='COLLECTIONS').targetUrl,'/collections');
+  }
   assert.ok(!texts.includes('Sample product'));
   assert.ok(!texts.includes('Tell your story and help customers discover your store.'));
   for(const section of first.pages[0].sections.filter(section=>!['NAVIGATION','FOOTER'].includes(section.type))){
@@ -52,5 +64,10 @@ test('theme installation creates independent compositions while preserving navig
   setStorefrontThemeMode(first.theme,preset.mode==='dark'?'light':'dark');
   assert.deepEqual(first.theme.colors,presetColors(preset.id,first.theme.mode));
  }
+ const minimal=structuredClone(base);minimal.pages=minimal.pages.slice(0,2);minimal.pages[1].slug='cart';
+ const completed=createThemeDocument(minimal,'Everyday','id');
+ assert.equal(completed.pages.length,7);assert.deepEqual(completed.pages[1],minimal.pages[1]);
+ assert.equal(completed.pages.find(page=>page.kind==='CART').slug,'cart-template-1');
+ assert.equal(new Set(completed.pages.map(page=>page.id)).size,completed.pages.length);
  assert.equal(compositions.size,10);assert.equal(JSON.stringify(base),before);
 });

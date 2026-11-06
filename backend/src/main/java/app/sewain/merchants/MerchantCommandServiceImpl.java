@@ -45,8 +45,8 @@ class MerchantCommandServiceImpl implements MerchantCommandService {
 	)
 	public MerchantResponse updateMerchant(UUID userId, UUID merchantId, MerchantCommand command) {
 		Merchant merchant = merchantRepository.findById(merchantId).orElseThrow(() -> new ResourceNotFoundException(ErrorCode.MERCHANT_NOT_FOUND));
+        if (!userId.equals(merchant.getUserId())) throw new org.springframework.security.access.AccessDeniedException(ErrorCode.MERCHANT_ACCESS_DENIED);
 		mapper.update(command, merchant);
-		merchant.setUserId(userId);
 		return mapper.toResponse(merchant);
 	}
 
