@@ -5,6 +5,11 @@ import type {
 } from "~/types/auth";
 
 export const useAuth = () => {
+  const config = useRuntimeConfig();
+  const apiBaseUrl = import.meta.server
+    ? config.apiBaseUrl || config.public.apiBaseUrl
+    : config.public.apiBaseUrl;
+
   const token = useCookie<string | null>("access_token", {
     sameSite: "lax",
   });
@@ -40,10 +45,8 @@ export const useAuth = () => {
   };
 
   const login = async (request: LoginRequest) => {
-    const config = useRuntimeConfig();
-
     const response = await $fetch<LoginResponse>("/api/auth/login", {
-      baseURL: config.public.apiBaseUrl,
+      baseURL: apiBaseUrl,
       method: "POST",
       body: request,
     });
@@ -54,10 +57,8 @@ export const useAuth = () => {
   };
 
   const register = async (request: RegisterRequest) => {
-    const config = useRuntimeConfig();
-
     return await $fetch("/api/auth/register", {
-      // baseURL: config.public.apiBaseUrl,
+      baseURL: apiBaseUrl,
       method: "POST",
       body: request,
     });

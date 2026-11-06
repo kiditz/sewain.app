@@ -96,6 +96,7 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    apiBaseUrl: "",
     public: {
       apiBaseUrl: "http://localhost:8080",
     },

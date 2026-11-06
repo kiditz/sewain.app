@@ -1,0 +1,142 @@
+name: sewain
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sewain}
+      POSTGRES_USER: ${POSTGRES_USER:-sewain}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    image: sewain/backend:local
+    build:
+      context: ./backend
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
+    environment:
+      SERVER_PORT: "8080"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-sewain}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sewain}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env}
+      SPRING_DOCKER_COMPOSE_ENABLED: "false"
+      SPRING_JPA_SHOW_SQL: "false"
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: INFO
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY_WEB_FILTERCHAINPROXY: INFO
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY_AUTHENTICATION: INFO
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY_AUTHORIZATION: INFO
+      APP_MEDIA_STORAGE_PATH: /app/upload
+      APP_MEDIA_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+      APP_INTEGRATIONS_ENCRYPTION_KEY: ${INTEGRATIONS_ENCRYPTION_KEY:?Set a base64 32-byte INTEGRATIONS_ENCRYPTION_KEY in the root .env}
+      APP_MAINTENANCE_MIGRATE_TENANTS: ${MIGRATE_TENANTS:-true}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=70}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - backend-data:/app/data
+      - backend-upload:/app/upload
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 10
+    mem_limit: ${BACKEND_MEMORY_LIMIT:-1536m}
+    cpus: ${BACKEND_CPU_LIMIT:-2.0}
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  web:
+    image: sewain/web:local
+    build:
+      context: ./web
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    environment:
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: "3000"
+      NUXT_API_BASE_URL: http://backend:8080
+      NUXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 5
+    mem_limit: ${WEB_MEMORY_LIMIT:-768m}
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+
+  whatsapp-api:
+    image: sewain/whatsapp-api:local
+    build:
+      context: ./whatsapp-api
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${WHATSAPP_PORT:-3001}:3000"
+    environment:
+      PORT: "3000"
+      API_KEY: ${WHATSAPP_API_KEY:?Set WHATSAPP_API_KEY in the root .env}
+      BASE_WEBHOOK_URL: http://backend:8080/api/integrations/whatsapp/webhook
+      ENABLE_LOCAL_CALLBACK_EXAMPLE: "false"
+      ENABLE_SWAGGER_ENDPOINT: "false"
+      SESSIONS_PATH: /usr/src/app/sessions
+      SET_MESSAGES_AS_SEEN: "false"
+      RECOVER_SESSIONS: "true"
+      MAX_ATTACHMENT_SIZE: "5120000"
+      DISABLED_CALLBACKS: message_reaction|unread_count|message_edit|message_ciphertext
+      RATE_LIMIT_MAX: "100"
+      RATE_LIMIT_WINDOW_MS: "60000"
+    volumes:
+      - whatsapp-sessions:/usr/src/app/sessions
+      - whatsapp-cache:/usr/src/app/.wwebjs_cache
+    tmpfs:
+      - /usr/src/app/uploads:uid=1000,gid=1000,mode=0700,size=64m
+    shm_size: 256mb
+    mem_limit: ${WHATSAPP_MEMORY_LIMIT:-1g}
+    cpus: ${WHATSAPP_CPU_LIMIT:-1.0}
+    pids_limit: 256
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/ping').then(async r=>{if(!r.ok || !(await r.json()).success)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging: *logging
+
+volumes:
+  postgres-data:
+  backend-data:
+  backend-upload:
+  whatsapp-sessions:
+  whatsapp-cache:

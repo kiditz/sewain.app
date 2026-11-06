@@ -13,8 +13,12 @@ export const useApi = () => {
       ? hostname.slice(0, -".sewain.app".length).split(".")[0]
       : null;
 
+  const apiBaseUrl = import.meta.server
+    ? config.apiBaseUrl || config.public.apiBaseUrl
+    : config.public.apiBaseUrl;
+
   return $fetch.create({
-    baseURL: `${config.public.apiBaseUrl}/api/`,
+    baseURL: `${apiBaseUrl}/api/`,
 
     onRequest({ options }) {
       const headers = new Headers(options.headers);

@@ -113,6 +113,11 @@ const menuSections = computed(() => [
         to: "/merchant/settings",
       },
       {
+        title: t("menu.integrations"),
+        icon: AppstoreOutlined,
+        to: "/merchant/integrations",
+      },
+      {
         title: t("menu.regionalSettings"),
         icon: GlobalOutlined,
         to: "/merchant/settings/regional",

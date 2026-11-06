@@ -1,0 +1,14 @@
+.git
+node_modules
+.nuxt
+.output
+.nitro
+.cache
+.data
+dist
+coverage
+tests
+.env
+.env.*
+*.log
+.DS_Store

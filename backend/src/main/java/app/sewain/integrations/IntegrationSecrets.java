@@ -34,14 +34,24 @@ public class IntegrationSecrets {
                 localKey = Base64.getDecoder().decode(configuredKey);
             } else {
                 Files.createDirectories(keyFile.toAbsolutePath().getParent());
-                if (!Files.exists(keyFile)) {
-                    var bytes = new byte[32]; random.nextBytes(bytes);
-                    try {
-                        Files.createFile(keyFile, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
-                        Files.writeString(keyFile, Base64.getEncoder().encodeToString(bytes));
-                    } catch (java.nio.file.FileAlreadyExistsException ignored) { /* Another instance created it. */ }
+                // A file lock prevents two local processes from observing a half-written key.
+                try (var channel = java.nio.channels.FileChannel.open(keyFile,
+                        java.util.Set.of(java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.READ, java.nio.file.StandardOpenOption.WRITE),
+                        PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+                     var lock = channel.lock()) {
+                    if (channel.size() == 0) {
+                        var bytes = new byte[32]; random.nextBytes(bytes);
+                        var encoded = ByteBuffer.wrap(Base64.getEncoder().encode(bytes));
+                        while (encoded.hasRemaining()) channel.write(encoded);
+                        channel.force(true);
+                        localKey = bytes;
+                    } else {
+                        if (channel.size() > 128) throw new IllegalStateException();
+                        var content = ByteBuffer.allocate((int) channel.size());
+                        while (content.hasRemaining() && channel.read(content) != -1) { /* Read the complete key. */ }
+                        localKey = Base64.getDecoder().decode(new String(content.array(), StandardCharsets.UTF_8).trim());
+                    }
                 }
-                localKey = Base64.getDecoder().decode(Files.readString(keyFile).trim());
             }
             if (localKey.length != 32) { localKey = null; throw new IllegalStateException(); }
         }
