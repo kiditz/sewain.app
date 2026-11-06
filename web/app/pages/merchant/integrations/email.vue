@@ -3,6 +3,7 @@ import type { EmailIntegration, EmailMessagePage, IntegrationEmailMessage } from
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 const { t } = useI18n();
 const mail = useEmailIntegration();
+const { formatDate: regionalDate } = useSettings();
 const { data: saved, error: loadError, refresh } = await useAsyncData("merchant-email-integration", mail.get);
 const config = reactive({
   outboundEnabled: false, inboundEnabled: false, fromAddress: "", fromName: "",
@@ -98,7 +99,7 @@ async function disconnect() {
     await refreshNuxtData("merchant-integrations"); notice.value = t("integrations.disconnected");
   });
 }
-function formatDate(value: string) { return new Date(`${value}Z`).toLocaleString(); }
+function formatDate(value: string) { return regionalDate(value, true); }
 </script>
 
 <template>

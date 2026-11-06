@@ -20,7 +20,7 @@ export const useApi = () => {
   return $fetch.create({
     baseURL: `${apiBaseUrl}/api/`,
 
-    onRequest({ options }) {
+    onRequest({ request, options }) {
       const headers = new Headers(options.headers);
       if (!guestToken.value) {
         guestToken.value = crypto.randomUUID();
@@ -33,10 +33,18 @@ export const useApi = () => {
         headers.set("X-Guest-Token", guestToken.value);
       }
 
-      if (tenant && tenant !== "www") {
+      const path = String(request).replace(/^https?:\/\/[^/]+/, "").split("?")[0];
+      const merchantDirectory = /^\/?(?:api\/)?merchants\/?$/.test(path || "");
+
+      if (merchantDirectory) {
+        // Resolving the user's stores must not depend on a stale persisted tenant.
+        headers.delete("X-Tenant");
+      } else if (tenant && tenant !== "www") {
         headers.set("X-Tenant", tenant);
       } else if (merchantStore.current?.slug) {
         headers.set("X-Tenant", merchantStore.current.slug);
+      } else {
+        headers.delete("X-Tenant");
       }
       
 

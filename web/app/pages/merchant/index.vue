@@ -13,7 +13,7 @@ import type { PageResponse } from "~/types/pagination";
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 
 const { t, locale } = useI18n();
-const { formatMoney, loadRegionalSettings } = useSettings();
+const { formatMoney, loadRegionalSettings, regional } = useSettings();
 const api = useApi();
 useHead({ title: t("dashboard.title") });
 
@@ -441,7 +441,8 @@ const statusColor = (status: OrderStatus) =>
                 <div class="text-right flex-shrink-0">
                   <div class="font-weight-medium">
                     {{
-                      event.at.toLocaleTimeString("id-ID", {
+                      event.at.toLocaleTimeString(regional.locale, {
+                        timeZone: regional.timezone,
                         hour: "2-digit",
                         minute: "2-digit",
                       })

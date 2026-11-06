@@ -7,29 +7,35 @@ import type { Product } from "~/types/product";
 const route = useRoute();
 const slug = String(route.params.slug);
 const storefront = useStorefront();
-await storefront.loadPublished();
+await callOnce(storefront.queryKey("published-configuration"), () => storefront.loadPublished(), { mode: "navigation" });
 const { theme, getPageByKind } = storefront;
 const { findCollectionBySlug, findCollectionProducts } = useCollection();
 const allProductsPage = computed(() =>
   slug === "all" ? getPageByKind("PRODUCT_GRID") : undefined,
 );
 
-const { data: collection } = await useAsyncData<Pick<Collection,"id"|"name"|"slug"|"imageUrl"|"parentId"|"description"> | null>(
-  `storefront-collection-${slug}`,
+const { data: collection, error: collectionError } = await useAsyncData<Pick<Collection,"id"|"name"|"slug"|"imageUrl"|"parentId"|"description"> | null>(
+  storefront.queryKey("collection-detail", { slug }),
   () => (slug === "all" ? Promise.resolve(null) : findCollectionBySlug(slug)),
 );
+if (collectionError.value) {
+  throw storefrontRequestError(collectionError.value, "Collection not found");
+}
 if (slug !== "all" && !collection.value) {
   throw createError({ statusCode: 404, statusMessage: "Collection not found" });
 }
 
 const currentPage = ref(1);
 const pageSize = 12;
-const { data: productsPage, status: productsStatus } = await useAsyncData<PageResponse<Product> | null>(
+const { data: productsPage, status: productsStatus, error: productsError } = await useAsyncData<PageResponse<Product> | null>(
   computed(() => storefront.queryKey("collection-page", { slug, page: currentPage.value - 1, size: pageSize })),
   () => collection.value
     ? storefront.fetchCollectionProducts(collection.value.id, { page: currentPage.value - 1, size: pageSize })
     : Promise.resolve(null),
 );
+if (productsError.value) {
+  throw storefrontRequestError(productsError.value, "Collection not found");
+}
 const pageCount = computed(() => Math.max(1, Math.ceil((productsPage.value?.totalItems ?? 0) / pageSize)));
 const title = computed(
   () => collection.value?.name ?? allProductsPage.value?.title ?? "All products",

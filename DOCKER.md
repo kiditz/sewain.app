@@ -96,3 +96,15 @@ docker compose down
 `down` preserves named volumes. `down -v` deletes database, keys, uploads, and WhatsApp credentials.
 The default resource limits are a starting point; raise them as workload/session counts grow.
 No image build, container start, test suite, or deployment was executed while preparing this setup.
+
+## Timezone policy
+
+PostgreSQL runs with UTC as its server/session timezone. Spring initializes its JVM and JDBC connections
+in UTC, including writes into existing `timestamp without time zone` audit columns. Regional settings
+do not change database storage. Browser/SSR date formatting uses the merchant's configured timezone,
+locale and date format; date-only calendar values are not shifted between timezones.
+
+No existing timestamps are rewritten. Old offset-less values do not reveal their original timezone:
+the frontend's UTC interpretation is the contract for new timestamps, not a conversion of legacy WIB data.
+Historical local timestamps require a separately reviewed migration to display the original instant correctly.
+`timestamptz` values with an explicit offset already identify an instant and remain supported.

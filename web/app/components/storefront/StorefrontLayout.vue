@@ -2,6 +2,7 @@
 import { VLayout, VThemeProvider } from "vuetify/components";
 import { useTheme } from "vuetify";
 import { storefrontBrandingKey, storefrontDrawerTargetKey } from "~/features/storefront-builder/utils/storefront-branding";
+import type { RegionalSettings } from "~/composables/useSettings";
 import type { StorefrontTheme } from "~/types/storefront";
 
 const props = defineProps<{
@@ -36,8 +37,14 @@ const { host } = useSiteContext();
 const api = useApi();
 const { data: branding } = await useAsyncData(
   `storefront-branding:${host}:${merchant.value?.slug ?? "guest"}`,
-  () => props.demo?Promise.resolve({name:"Sewain",logoUrl:null,faviconUrl:null}):api<{ name: string; logoUrl: string | null; faviconUrl: string | null }>("/storefront/branding"),
+  () => props.demo?Promise.resolve({name:"Sewain",logoUrl:null,faviconUrl:null}):api<{ name: string; logoUrl: string | null; faviconUrl: string | null; regional?: Partial<RegionalSettings> }>("/storefront/branding"),
 );
+const { regional } = useSettings();
+watch(branding, value => {
+  if (value && "regional" in value && value.regional) {
+    regional.value = { ...regional.value, ...value.regional };
+  }
+}, { immediate: true });
 const merchantName = computed(() => branding.value?.name || merchant.value?.name || "Your Store");
 const logoUrl = computed(() => branding.value ? branding.value.logoUrl : merchant.value?.storeInformation?.logoUrl);
 provide(storefrontBrandingKey, { merchantName, logoUrl });

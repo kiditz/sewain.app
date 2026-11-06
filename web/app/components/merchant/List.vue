@@ -1,20 +1,5 @@
 <script lang="ts" setup>
-const { setLocale } = useI18n();
-const store = useMerchantStore();
-const { current } = storeToRefs(store);
-const { findByKey, regional } = useSettings();
-async function getRegionalSetting() {
-  try {
-    return await findByKey("REGIONAL");
-  } catch (error) {
-    throw error;
-  }
-}
-
-onMounted(async () => {
-  await getRegionalSetting();
-  setLocale(regional.value.locale)
-});
+const { current } = storeToRefs(useMerchantStore());
 </script>
 <template>
   <v-btn variant="tonal" density="comfortable">

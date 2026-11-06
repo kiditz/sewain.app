@@ -67,13 +67,13 @@ class FinanceService {
 	}
 
 	private DateRange range(LocalDate from, LocalDate to) {
-		LocalDate end = to == null ? LocalDate.now(ZoneId.systemDefault()) : to;
+		String timezone = settings.getValue(SettingKey.REGIONAL).path(TIMEZONE).asString(ASIA_JAKARTA);
+		ZoneId zone = ZoneId.of(timezone);
+		LocalDate end = to == null ? LocalDate.now(zone) : to;
 		LocalDate start = from == null ? end.minusDays(29) : from;
 		if (end.isBefore(start)) throw new ValidationException(ErrorCode.FINANCE_DATE_RANGE_INVALID);
 		if (java.time.temporal.ChronoUnit.DAYS.between(start, end) >= 90)
 			throw new ValidationException(ErrorCode.FINANCE_DATE_RANGE_TOO_LARGE);
-		String timezone = settings.getValue(SettingKey.REGIONAL).path(TIMEZONE).asString(ASIA_JAKARTA);
-		ZoneId zone = ZoneId.of(timezone);
 		return new DateRange(start.atStartOfDay(zone).toOffsetDateTime(), end.plusDays(1).atStartOfDay(zone).toOffsetDateTime());
 	}
 

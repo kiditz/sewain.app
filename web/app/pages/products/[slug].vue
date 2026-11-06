@@ -4,18 +4,21 @@ import { useRecentlyViewedProducts } from "~/features/storefront-builder/composa
 
 const route = useRoute();
 const storefront = useStorefront();
-await storefront.loadPublished();
+await callOnce(storefront.queryKey("published-configuration"), () => storefront.loadPublished(), { mode: "navigation" });
 const { theme, getPageByKind } = storefront;
 const templatePage = computed(() => getPageByKind("PRODUCT"));
 
 const slug = computed(() => String(route.params.slug));
 const { findProductBySlug } = useProduct();
 
-const { data: product } = await useAsyncData(
-  () => `product-${slug.value}`,
+const { data: product, error: productError } = await useAsyncData(
+  () => storefront.queryKey("product-detail", { slug: slug.value }),
   () => findProductBySlug(slug.value),
 );
 
+if (productError.value) {
+  throw storefrontRequestError(productError.value, "Product not found");
+}
 if (!product.value) {
   throw createError({ statusCode: 404, statusMessage: "Product not found" });
 }

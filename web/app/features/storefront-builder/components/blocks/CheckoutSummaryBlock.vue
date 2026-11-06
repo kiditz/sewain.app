@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { formatDate } = useSettings();
 import type { StorefrontBlock } from "~/types/storefront";
 import { useCheckoutContext } from "~/features/storefront-checkout/composables/checkout-context";
 import { useCheckoutBlockStyle } from "../../composables/useCheckoutBlockStyle";

@@ -2,8 +2,10 @@ FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /workspace
 COPY gradlew settings.gradle build.gradle ./
 COPY gradle ./gradle
+RUN chmod +x gradlew
 COPY src ./src
-RUN chmod +x gradlew && ./gradlew bootJar -x test --no-daemon
+RUN --mount=type=cache,id=sewain-gradle,target=/root/.gradle,sharing=locked \
+    ./gradlew bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 WORKDIR /app

@@ -2,7 +2,7 @@
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 const route = useRoute();
 const storefront = useStorefront();
-await storefront.loadPublished();
+await callOnce(storefront.queryKey("published-configuration"), () => storefront.loadPublished(), { mode: "navigation" });
 const { getPageBySlug, theme } = storefront;
 const page = computed(() => getPageBySlug(String(route.params.slug)));
 useSeoMeta({ title: () => page.value?.title ?? "Page not found" });

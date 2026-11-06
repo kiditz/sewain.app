@@ -27,7 +27,8 @@ export function useStorefront() {
     await menuStore.initializeDefaults();
   }
   async function loadPublished() {
-    const response = await api<{ configuration: StorefrontDocument | null }>("/storefront/published");
+    const response = await api<{ configuration: StorefrontDocument | null }>("/storefront/published")
+      .catch((error: unknown) => { throw storefrontRequestError(error, "Storefront not found"); });
     // Public data must never become the cached admin list (which includes drafts).
     pageStore.initialized.value = false;
     themeStore.initialized.value = false;

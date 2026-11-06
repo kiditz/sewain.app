@@ -1,6 +1,6 @@
 import type { Setting, SettingCommand } from "~/types/settings";
 
-interface RegionalSettings {
+export interface RegionalSettings {
   countryId: number | null;
   currency: string;
   currencyPosition: "before" | "after";
@@ -23,7 +23,8 @@ const DEFAULT_REGIONAL_SETTINGS: RegionalSettings = {
 export const useSettings = () => {
   const api = useApi();
 
-  const regional = useState<RegionalSettings>("regional-settings", () => ({
+  const scope = `${useRequestURL().host}:${useMerchantStore().current?.slug ?? "guest"}`;
+  const regional = useState<RegionalSettings>(`regional-settings:${scope}`, () => ({
     ...DEFAULT_REGIONAL_SETTINGS,
   }));
 
@@ -49,9 +50,13 @@ export const useSettings = () => {
     });
 
   async function loadRegionalSettings() {
-    const setting = await findByKey("REGIONAL");
+    const setting = await findByKey("REGIONAL").catch((error: unknown) => {
+      const failure = error as { response?: { status?: number }; statusCode?: number };
+      if ((failure.response?.status ?? failure.statusCode) === 404) return null;
+      throw error;
+    });
 
-    if (setting.value && typeof setting.value === "object") {
+    if (setting?.value && typeof setting.value === "object") {
       regional.value = {
         ...DEFAULT_REGIONAL_SETTINGS,
         ...(setting.value as Partial<RegionalSettings>),
@@ -67,12 +72,13 @@ export const useSettings = () => {
   ): string {
     if (value == null || value === "") return "-";
 
-    const date = value instanceof Date ? value : new Date(value);
+    const dateOnly = typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const date = parseApiDate(value);
 
     if (Number.isNaN(date.getTime())) return "-";
 
     const { locale, timezone, dateFormat } = regional.value;
-    const timeZone = timezone || "UTC";
+    const timeZone = dateOnly ? "UTC" : timezone || "UTC";
 
     const parts = new Intl.DateTimeFormat(locale, {
       timeZone,

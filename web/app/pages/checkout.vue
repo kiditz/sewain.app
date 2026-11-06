@@ -5,7 +5,7 @@ import { useStorefront } from "~/features/storefront-builder/composables/useStor
 
 
 const storefront = useStorefront();
-await storefront.loadPublished().catch(() => undefined);
+await callOnce(storefront.queryKey("published-configuration"), () => storefront.loadPublished(), { mode: "navigation" });
 const { theme, getPageByKind } = storefront;
 const page = computed(() => getPageByKind("CHECKOUT"));
 

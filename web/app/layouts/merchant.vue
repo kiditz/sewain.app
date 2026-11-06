@@ -2,6 +2,14 @@
 import DashboardAppBar from "~/components/dashboard/AppBar.vue";
 import DashboardNavigation from "~/components/dashboard/Navigation.vue";
 
+const { loadRegionalSettings, regional } = useSettings();
+const { setLocale } = useI18n();
+const scope = `${useRequestURL().host}:${useMerchantStore().current?.slug ?? "guest"}`;
+await callOnce(`merchant-regional:${scope}`, async () => {
+  await loadRegionalSettings();
+}, { mode: "navigation" });
+await setLocale(regional.value.locale);
+
 </script>
 
 <template>

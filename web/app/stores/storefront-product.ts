@@ -12,6 +12,7 @@ import {
 export const useStorefrontProductStore = defineStore(
   "storefront-product",
   () => {
+    const { formatDate: regionalDate } = useSettings();
     const product = ref<Product | null>(null);
     const selectedVariantId = ref<string | null>(null);
     const selectedPlanId = ref<string | null>(null);
@@ -229,16 +230,7 @@ export const useStorefrontProductStore = defineStore(
     }
 
     function formatDate(value: string): string {
-      if (!value) return "—";
-
-      const date = parseLocalDate(value);
-
-      if (!date) return "—";
-
-      return new Intl.DateTimeFormat("id-ID", {
-        dateStyle: "medium",
-        ...(value.includes("T") ? { timeStyle: "short" as const } : {}),
-      }).format(date);
+      return value ? regionalDate(value, value.includes("T")) : "—";
     }
 
     function selectDateRange(range: string[]): void {

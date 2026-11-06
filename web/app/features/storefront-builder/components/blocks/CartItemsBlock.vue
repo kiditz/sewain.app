@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { formatDate } = useSettings();
 import moment from "moment";
 import { getBlockSettings, getLayoutStyle, getPaddingStyle } from "../../utils/block-settings";
 import { useCartView } from "../../composables/useCartView";

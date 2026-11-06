@@ -2,7 +2,7 @@
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 
 const storefront = useStorefront();
-await storefront.loadPublished();
+await callOnce(storefront.queryKey("published-configuration"), () => storefront.loadPublished(), { mode: "navigation" });
 const { theme, getPageByKind } = storefront;
 const page = computed(() => getPageByKind("PRODUCT_GRID"));
 

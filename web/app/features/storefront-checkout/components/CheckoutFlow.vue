@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { formatDate } = useSettings();
 import CheckoutPaymentSection from "~/features/storefront-checkout/components/CheckoutPaymentSection.vue";
 import { useCheckoutState } from "../composables/useCheckoutState";
 import { checkoutContextKey } from "../composables/checkout-context";
