@@ -2,6 +2,7 @@
 import type { Country } from "~/composables/useCountry";
 
 const { t, locale, locales, setLocale } = useI18n();
+useHead({ title: () => t("menu.regionalSettings") });
 definePageMeta({
   layout: "merchant",
   middleware: ["merchant"]

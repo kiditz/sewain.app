@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 const { t } = useI18n();
+useHead({ title: () => t("menu.integrations") });
 const integration = useEmailIntegration();
 const { data: plugins, status, error, refresh } = await useAsyncData("merchant-integrations", integration.plugins);
 </script>

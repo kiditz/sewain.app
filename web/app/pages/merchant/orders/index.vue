@@ -5,6 +5,7 @@ import type { MerchantOrder, OrderStatus } from "~/types/order";
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 
 const { t } = useI18n();
+useHead({ title: () => t("menu.orders") });
 const router = useRouter();
 const { findOrders } = useOrder();
 const { formatMoney, formatDate, loadRegionalSettings } = useSettings();

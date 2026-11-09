@@ -20,6 +20,7 @@ interface FinanceResponse {
 }
 
 const { t, locale } = useI18n();
+useHead({ title: () => t("menu.financeOverview") });
 const api = useApi();
 const { formatMoney, regional, loadRegionalSettings } = useSettings();
 const period = ref("30");

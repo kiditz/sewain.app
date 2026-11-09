@@ -4,9 +4,7 @@ definePageMeta({
   layout: "merchant",
   middleware: ["merchant"]
 });
-useHead({
-  title: t("product.title"),
-});
+useHead({ title: () => t("menu.rentalPlans") });
 const links = [
   
   {

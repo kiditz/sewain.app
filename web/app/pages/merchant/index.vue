@@ -15,7 +15,7 @@ definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 const { t, locale } = useI18n();
 const { formatMoney, loadRegionalSettings, regional } = useSettings();
 const api = useApi();
-useHead({ title: t("dashboard.title") });
+useHead({ title: () => t("menu.dashboard") });
 
 interface InventoryUnitSummary {
   id: string;

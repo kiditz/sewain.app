@@ -885,6 +885,7 @@
     }
   },
   "menu": {
+    "pages": "Halaman",
     "calendar": "Kalender",
     "collections": "Koleksi",
     "customers": "Pelanggan",

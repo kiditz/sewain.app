@@ -885,6 +885,7 @@
     }
   },
   "menu": {
+    "pages": "Pages",
     "calendar": "Calendar",
     "collections": "Collections",
     "customers": "Customers",

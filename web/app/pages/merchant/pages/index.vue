@@ -4,6 +4,7 @@ import type { StorefrontPage } from "~/types/storefront";
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 const storefront = useStorefront();
 const { t } = useI18n();
+useHead({ title: () => t("menu.pages") });
 const snackbar = useSnackbarStore();
 const { apiErrorMessage } = useApiError();
 const search = ref("");

@@ -5,6 +5,7 @@ import type { Customer, CustomerStatistics } from "~/types/customer";
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 
 const { t } = useI18n();
+useHead({ title: () => t("menu.customers") });
 const router = useRouter();
 const { findCustomers, getCustomerStatistics } = useCustomer();
 const { formatDate, formatMoney, loadRegionalSettings } = useSettings();

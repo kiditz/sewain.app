@@ -7,6 +7,7 @@ definePageMeta({
 });
 
 const { t, locale } = useI18n();
+useHead({ title: () => t("menu.reports") });
 const { formatMoney, formatDate } = useSettings();
 const { getReport } = useMerchantReport();
 const period = ref("30");

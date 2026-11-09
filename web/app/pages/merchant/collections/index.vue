@@ -7,6 +7,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+useHead({ title: () => t("menu.collections") });
 const { notifyCollectionError, watchCollectionErrors } = useCollectionError();
 
 const { findCollections, deleteCollection: removeCollection } = useCollection();

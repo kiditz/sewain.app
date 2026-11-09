@@ -98,7 +98,7 @@ const menuSections = computed(() => [
         to: "/merchant/storefront",
       },
       {
-        title: "Pages",
+        title: t("menu.pages"),
         icon: FileTextOutlined,
         to: "/merchant/pages",
       },

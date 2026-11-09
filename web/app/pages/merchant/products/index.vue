@@ -6,9 +6,7 @@ definePageMeta({
   layout: "merchant",
   middleware: ["merchant"]
 });
-useHead({
-  title: t("product.title"),
-});
+useHead({ title: () => t("menu.products") });
 
 const productToDelete = ref<Product | null>(null);
 const showDeleteDialog = ref(false);

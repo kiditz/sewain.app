@@ -13,6 +13,7 @@ const api = useApi();
 const flushWrites = useStorefrontWriteFlush();
 const snackbar = useSnackbarStore();
 const { t, te, locale } = useI18n();
+useHead({ title: () => t("menu.storefront") });
 const previewingPreset = ref<(typeof themeCatalog)[number] | null>(null);
 const demoKind = ref("HOME");
 const demoDevice = ref("desktop");

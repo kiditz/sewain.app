@@ -15,6 +15,7 @@ import enGbLocale from "@fullcalendar/core/locales/en-gb";
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 
 const { t, locale } = useI18n();
+useHead({ title: () => t("menu.calendar") });
 const api = useApi();
 const { regional, loadRegionalSettings } = useSettings();
 

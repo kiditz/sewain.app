@@ -2,6 +2,9 @@
 <script setup lang="ts">
 import type { Setting, SettingCommand } from '~/types/settings'
 
+const { t } = useI18n();
+useHead({ title: () => t("menu.paymentSettings") });
+
 definePageMeta({
   layout: 'merchant',
   middleware: ['auth', 'merchant'],

@@ -19,6 +19,7 @@ interface RentalSettings {
 
 const { findByKey, create, update } = useSettings()
 const { locale, t } = useI18n()
+useHead({ title: () => t("menu.rentalSettings") });
 const { apiErrorMessage } = useApiError()
 
 const defaultSettings = (): RentalSettings => ({

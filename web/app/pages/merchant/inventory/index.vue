@@ -21,9 +21,7 @@ definePageMeta({
   middleware: ["merchant"]
 });
 
-useHead({
-  title: t("inventory.title"),
-});
+useHead({ title: () => t("menu.inventory") });
 
 const inventory = ref<Inventory[]>([]);
 const search = ref("");

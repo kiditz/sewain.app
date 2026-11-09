@@ -13,6 +13,7 @@ definePageMeta({
 type MediaTarget = "logo" | "favicon";
 
 const { t } = useI18n();
+useHead({ title: () => t("menu.storeSettings") });
 const showMedia = ref(false);
 const mediaTarget = ref<MediaTarget>("logo");
 const store = useMerchantStore();
