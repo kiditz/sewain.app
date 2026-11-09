@@ -68,7 +68,7 @@ class ProductImportService {
         var format = CSVFormat.RFC4180.builder().setHeader().setSkipHeaderRecord(true).setTrim(true).setIgnoreEmptyLines(true).get();
         try (var parser = format.parse(new StringReader(text))) {
             var headers = parser.getHeaderNames();
-            if (new HashSet<>(headers).size()!=headers.size() || !headers.containsAll(List.of("name","slug","sku","rental_fee"))) throw bad("Header wajib: name,slug,sku,rental_fee");
+            if (new HashSet<>(headers).size()!=headers.size() || !new HashSet<>(headers).containsAll(List.of("name","slug","sku","rental_fee"))) throw bad("Header wajib: name,slug,sku,rental_fee");
             var allowed = Set.of("name","slug","sku","rental_fee","stock","buy_price","deposit_amount","status","description","image_urls");
             if (!allowed.containsAll(headers)) throw bad("Ada kolom CSV yang tidak dikenal. Gunakan template import.");
             var result = new ArrayList<Map<String,String>>();
