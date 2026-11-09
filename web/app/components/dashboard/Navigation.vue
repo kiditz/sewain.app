@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
 import {
   DashboardOutlined,
   CalendarOutlined,
@@ -22,6 +23,11 @@ import logo from "~/assets/images/logo.svg";
 const { t } = useI18n();
 const route = useRoute();
 const customizer = useCustomizerStore();
+const { mdAndDown } = useDisplay();
+watch(mdAndDown, mobile => { customizer.drawer = !mobile; }, { immediate: true });
+watch(() => route.fullPath, () => {
+  if (mdAndDown.value) customizer.drawer = false;
+});
 
 const menuSections = computed(() => [
   {
@@ -153,18 +159,19 @@ function isActive(to: string) {
 <template>
   <v-navigation-drawer
     v-model="customizer.drawer"
+    id="dashboard-navigation"
     class="leftSidebar"
-    :rail="customizer.miniSidebar"
+    :rail="!mdAndDown && customizer.miniSidebar"
     :rail-width="62"
     :width="256"
     mobile-breakpoint="lg"
-    :permanent="!$vuetify.display.mobile"
-    :temporary="$vuetify.display.mobile"
+    :permanent="!mdAndDown"
+    :temporary="mdAndDown"
   >
     <div class="sidebar-brand">
       <NuxtLink to="/merchant" class="d-flex align-center">
         <img
-          v-if="customizer.miniSidebar"
+          v-if="!mdAndDown && customizer.miniSidebar"
           :src="logoSm"
           width="28"
           height="32"
@@ -184,7 +191,7 @@ function isActive(to: string) {
 
     <v-list nav class="sidebar-menu">
       <template v-for="section in menuSections" :key="section.title">
-        <v-list-subheader v-if="!customizer.miniSidebar">
+        <v-list-subheader v-if="mdAndDown || !customizer.miniSidebar">
           {{ section.title }}
         </v-list-subheader>
 

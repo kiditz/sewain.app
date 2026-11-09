@@ -181,3 +181,17 @@ body {
     color: rgb(var(--v-theme-primary));
   }
 }
+
+// Dashboard flex/grid children must be allowed to shrink around wide tables and forms.
+.page-wrapper {
+  min-width: 0;
+  > .v-container { min-width: 0; max-width: 100%; }
+  .v-row > .v-col { min-width: 0; }
+  .v-table { min-width: 0; max-width: 100%; }
+  .v-table__wrapper { overflow-x: auto; }
+  .v-data-table-footer { flex-wrap: wrap; gap: 8px; }
+  @media (max-width: 599px) {
+    > .v-container > .v-container { padding: 16px !important; }
+    .v-data-table-footer { padding-inline: 8px; justify-content: center; }
+  }
+}

@@ -1,19 +1,29 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
 import { MenuOutlined } from "@ant-design/icons-vue";
 
 const customizer = useCustomizerStore();
+const { mdAndDown } = useDisplay();
+const { t } = useI18n();
+function toggleNavigation() {
+  if (mdAndDown.value) customizer.toggleDrawer();
+  else customizer.setMiniSidebar(!customizer.miniSidebar);
+}
 </script>
 
 <template>
   <v-app-bar elevation="0">
     <!-- <v-app-bar-nav-icon class="d-md-none" /> -->
     <v-btn
-      class="hidden-md-and-down text-secondary mx-3"
+      class="text-secondary mx-2 flex-shrink-0"
+      :aria-label="t('ui.menu')"
+      aria-controls="dashboard-navigation"
+      :aria-expanded="mdAndDown ? customizer.drawer : !customizer.miniSidebar"
       color="darkText"
       icon
       rounded="sm"
       variant="text"
-      @click.stop="customizer.setMiniSidebar(!customizer.miniSidebar)"
+      @click.stop="toggleNavigation"
       size="small"
     >
       <MenuOutlined :style="{ fontSize: '16px' }" />
@@ -29,7 +39,7 @@ const customizer = useCustomizerStore();
         <div class="text-body-small text-medium-emphasis">Workspace</div>
       </div>
     </v-btn> -->
-    <v-sheet class="d-none d-md-block mr-2">
+    <v-sheet class="dashboard-store-name mr-2">
       <div class="d-flex align-center">
         <merchant-list />
       </div>
@@ -84,3 +94,9 @@ const customizer = useCustomizerStore();
     </v-menu> -->
   </v-app-bar>
 </template>
+
+<style scoped>
+.dashboard-store-name { min-width: 0; max-width: min(40vw, 240px); overflow: hidden; }
+.dashboard-store-name :deep(.v-btn) { max-width: 100%; }
+.dashboard-store-name :deep(.v-btn__content) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>

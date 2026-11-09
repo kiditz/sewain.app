@@ -8,11 +8,11 @@ const { user, initials } = storeToRefs(store);
 <template>
   <v-menu offset="8, 0" v-if="user" :close-on-content-click="false">
     <template #activator="{ props }">
-      <v-btn class="profileBtn mr-3" variant="text" rounded="lg" v-bind="props">
+      <v-btn class="profileBtn mr-2 flex-shrink-0" variant="text" rounded="lg" v-bind="props">
         <v-avatar size="32" color="primary">
           <span class="text-body-medium"> {{ initials }} </span>
         </v-avatar>
-        <div class="text-left ml-3 d-none d-sm-block">
+        <div class="profile-identity text-left ml-3 d-none d-sm-block">
           <div class="text-body-medium font-weight-medium">
             {{ user.fullName }}
           </div>
@@ -28,8 +28,13 @@ const { user, initials } = storeToRefs(store);
         />
       </v-btn>
     </template>
-    <v-sheet rounded="md" width="290">
+    <v-sheet rounded="md" width="290" style="max-width: calc(100vw - 24px)">
       <auth-profile-detail />
     </v-sheet>
   </v-menu>
 </template>
+
+<style scoped>
+.profile-identity { max-width: clamp(100px, 15vw, 220px); min-width: 0; }
+.profile-identity > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>

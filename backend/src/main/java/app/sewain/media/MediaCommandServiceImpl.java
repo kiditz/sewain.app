@@ -60,6 +60,13 @@ class MediaCommandServiceImpl implements MediaCommandService {
                   objectKey
             );
 
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override public void afterCompletion(int status) {
+                        if (status != STATUS_COMMITTED) storage.delete(stored.objectKey());
+                    }
+                });
+            }
             var media = new Media();
 
             media.setFilename(

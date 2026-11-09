@@ -59,6 +59,8 @@ const confirmDelete = async () => {
         </p>
       </div>
 
+      <div class="d-flex flex-wrap ga-2">
+      <v-btn variant="outlined" prepend-icon="mdi-upload" to="/merchant/products/import">Import CSV</v-btn>
       <v-btn
         color="primary"
         prepend-icon="mdi-plus"
@@ -66,6 +68,7 @@ const confirmDelete = async () => {
       >
         {{ t("product.add.title") }}
       </v-btn>
+      </div>
     </div>
     <product-table @delete="openDeleteDialog" />
   </v-container>
