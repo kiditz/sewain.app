@@ -43,9 +43,9 @@ const submit = handleSubmit(async (values) => {
   serverError.value = undefined;
 
   try {
-    await addMerchant(values);
-
-    await navigateTo("/merchant");
+    const merchant = await addMerchant(values);
+    useMerchantStore().setCurrent(merchant);
+    await navigateTo("/merchant/setup");
   } catch (error: any) {
     const response = error.data;
 
@@ -90,6 +90,7 @@ const submit = handleSubmit(async (values) => {
 
         <v-text-field
           v-model="name"
+          density="compact"
           variant="outlined"
           hide-details="auto"
           :error-messages="errors.name"
@@ -101,6 +102,7 @@ const submit = handleSubmit(async (values) => {
 
         <v-text-field
           v-model="slug"
+          density="compact"
           variant="outlined"
           hide-details="auto"
           :error-messages="errors.slug"

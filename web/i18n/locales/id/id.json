@@ -1,4 +1,21 @@
 {
+  "provisioning": {
+    "title": "Menyiapkan toko…",
+    "body": "Kami sedang membuat database dan pengaturan toko. Dashboard akan terbuka setelah proses selesai.",
+    "readyTitle": "Toko siap",
+    "readyBody": "Pengaturan toko sudah selesai. Membuka dashboard…",
+    "failedTitle": "Toko belum berhasil disiapkan",
+    "failedBody": "Proses persiapan gagal. Coba lagi untuk melanjutkan migrasi yang belum selesai.",
+    "connecting": "Menghubungkan ke server…",
+    "reconnecting": "Koneksi terputus. Menghubungkan kembali tanpa membatalkan persiapan toko.",
+    "authRequired": "Sesi koneksi berakhir. Silakan login kembali untuk melihat status terbaru.",
+    "login": "Login kembali",
+    "retry": "Coba siapkan lagi",
+    "delayed": "Persiapan masih berjalan. Halaman boleh direfresh; progres tersimpan di server.",
+    "enterFailed": "Toko sudah siap, tetapi dashboard belum berhasil dibuka.",
+    "continue": "Buka dashboard",
+    "requestFailed": "Status belum dapat dimuat. Periksa koneksi atau masuk kembali."
+  },
   "blockSettingsGroups": {
     "content": "Konten",
     "typography": "Tipografi",
@@ -1931,6 +1948,8 @@
     "padding": "Padding",
     "page": "Halaman",
     "page_in_preparation": "Halaman ini sedang disiapkan.",
+    "store_unavailable": "Toko belum tersedia",
+    "store_unavailable_description": "Toko ini belum memiliki halaman beranda yang diterbitkan.",
     "page_not_found": "Halaman tidak ditemukan",
     "page_sections": "Bagian halaman",
     "page_settings": "Pengaturan halaman",

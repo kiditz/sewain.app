@@ -10,6 +10,8 @@ record MerchantResponse(
 		StoreInformationResponse storeInformation,
 		BusinessInformationResponse businessInformation,
 		String customDomain,
+		String provisioningStatus,
+		long provisioningVersion,
 		boolean published
 ) {
 }

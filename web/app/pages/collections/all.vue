@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePublicCanonical } from "~/composables/usePublicCanonical";
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 
 const storefront = useStorefront();
@@ -9,6 +10,7 @@ const page = computed(() => getPageByKind("PRODUCT_GRID"));
 useSeoMeta({
   title: () => page.value?.title || "Products",
 });
+usePublicCanonical();
 </script>
 
 <template>

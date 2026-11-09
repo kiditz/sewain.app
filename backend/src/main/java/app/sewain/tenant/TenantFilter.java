@@ -37,7 +37,17 @@ public class TenantFilter extends OncePerRequestFilter {
 	) throws ServletException, IOException {
 
 		try {
-			String tenant = tenantAccessService.getSchema(resolveTenant(request));
+			String tenant;
+            try {
+                var path = request.getServletPath();
+                tenant = path.equals("/api/merchants") || path.equals("/ws/provisioning")
+                        ? PUBLIC : tenantAccessService.getSchema(resolveTenant(request));
+            } catch (org.springframework.web.server.ResponseStatusException unavailable) {
+                response.setStatus(unavailable.getStatusCode().value());
+                response.setContentType("application/json");
+                response.getWriter().write("{\"message\":\"merchant.provisioning\"}");
+                return;
+            }
 			if (!tenant.equals(PUBLIC)) {
 				UUID userId = getUserId();
 				if (userId != null) {

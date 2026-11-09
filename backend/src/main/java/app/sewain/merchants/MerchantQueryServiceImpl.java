@@ -21,10 +21,6 @@ class MerchantQueryServiceImpl implements MerchantQueryService {
 
 	@Override
 	@Transactional(readOnly = true)
-	@Cacheable(
-			cacheNames = "userMerchants",
-			key = "#userId"
-	)
 	public List<MerchantResponse> findByUser(UUID userId) {
 		return mapper.toResponses(merchantRepository.findByUserId(userId));
 	}

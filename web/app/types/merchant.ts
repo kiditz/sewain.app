@@ -23,6 +23,8 @@ export interface Merchant {
   businessInformation: BusinessInformation;
   customDomain: string | null;
   published: boolean;
+  provisioningStatus: "PROVISIONING" | "READY" | "FAILED";
+  provisioningVersion: number;
 }
 
 export interface MerchantCommand {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePublicCanonical } from "~/composables/usePublicCanonical";
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 import { useRecentlyViewedProducts } from "~/features/storefront-builder/composables/useRecentlyViewedProducts";
 
@@ -38,6 +39,7 @@ useSeoMeta({
   title: () => product?.value?.name ?? "Product",
   description: () => product?.value?.description ?? "",
 });
+usePublicCanonical(() => !!product.value);
 </script>
 
 <template>

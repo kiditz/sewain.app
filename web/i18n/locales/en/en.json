@@ -1,4 +1,21 @@
 {
+  "provisioning": {
+    "title": "Preparing your store…",
+    "body": "We are setting up your store database and settings. The dashboard will open when setup is complete.",
+    "readyTitle": "Your store is ready",
+    "readyBody": "Setup is complete. Opening the dashboard…",
+    "failedTitle": "Store setup failed",
+    "failedBody": "Setup could not be completed. Retry to resume the unfinished migrations.",
+    "connecting": "Connecting to the server…",
+    "reconnecting": "Connection lost. Reconnecting without cancelling store setup.",
+    "authRequired": "Your connection session ended. Sign in again to receive the latest status.",
+    "login": "Sign in again",
+    "retry": "Retry setup",
+    "delayed": "Setup is still running. You can refresh this page; progress is stored on the server.",
+    "enterFailed": "Your store is ready, but the dashboard could not be opened.",
+    "continue": "Open dashboard",
+    "requestFailed": "Could not retrieve setup status. Check your connection or sign in again."
+  },
   "blockSettingsGroups": {
     "content": "Content",
     "typography": "Typography",
@@ -1931,6 +1948,8 @@
     "padding": "Padding",
     "page": "Page",
     "page_in_preparation": "This page is being prepared.",
+    "store_unavailable": "Store unavailable",
+    "store_unavailable_description": "This store does not have a published homepage yet.",
     "page_not_found": "Page not found",
     "page_sections": "Page sections",
     "page_settings": "Page settings",

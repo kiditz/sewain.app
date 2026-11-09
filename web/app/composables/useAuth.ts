@@ -19,10 +19,7 @@ export const useAuth = () => {
   const clearCookies = () => {
     if (!import.meta.client) return;
 
-    const names = document.cookie
-      .split(";")
-      .map((cookie) => cookie.split("=", 1)[0]?.trim())
-      .filter((name): name is string => Boolean(name));
+    const names = ["access_token", "guest_token", "merchant", "user"];
     const pathSegments = window.location.pathname.split("/").filter(Boolean);
     const paths = new Set(["/"]);
     for (let index = 1; index <= pathSegments.length; index += 1) {
@@ -64,11 +61,16 @@ export const useAuth = () => {
     });
   };
 
-  const logout = () => {
+  const logout = async () => {
     token.value = null;
     useMerchantStore().clear();
     useUserStore().user = null;
+    clearNuxtData();
+    // Let persisted-state watchers finish writing cleared state before removing the cookies.
+    await nextTick();
     clearCookies();
+    if (import.meta.client) window.location.replace("/login");
+    else return navigateTo("/login", { replace: true });
   };
 
   return {

@@ -30,7 +30,11 @@ public class TenantAccessService {
 
 	public String getSchema(String slug) {
 		return merchantRepository.findBySlug(slug)
-				.map(Merchant::getSchema).orElse("public");
+				.map(merchant -> {
+                    if (!"READY".equals(merchant.getProvisioningStatus()))
+                        throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "merchant.provisioning");
+                    return merchant.getSchema();
+                }).orElse("public");
 
 	}
 }

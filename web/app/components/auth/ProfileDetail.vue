@@ -4,9 +4,8 @@ import { EditOutlined, LockOutlined, LogoutOutlined } from "@ant-design/icons-vu
 const { user, initials } = storeToRefs(useUserStore());
 const auth = useAuth();
 
-const logout = () => {
-  auth.logout();
-  return navigateTo("/login", { replace: true });
+const logout = async () => {
+  await auth.logout();
 };
 </script>
 

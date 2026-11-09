@@ -34,6 +34,13 @@ class Merchant {
 	@Column(name = "is_active", nullable = false)
 	private boolean active;
 
+    @Column(name = "provisioning_status", nullable = false)
+    private String provisioningStatus = "PROVISIONING";
+
+    @Version
+    @Column(name = "provisioning_version", nullable = false)
+    private long provisioningVersion;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;

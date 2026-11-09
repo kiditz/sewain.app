@@ -9,11 +9,11 @@ export default defineNuxtRouteMiddleware(async () => {
   const store = useMerchantStore();
   const merchants = await findMerchants();
 
+  store.setMerchants(merchants);
   if (merchants.length === 0) {
     return navigateTo("/merchant/create");
   }
-  store.setMerchants(merchants);
-  if (!store.current) {
-    store.setCurrent(merchants[0]);
+  if (store.current?.provisioningStatus !== "READY") {
+    return navigateTo("/merchant/setup");
   }
 });

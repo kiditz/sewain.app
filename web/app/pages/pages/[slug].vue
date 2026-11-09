@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { usePublicCanonical } from "~/composables/usePublicCanonical";
 import { useStorefront } from "~/features/storefront-builder/composables/useStorefront";
 const route = useRoute();
 const storefront = useStorefront();
 await callOnce(storefront.queryKey("published-configuration"), () => storefront.loadPublished(), { mode: "navigation" });
 const { getPageBySlug, theme } = storefront;
 const page = computed(() => getPageBySlug(String(route.params.slug)));
+if (import.meta.server && !page.value) {
+  const event = useRequestEvent();
+  if (event) setResponseStatus(event, 404, "Page not found");
+}
 useSeoMeta({ title: () => page.value?.title ?? "Page not found" });
 useHead({
   title: page.value?.title,
 });
+usePublicCanonical(() => !!page.value);
 </script>
 <template>
   <StorefrontLayout :theme="theme">

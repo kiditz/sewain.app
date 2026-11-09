@@ -41,7 +41,7 @@ class SecurityConfig {
 						)
 				)
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+						.requestMatchers("/api/auth/register", "/api/auth/login", "/ws/provisioning").permitAll()
 
 						// Operational migrations are only available through the maintenance runner.
                         .requestMatchers("/api/merchants/migrate").denyAll()
