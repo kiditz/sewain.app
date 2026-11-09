@@ -27,8 +27,8 @@ public class ProvisioningWebSocketConfiguration implements WebSocketMessageBroke
     private final JwtDecoder decoder;
     private final String[] origins;
     public ProvisioningWebSocketConfiguration(JwtDecoder decoder,
-            @Value("${app.websocket.allowed-origin-patterns:http://*.localhost:3000,http://localhost:3000,http://sewain.app:3000,http://*.sewain.app:3000}") String origins) {
-        this.decoder = decoder; this.origins = origins.split(",");
+            @Value("${app.websocket.allowed-origin-patterns}") String origins) {
+        this.decoder = decoder; this.origins = java.util.Arrays.stream(origins.split(",")).map(String::trim).filter(origin -> !origin.isEmpty()).toArray(String[]::new);
     }
     @Bean public ThreadPoolTaskScheduler provisioningHeartbeatScheduler() {
         var scheduler = new ThreadPoolTaskScheduler(); scheduler.setPoolSize(1); scheduler.setThreadNamePrefix("stomp-heartbeat-"); return scheduler;

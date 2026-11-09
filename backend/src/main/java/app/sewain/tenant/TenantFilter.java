@@ -45,7 +45,9 @@ public class TenantFilter extends OncePerRequestFilter {
             } catch (org.springframework.web.server.ResponseStatusException unavailable) {
                 response.setStatus(unavailable.getStatusCode().value());
                 response.setContentType("application/json");
-                response.getWriter().write("{\"message\":\"merchant.provisioning\"}");
+                response.getWriter().write("""
+                        {"message":"merchant.provisioning"}
+                        """);
                 return;
             }
 			if (!tenant.equals(PUBLIC)) {
