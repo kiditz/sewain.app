@@ -19,11 +19,17 @@ class ProductImportConfiguration {
     @Bean JdbcTransactionManager importBatchTransactionManager(DataSource dataSource) {
         return new JdbcTransactionManager(dataSource);
     }
-    @Bean ThreadPoolTaskExecutor productImportExecutor() {
-        var executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1); executor.setMaxPoolSize(1); executor.setQueueCapacity(10);
-        executor.setThreadNamePrefix("product-import-");
-        executor.setWaitForTasksToCompleteOnShutdown(true); executor.setAwaitTerminationSeconds(30);
-        return executor;
+    // Keep this worker separate from the application's @Async executor and tenant decorator.
+    @Bean ImportWorker productImportWorker() { return new ImportWorker(); }
+    static final class ImportWorker {
+        private final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        ImportWorker() {
+            executor.setCorePoolSize(1); executor.setMaxPoolSize(1); executor.setQueueCapacity(10);
+            executor.setThreadNamePrefix("product-import-");
+            executor.setWaitForTasksToCompleteOnShutdown(true); executor.setAwaitTerminationSeconds(30);
+            executor.initialize();
+        }
+        void execute(Runnable task) { executor.execute(task); }
+        @jakarta.annotation.PreDestroy void close() { executor.shutdown(); }
     }
 }

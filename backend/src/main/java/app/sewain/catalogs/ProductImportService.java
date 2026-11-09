@@ -16,7 +16,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,10 +32,23 @@ class ProductImportService {
     private final JdbcTemplate jdbc;
     private final JobRepository jobRepository;
     private final JobOperator jobOperator;
-    private final ThreadPoolTaskExecutor productImportExecutor;
+    private final ProductImportConfiguration.ImportWorker productImportWorker;
     private final ProductImportRowService rows;
     private final SimpMessagingTemplate socket;
     private final TenantAccessService access;
+    record ProductRows(List<Map<String,String>> variants, List<Integer> recordNumbers) {}
+    static List<ProductRows> group(List<Map<String,String>> records) {
+        var groups = new LinkedHashMap<String,ProductRows>();
+        for (int i=0;i<records.size();i++) {
+            var row = records.get(i);
+            var slug = row.getOrDefault("slug", "");
+            var key = slug.isBlank() ? "invalid:"+i : slug;
+            var group = groups.computeIfAbsent(key, ignored -> new ProductRows(new ArrayList<>(),new ArrayList<>()));
+            group.variants().add(row);
+            group.recordNumbers().add(i+2);
+        }
+        return new ArrayList<>(groups.values());
+    }
     record RowResult(int row, String status, String message) {}
     record Status(UUID id, String status, int total, int processed, int succeeded, int skipped, int failed, String message, long version, List<RowResult> errors) {}
 
@@ -49,12 +61,12 @@ class ProductImportService {
         var tenant = TenantContext.get();
         if (tenant == null || tenant.equals("public")) throw new AccessDeniedException("Pilih toko terlebih dahulu");
         if (file.isEmpty() || file.getSize()>5*1024*1024) throw bad("CSV harus diisi, maksimal 5 MB");
-        List<Map<String,String>> records = parse(file);
+        var records = group(parse(file));
         var id = UUID.randomUUID();
         try {
             jdbc.update("INSERT INTO public.product_imports(id,tenant,user_id,status,total) VALUES (?,?,?,'QUEUED',?)",id,tenant,user,records.size());
         } catch (org.springframework.dao.DuplicateKeyException busy) { throw new ResponseStatusException(HttpStatus.CONFLICT,"Masih ada import aktif untuk toko ini"); }
-        try { productImportExecutor.execute(() -> run(id,tenant,user,records)); }
+        try { productImportWorker.execute(() -> run(id,tenant,user,records)); }
         catch (org.springframework.core.task.TaskRejectedException busy) {
             finish(id,"FAILED","Antrean penuh. Coba upload lagi nanti.");
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,"Antrean import penuh");
@@ -69,12 +81,12 @@ class ProductImportService {
         try (var parser = format.parse(new StringReader(text))) {
             var headers = parser.getHeaderNames();
             if (new HashSet<>(headers).size()!=headers.size() || !new HashSet<>(headers).containsAll(List.of("name","slug","sku","rental_fee"))) throw bad("Header wajib: name,slug,sku,rental_fee");
-            var allowed = Set.of("name","slug","sku","rental_fee","stock","buy_price","deposit_amount","status","description","image_urls");
+            var allowed = Set.of("name","slug","sku","rental_fee","stock","buy_price","deposit_amount","status","description","image_urls","variant_name");
             if (!allowed.containsAll(headers)) throw bad("Ada kolom CSV yang tidak dikenal. Gunakan template import.");
             var result = new ArrayList<Map<String,String>>();
             for (var record : parser) {
                 if (!record.isConsistent()) throw bad("Jumlah kolom tidak sesuai pada record "+record.getRecordNumber());
-                if (result.size()>=1000) throw bad("Maksimal 1000 produk per import");
+                if (result.size()>=1000) throw bad("Maksimal 1000 baris varian per import");
                 var row = new HashMap<>(record.toMap());
                 row.entrySet().removeIf(entry -> entry.getValue().isBlank() && !Set.of("name","slug","sku","rental_fee").contains(entry.getKey()));
                 result.add(row);
@@ -84,27 +96,27 @@ class ProductImportService {
         } catch (IOException | UncheckedIOException | IllegalArgumentException error) { throw bad("CSV tidak valid: periksa pemisah koma dan tanda kutip"); }
     }
 
-    private void run(UUID id,String tenant,UUID user,List<Map<String,String>> records) {
+    private void run(UUID id,String tenant,UUID user,List<ProductRows> records) {
         TenantContext.set(tenant);
         try {
             jdbc.update("UPDATE public.product_imports SET status='RUNNING',version=version+1 WHERE id=?",id);
             publish(id,user);
             var iterator = records.iterator();
-            var number = new java.util.concurrent.atomic.AtomicInteger(1);
             var step = new StepBuilder("importProductRows",jobRepository).tasklet((contribution,context) -> {
                 if (!iterator.hasNext()) return RepeatStatus.FINISHED;
-                int row = number.incrementAndGet();
+                var product = iterator.next();
                 String state, message = null;
-                try { state = rows.create(iterator.next()); }
+                try { state = rows.create(product.variants()); }
                 catch (Exception error) {
                     state = "FAILED";
                     // Never expose HTTP URLs/credentials or SQL diagnostics in the report.
                     message = error instanceof IllegalArgumentException ? error.getMessage() : "Produk/gambar gagal disimpan. Periksa data, SKU unik, dan URL gambar publik.";
                     if (message == null) message = "Data tidak valid";
                     message = message.substring(0,Math.min(255,message.length()));
-                    log.warn("Product import {} record {} failed ({})",id,row,error.getClass().getSimpleName());
+                    log.warn("Product import {} records {} failed ({})",id,product.recordNumbers(),error.getClass().getSimpleName());
                 }
-                jdbc.update("INSERT INTO public.product_import_rows(import_id,row_number,status,message) VALUES (?,?,?,?)",id,row,state,message);
+                for (var row : product.recordNumbers())
+                    jdbc.update("INSERT INTO public.product_import_rows(import_id,row_number,status,message) VALUES (?,?,?,?)",id,row,state,message);
                 jdbc.update("UPDATE public.product_imports SET processed=processed+1,succeeded=succeeded+?,skipped=skipped+?,failed=failed+?,version=version+1 WHERE id=?",state.equals("SUCCEEDED")?1:0,state.equals("SKIPPED")?1:0,state.equals("FAILED")?1:0,id);
                 contribution.incrementReadCount();
                 if (state.equals("SUCCEEDED")) contribution.incrementWriteCount(1);

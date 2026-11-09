@@ -26,7 +26,7 @@ export function useProductImport() {
   let disposed = false;
   let revision = 0;
   function accept(value: ProductImportStatus | null, replace = false) {
-    if (!value || disposed) return;
+    if (!value || disposed || typeof value.id !== 'string' || !Number.isSafeInteger(value.version) || !Array.isArray(value.errors)) return;
     if (status.value?.id === value.id && value.version < status.value.version) return;
     if (!replace && status.value && status.value.id !== value.id) return;
     status.value = value;
@@ -46,7 +46,8 @@ export function useProductImport() {
       // Recover events that arrived before the upload response assigned the job ID.
       await snapshot();
     } catch (cause) {
-      error.value = useApiError().apiErrorMessage(cause);
+      const message = (cause as { data?: { message?: unknown } })?.data?.message;
+      error.value = typeof message === 'string' ? message : 'Upload CSV gagal. Coba lagi.';
     } finally { uploading.value = false; }
   }
   onMounted(async () => {

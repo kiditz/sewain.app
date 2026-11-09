@@ -1,6 +1,5 @@
-package app.sewa.rent;
+package app.sewain;
 
-import app.sewain.SewainApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.modulith.core.ApplicationModules;
