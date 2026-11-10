@@ -1,0 +1,55 @@
+name: sewain-whatsapp
+
+services:
+  whatsapp-api:
+    build:
+      context: .
+    image: sewain/whatsapp-api:local
+    restart: unless-stopped
+    init: true
+    ports:
+      - "127.0.0.1:${WHATSAPP_PORT:-3001}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      API_KEY: ${API_KEY:?Set API_KEY in whatsapp-api/.env}
+      BASE_WEBHOOK_URL: ${BASE_WEBHOOK_URL:-http://host.docker.internal:8080/api/integrations/whatsapp/webhook}
+      ENABLE_LOCAL_CALLBACK_EXAMPLE: "false"
+      ENABLE_SWAGGER_ENDPOINT: ${ENABLE_SWAGGER_ENDPOINT:-false}
+      SESSIONS_PATH: /usr/src/app/sessions
+      SET_MESSAGES_AS_SEEN: "false"
+      RECOVER_SESSIONS: "true"
+      MAX_ATTACHMENT_SIZE: "5120000"
+      DISABLED_CALLBACKS: ${DISABLED_CALLBACKS:-message_reaction|unread_count|message_edit|message_ciphertext}
+      RATE_LIMIT_MAX: "100"
+      RATE_LIMIT_WINDOW_MS: "60000"
+    volumes:
+      - whatsapp-sessions:/usr/src/app/sessions
+      - whatsapp-cache:/usr/src/app/.wwebjs_cache
+    tmpfs:
+      - /usr/src/app/uploads:uid=1000,gid=1000,mode=0700,size=64m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    shm_size: 256mb
+    mem_limit: ${WHATSAPP_MEMORY_LIMIT:-1g}
+    cpus: ${WHATSAPP_CPU_LIMIT:-1.0}
+    pids_limit: 256
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/ping').then(async r=>{if(!r.ok || !(await r.json()).success)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  whatsapp-sessions:
+  whatsapp-cache:

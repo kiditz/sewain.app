@@ -78,11 +78,12 @@ so Nuxt SSR reaches Spring through `backend:8080` rather than its own container'
 
 ## WhatsApp integration status
 
-The gateway is packaged and can expose its REST API after startup. The Spring WhatsApp connector and
-`/api/integrations/whatsapp/webhook` route have not been implemented yet; callback delivery to that
-placeholder URL will fail until the connector is added. Starting an empty gateway does not create a
-WhatsApp session or send messages. Existing sessions in its volume are restored automatically.
+The gateway is connected to the Spring WhatsApp integration. Open **Merchant → Integrasi → WhatsApp**
+to link a merchant phone via QR and view/send direct text messages. Compose passes the existing
+`WHATSAPP_API_KEY` to both services and uses it to sign backend callbacks. Session credentials persist
+in `whatsapp-sessions`. An empty gateway does not automatically pair a phone or send messages.
 API/session endpoints require `x-api-key`; never expose that secret through Nuxt public configuration.
+See [docs/whatsapp-integration.md](docs/whatsapp-integration.md) for limits and verification steps.
 
 ## Operations
 
