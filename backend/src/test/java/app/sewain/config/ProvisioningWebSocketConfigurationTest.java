@@ -37,11 +37,21 @@ class ProvisioningWebSocketConfigurationTest {
     }
     @Test void cannotSubscribeToAnotherUsersOrBroadcastDestination() {
         var jwt = token();
-        for (var destination : List.of("/queue/provisioning", "/topic/provisioning", "/user/another-user/queue/provisioning")) {
+        for (var destination : List.of("/queue/provisioning", "/topic/provisioning", "/user/another-user/queue/provisioning", "/topic/whatsapp", "/queue/whatsapp", "/user/another-user/queue/whatsapp")) {
             var header = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
             header.setUser(new JwtAuthenticationToken(jwt, List.of(), jwt.getClaimAsString("user")));
             header.setDestination(destination);
             assertThrows(AccessDeniedException.class, () -> configuration.provisioningInterceptor().preSend(message(header), null));
         }
+    }
+    @Test void allowsOnlyAuthenticatedPersonalWhatsAppQueue() {
+        var jwt = token();
+        var header = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        header.setUser(new JwtAuthenticationToken(jwt,List.of(),jwt.getClaimAsString("user")));
+        header.setDestination("/user/queue/whatsapp");
+        assertDoesNotThrow(() -> configuration.provisioningInterceptor().preSend(message(header),null));
+        var anonymous = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        anonymous.setDestination("/user/queue/whatsapp");
+        assertThrows(AccessDeniedException.class,() -> configuration.provisioningInterceptor().preSend(message(anonymous),null));
     }
 }

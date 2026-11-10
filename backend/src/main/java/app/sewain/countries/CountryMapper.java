@@ -3,11 +3,12 @@ package app.sewain.countries;
 import app.sewain.settings.JsonNodeMapper;
 import app.sewain.shared.GlobalMapperConfig;
 import org.mapstruct.Mapper;
+import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapping;
 
 import java.util.List;
 
-@Mapper(config = GlobalMapperConfig.class, uses = JsonNodeMapper.class)
+@Mapper(config = GlobalMapperConfig.class, uses = JsonNodeMapper.class, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 interface CountryMapper {
 
 	@Mapping(target = "iso2", source = "iso2")

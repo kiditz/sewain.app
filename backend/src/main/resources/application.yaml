@@ -39,6 +39,11 @@ spring:
         jwt:
           jwk-set-uri: https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com
 app:
+  integrations:
+    whatsapp:
+      base-url: ${WHATSAPP_BASE_URL:http://localhost:3001}
+      api-key: ${WHATSAPP_API_KEY:}
+      webhook-secret: ${WHATSAPP_WEBHOOK_SECRET:${WHATSAPP_API_KEY:}}
   websocket:
     allowed-origin-patterns: ${APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:http://localhost:3000}
   media:

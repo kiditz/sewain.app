@@ -108,3 +108,5 @@ No existing timestamps are rewritten. Old offset-less values do not reveal their
 the frontend's UTC interpretation is the contract for new timestamps, not a conversion of legacy WIB data.
 Historical local timestamps require a separately reviewed migration to display the original instant correctly.
 `timestamptz` values with an explicit offset already identify an instant and remain supported.
+
+WhatsApp merchant integration, pairing, environment wiring and manual verification: [docs/whatsapp-integration.md](docs/whatsapp-integration.md).

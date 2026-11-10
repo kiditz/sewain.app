@@ -19,18 +19,18 @@ const { data: plugins, status, error, refresh } = await useAsyncData("merchant-i
       <v-col v-for="plugin in plugins || []" :key="plugin.code" cols="12" md="6" lg="4">
         <v-card variant="outlined" rounded="lg" class="pa-6 h-100">
           <div class="d-flex align-center justify-space-between mb-4">
-            <v-icon icon="mdi-email-outline" size="32" color="primary" />
+            <v-icon :icon="plugin.code === 'whatsapp' ? 'mdi-whatsapp' : 'mdi-email-outline'" size="32" color="primary" />
             <v-chip :color="plugin.enabled ? 'success' : undefined" size="small" variant="tonal">
               {{ t(plugin.enabled ? "integrations.active" : plugin.installed ? "integrations.inactive" : "integrations.notConnected") }}
             </v-chip>
           </div>
           <h2 class="text-title-large mb-2">{{ plugin.name }}</h2>
-          <p class="text-body-medium text-medium-emphasis mb-4">{{ plugin.code === 'email' ? t('integrations.emailDescription') : plugin.description }}</p>
+          <p class="text-body-medium text-medium-emphasis mb-4">{{ plugin.code === 'email' ? t('integrations.emailDescription') : plugin.code === 'whatsapp' ? 'Hubungkan nomor WhatsApp toko untuk mengirim dan menerima pesan teks.' : plugin.description }}</p>
           <v-chip v-for="capability in plugin.capabilities" :key="capability" size="small" variant="outlined" class="me-2 mb-4">
-            {{ capability === 'EMAIL_OUTBOUND' ? t('integrations.outbound') : capability === 'EMAIL_INBOUND' ? t('integrations.inbound') : capability }}
+            {{ ['EMAIL_OUTBOUND', 'WHATSAPP_OUTBOUND'].includes(capability) ? t('integrations.outbound') : ['EMAIL_INBOUND', 'WHATSAPP_INBOUND'].includes(capability) ? t('integrations.inbound') : capability }}
           </v-chip>
           <div>
-            <v-btn v-if="plugin.code === 'email'" color="primary" to="/merchant/integrations/email">
+            <v-btn v-if="['email', 'whatsapp'].includes(plugin.code)" color="primary" :to="`/merchant/integrations/${plugin.code}`">
               {{ t(plugin.installed ? "integrations.manage" : "integrations.connect") }}
             </v-btn>
           </div>

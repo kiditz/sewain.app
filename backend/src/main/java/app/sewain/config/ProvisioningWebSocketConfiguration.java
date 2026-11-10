@@ -63,7 +63,7 @@ public class ProvisioningWebSocketConfiguration implements WebSocketMessageBroke
                 if (!(header.getUser() instanceof JwtAuthenticationToken user) || !user.isAuthenticated() ||
                         user.getToken().getExpiresAt() == null || !user.getToken().getExpiresAt().isAfter(Instant.now()))
                     throw new AccessDeniedException("Authentication expired");
-                if (header.getCommand() == StompCommand.SUBSCRIBE && !Set.of("/user/queue/provisioning", "/user/queue/product-imports").contains(header.getDestination()))
+                if (header.getCommand() == StompCommand.SUBSCRIBE && !Set.of("/user/queue/provisioning", "/user/queue/product-imports", "/user/queue/whatsapp").contains(header.getDestination()))
                     throw new AccessDeniedException("Subscription denied");
                 if (header.getCommand() == StompCommand.SEND && (header.getDestination() == null || !Set.of("/app/provisioning/status", "/app/provisioning/retry", "/app/product-imports/status").contains(header.getDestination())))
                     throw new AccessDeniedException("Destination denied");

@@ -2,7 +2,9 @@ package app.sewain.media;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.hc.client5.http.DnsResolver;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.springframework.web.client.RestClient;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -19,6 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RemoteImageImporter {
     private final MediaCommandService media;
+    private final RestClient.Builder restClientBuilder;
 
     public String download(String source) throws IOException {
         URI uri;
@@ -37,19 +40,21 @@ public class RemoteImageImporter {
                 .setResponseTimeout(Timeout.ofSeconds(15)).setConnectionRequestTimeout(Timeout.ofSeconds(5)).build();
         try (var client = HttpClients.custom().setConnectionManager(manager).setDefaultRequestConfig(config)
                 .disableRedirectHandling().disableAutomaticRetries().disableContentCompression().disableCookieManagement().build()) {
-            var request = new HttpGet(uri);
+            var restClient = restClientBuilder.clone().requestFactory(new HttpComponentsClientHttpRequestFactory(client)).build();
             // Whole-request deadline also bounds a server that trickles bytes indefinitely.
             try (var deadline = java.util.concurrent.Executors.newSingleThreadScheduledExecutor()) {
-                deadline.schedule(request::cancel, 30, java.util.concurrent.TimeUnit.SECONDS);
-                try { return client.execute(request, response -> {
-                    if (response.getCode() != 200 || response.getEntity() == null) throw new IOException("Download gambar gagal (HTTP " + response.getCode() + ")");
-                    try (var input = response.getEntity().getContent()) {
+                deadline.schedule(() -> client.close(CloseMode.IMMEDIATE), 30, java.util.concurrent.TimeUnit.SECONDS);
+                try { return restClient.get().uri(uri).exchange((request, response) -> {
+                    if (response.getStatusCode().value() != 200) throw new IOException("Download gambar gagal (HTTP " + response.getStatusCode().value() + ")");
+                    try (var input = response.getBody()) {
                         var bytes = input.readNBytes(5 * 1024 * 1024 + 1);
                         if (bytes.length > 5 * 1024 * 1024) throw new IOException("Gambar melebihi 5 MB");
                         return media.upload(List.of(new Download(bytes)), List.of()).getFirst().url();
                     }
                 }); } finally { deadline.shutdownNow(); }
             }
+        } catch (org.springframework.web.client.RestClientException error) {
+            throw new IOException("Download gambar gagal", error);
         }
     }
 

@@ -1,6 +1,5 @@
 package app.sewain.tenant;
 
-import app.sewain.merchants.TenantAccessService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +26,7 @@ public class TenantFilter extends OncePerRequestFilter {
 	private static final String PUBLIC = "public";
 	private static final String TENANT_HEADER = "X-Tenant";
 
-	private final TenantAccessService tenantAccessService;
+	private final TenantAccess tenantAccessService;
 
 	@Override
 	protected void doFilterInternal(
@@ -40,7 +39,7 @@ public class TenantFilter extends OncePerRequestFilter {
 			String tenant;
             try {
                 var path = request.getServletPath();
-                tenant = path.equals("/api/merchants") || path.equals("/ws/provisioning")
+                tenant = path.equals("/api/merchants") || path.equals("/ws/provisioning") || path.equals("/api/integrations/whatsapp/webhook")
                         ? PUBLIC : tenantAccessService.getSchema(resolveTenant(request));
             } catch (org.springframework.web.server.ResponseStatusException unavailable) {
                 response.setStatus(unavailable.getStatusCode().value());
@@ -56,7 +55,7 @@ public class TenantFilter extends OncePerRequestFilter {
 					tenantAccessService.validateAccess(userId, tenant);
 				}
 			}
-			log.info("Connected to tenant: {}", tenant);
+			log.debug("Connected to tenant: {}", tenant);
 			TenantContext.set(tenant.replace("-", "_"));
 			filterChain.doFilter(request, response);
 		} finally {

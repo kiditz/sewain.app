@@ -43,6 +43,8 @@ class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers("/api/auth/register", "/api/auth/login", "/ws/provisioning").permitAll()
 
+						.requestMatchers(HttpMethod.POST, "/api/integrations/whatsapp/webhook").permitAll()
+
 						// Operational migrations are only available through the maintenance runner.
                         .requestMatchers("/api/merchants/migrate").denyAll()
 

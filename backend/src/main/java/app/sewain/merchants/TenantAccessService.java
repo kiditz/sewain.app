@@ -10,11 +10,12 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class TenantAccessService {
+public class TenantAccessService implements app.sewain.tenant.TenantAccess {
 
 	private final MerchantUserRepository merchantUserRepository;
 	private final MerchantRepository merchantRepository;
 
+	@Override
 	public void validateAccess(UUID userId, String tenant) {
 		if ("public".equals(tenant)) {
 			return;
@@ -28,6 +29,7 @@ public class TenantAccessService {
 		}
 	}
 
+	@Override
 	public String getSchema(String slug) {
 		return merchantRepository.findBySlug(slug)
 				.map(merchant -> {
