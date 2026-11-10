@@ -2424,6 +2424,7 @@
     "title": "Integrations",
     "subtitle": "Connect the services your store uses. Each store manages its own accounts and settings.",
     "emailTitle": "Email integration",
+    "whatsappTitle": "WhatsApp integration",
     "emailDescription": "Connect your own email account to send messages through SMTP and receive messages through IMAP.",
     "active": "Active",
     "inactive": "Inactive",

@@ -13,11 +13,25 @@ export const test = base.extend({
     test.skip(!process.env.E2E_EMAIL || !process.env.E2E_PASSWORD || !process.env.E2E_MERCHANT_NAME,
       'Set E2E_EMAIL, E2E_PASSWORD and E2E_MERCHANT_NAME; a READY test merchant is required.');
     await page.goto('/login');
+    // SSR inputs can be visible before Vue attaches the form handlers.
+    // Wait on every fresh test context so hydration cannot erase typed values.
+    await page.waitForFunction(() => {
+      const app = document.querySelector('#__nuxt')?.__vue_app__;
+      return app?.config.globalProperties.$nuxt?.isHydrating === false;
+    });
     // Login's existing v-labels are not associated with the inputs; scope to its form.
     const form = page.locator('form');
-    await form.locator('input:not([type="password"]):not([type="hidden"])').fill(process.env.E2E_EMAIL);
-    await form.locator('input[type="password"]').fill(process.env.E2E_PASSWORD);
-    await form.getByRole('button', { name: /^(Masuk|Sign in)$/i }).click();
+    const email = form.locator('input:not([type="password"]):not([type="hidden"])');
+    const password = form.locator('input[type="password"]');
+    const submit = form.getByRole('button', { name: /^(Masuk|Sign in)$/i });
+    await email.fill(process.env.E2E_EMAIL);
+    await password.fill(process.env.E2E_PASSWORD);
+    await expect(email).toHaveValue(process.env.E2E_EMAIL);
+    // Compare as a boolean so failed assertions do not print the password.
+    await expect.poll(async () => (await password.inputValue()) === process.env.E2E_PASSWORD,
+      { message: 'Login password should remain filled after hydration' }).toBe(true);
+    await expect(submit).toBeEnabled();
+    await submit.click();
     await expect(page).toHaveURL(/\/merchant\/?$/);
     await expect(page.locator('.dashboard-store-name').getByRole('button')).toHaveText(process.env.E2E_MERCHANT_NAME);
     await expect(page.locator('.profileBtn')).toBeVisible();

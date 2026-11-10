@@ -2,6 +2,7 @@
 import type { EmailIntegration, EmailMessagePage, IntegrationEmailMessage } from "~/composables/useEmailIntegration";
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 const { t } = useI18n();
+useHead({ title: () => t("integrations.emailTitle") });
 const mail = useEmailIntegration();
 const { formatDate: regionalDate } = useSettings();
 const { data: saved, error: loadError, refresh } = await useAsyncData("merchant-email-integration", mail.get);

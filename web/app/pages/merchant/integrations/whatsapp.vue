@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import QrcodeVue from 'qrcode.vue';
 definePageMeta({ layout: 'merchant', middleware: ['merchant'] });
-useHead({ title: 'Integrasi WhatsApp' });
+const { t } = useI18n();
+useHead({ title: () => t('integrations.whatsappTitle') });
 const { status, disconnectFailed, messages, total, page, loading, busy, error, connection, refresh, connect, disconnect, send } = useWhatsAppIntegration();
 const to = ref('');
 const body = ref('');

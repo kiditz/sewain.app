@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-if (process.env.E2E_REQUIRE_AUTH === 'true' && (!process.env.E2E_EMAIL || !process.env.E2E_PASSWORD || !process.env.E2E_MERCHANT_NAME)) {
+if ((process.env.E2E_REQUIRE_AUTH === 'true' || process.env.E2E_ALLOW_WRITES === 'true') && (!process.env.E2E_EMAIL || !process.env.E2E_PASSWORD || !process.env.E2E_MERCHANT_NAME)) {
   throw new Error('Set E2E_EMAIL, E2E_PASSWORD and E2E_MERCHANT_NAME for authenticated E2E.');
 }
 export default defineConfig({
@@ -24,6 +24,7 @@ export default defineConfig({
     serviceWorkers: 'block',
   },
   projects: [
+    { name: 'write-desktop', testMatch: 'workflow.spec.mjs', use: { viewport: { width: 1440, height: 1000 }, timezoneId: 'Asia/Jakarta' } },
     { name: 'desktop', testMatch: ['public.spec.mjs', 'merchant.spec.mjs'], use: { viewport: { width: 1440, height: 1000 } } },
     { name: 'mobile', testMatch: ['public.spec.mjs', 'responsive.spec.mjs'], use: { viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true } },
     { name: 'tablet', testMatch: 'responsive.spec.mjs', use: { viewport: { width: 768, height: 1024 }, hasTouch: true } },
