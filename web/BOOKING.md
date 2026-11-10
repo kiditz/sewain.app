@@ -2,7 +2,7 @@
 
 ## 1. Booking Lifecycle
 
-Booking merepresentasikan seluruh proses penyewaan, mulai dari customer melakukan booking sampai seluruh barang dikembalikan dan proses rental selesai.
+A booking represents the entire rental process, from the customer placing a booking until all items are returned and the rental is complete.
 
 ```text
 PENDING
@@ -29,7 +29,7 @@ RETURNING
 COMPLETED
 ```
 
-`DAMAGED` bukan merupakan `BookingStatus`. Kondisi rusak merupakan hasil dari proses return inspection.
+`DAMAGED` is not a `BookingStatus`. Damage is an outcome of the return inspection.
 
 ### Booking Status
 
@@ -56,7 +56,7 @@ CONFIRMED  ──────► CANCELLED
 
 ## 2. Booking Rental Period
 
-Booking menyimpan periode rental:
+A booking stores the rental period:
 
 ```text
 Booking #BK-2026-001
@@ -102,9 +102,9 @@ updated_at
 
 ### Rental Plan Snapshot
 
-Booking tidak hanya menyimpan `rental_plan_id`.
+A booking stores more than just `rental_plan_id`.
 
-Rental plan dapat berubah setelah booking dibuat, sehingga nilai yang digunakan ketika booking dibuat harus disimpan sebagai snapshot.
+Rental plans may change after a booking is created, so the values used at booking time must be stored as a snapshot.
 
 ```text
 rental_fee
@@ -113,20 +113,20 @@ duration_value
 duration_unit
 ```
 
-Contoh:
+Example:
 
 ```text
-Rental plan saat booking:
+Rental plan at booking time:
 3 Days = Rp120.000
 ```
 
-Jika merchant kemudian mengubah rental plan:
+If the merchant later changes the rental plan:
 
 ```text
 3 Days = Rp150.000
 ```
 
-booking lama tetap menggunakan:
+the existing booking continues to use:
 
 ```text
 3 Days = Rp120.000
@@ -136,15 +136,15 @@ booking lama tetap menggunakan:
 
 ## 3. Inventory Unit
 
-Booking harus mengacu pada **inventory unit**, bukan hanya product.
+A booking must reference an **inventory unit**, rather than only a product.
 
-Product merupakan representasi barang secara umum:
+A product represents a general type of item:
 
 ```text
 Sony A7 IV
 ```
 
-Sedangkan inventory unit merepresentasikan barang fisik:
+An inventory unit represents a specific physical item:
 
 ```text
 Sony A7 IV
@@ -184,7 +184,7 @@ expected_return_at
 returned_at
 ```
 
-Contoh:
+Example:
 
 ```text
 BK001
@@ -192,15 +192,15 @@ BK001
     └── CAM-002
 ```
 
-Dengan demikian sistem dapat mengetahui inventory unit fisik mana yang sedang disewa oleh customer.
+This allows the system to identify the specific physical inventory unit rented by the customer.
 
 ---
 
 ## 4. Availability
 
-Availability harus dihitung berdasarkan **inventory unit**, bukan hanya product.
+Availability must be calculated per **inventory unit**, rather than only per product.
 
-Contoh:
+Example:
 
 ```text
 10 Oct - 13 Oct
@@ -210,7 +210,7 @@ CAM-002 → available
 CAM-003 → booked
 ```
 
-Ketika customer melakukan booking:
+When the customer places a booking:
 
 ```text
 available units
@@ -219,7 +219,7 @@ available units
    CAM-002
 ```
 
-Setelah booking dikonfirmasi:
+After the booking is confirmed:
 
 ```text
 CAM-002
@@ -228,7 +228,7 @@ CAM-002
 RESERVED
 ```
 
-Ketika barang diserahkan kepada customer:
+When the item is handed over to the customer:
 
 ```text
 CAM-002
@@ -237,7 +237,7 @@ CAM-002
 RENTED
 ```
 
-Ketika customer mengembalikan barang:
+When the customer returns the item:
 
 ```text
 CAM-002
@@ -246,7 +246,7 @@ CAM-002
 INSPECTION
 ```
 
-Setelah inspection:
+After inspection:
 
 ```text
 INSPECTION
@@ -260,7 +260,7 @@ INSPECTION
 
 ## 5. Inventory Unit Lifecycle
 
-Inventory unit memiliki lifecycle sendiri yang terpisah dari booking.
+An inventory unit has its own lifecycle, separate from the booking.
 
 ```java
 public enum InventoryUnitStatus {
@@ -292,7 +292,7 @@ INSPECTION
 AVAILABLE
 ```
 
-Jika ditemukan kerusakan:
+If damage is found:
 
 ```text
 INSPECTION
@@ -301,13 +301,13 @@ INSPECTION
 MAINTENANCE
 ```
 
-`BookingStatus` dan `InventoryUnitStatus` harus tetap dipisahkan karena keduanya merepresentasikan state yang berbeda.
+`BookingStatus` and `InventoryUnitStatus` must remain separate because they represent different states.
 
 ---
 
 ## 6. Return Process
 
-Barang yang dikembalikan tidak langsung membuat booking menjadi `COMPLETED`.
+Returning an item does not immediately change the booking to `COMPLETED`.
 
 Flow:
 
@@ -323,7 +323,7 @@ RETURNING
 COMPLETED
 ```
 
-Return inspection dapat mencakup:
+A return inspection can include:
 
 ```text
 Condition:
@@ -341,32 +341,32 @@ Late:
 0 days
 ```
 
-Jika ditemukan damage:
+If damage is found:
 
 ```text
 Damage fee:
 Rp500.000
 ```
 
-Booking tetap dapat menjadi:
+The booking can still become:
 
 ```text
 COMPLETED
 ```
 
-dengan:
+with:
 
 ```text
 damage_fee = 500000
 ```
 
-Damage bukan booking status.
+Damage is not a booking status.
 
 ---
 
 ## 7. Return Inspection
 
-Return inspection sebaiknya merupakan entity terpisah dari `Booking`.
+A return inspection should be a separate entity from `Booking`.
 
 ### Booking Return
 
@@ -387,7 +387,7 @@ created_at
 
 ### Booking Return Item
 
-Jika satu booking memiliki beberapa inventory unit, inspection dilakukan per item.
+If a booking contains multiple inventory units, inspect each item separately.
 
 ```text
 booking_return_items
@@ -402,7 +402,7 @@ damage_notes
 damage_fee
 ```
 
-Contoh:
+Example:
 
 ```text
 Booking
@@ -411,7 +411,7 @@ Booking
 └── Tripod
 ```
 
-Hasil inspection:
+Inspection results:
 
 ```text
 Camera  → GOOD
@@ -419,15 +419,15 @@ Lens    → DAMAGED
 Tripod  → GOOD
 ```
 
-Dengan model ini, damage dapat dicatat secara spesifik pada inventory unit yang bermasalah.
+This model records damage against the specific affected inventory unit.
 
 ---
 
 ## 8. Deposit
 
-Deposit bukan bagian dari rental fee.
+The deposit is separate from the rental fee.
 
-Contoh:
+Example:
 
 ```text
 Rental fee       Rp300.000
@@ -436,7 +436,7 @@ Deposit          Rp1.000.000
 Customer pays    Rp1.300.000
 ```
 
-Ketika barang dikembalikan:
+When the item is returned:
 
 ```text
 Deposit           Rp1.000.000
@@ -445,7 +445,7 @@ Damage deduction  Rp300.000
 Refund             Rp700.000
 ```
 
-Financial transactions yang terkait dengan booking dapat mencakup:
+Financial transactions associated with a booking can include:
 
 ```text
 Booking
@@ -460,9 +460,9 @@ Booking
 
 ## 9. Late Return
 
-Expected return dan actual return harus disimpan secara terpisah.
+Expected and actual return times must be stored separately.
 
-Contoh:
+Example:
 
 ```text
 Expected:
@@ -479,16 +479,16 @@ expected_return_at = 13 Oct 15:00
 returned_at        = 14 Oct 10:00
 ```
 
-Late duration dihitung berdasarkan kedua timestamp tersebut.
+The late duration is calculated from these two timestamps.
 
-Hasil perhitungan dapat menghasilkan:
+The calculation can produce:
 
 ```text
 late_days
 late_fee
 ```
 
-`expected_return_at` tidak boleh diubah ketika customer terlambat mengembalikan barang.
+`expected_return_at` must not change when the customer returns an item late.
 
 ---
 

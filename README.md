@@ -1,29 +1,29 @@
 # Sewain
 
-Aplikasi rental multi-tenant: backend Spring Boot, frontend Nuxt, PostgreSQL, serta gateway WhatsApp Web. Panduan ini untuk development lokal, dengan Docker maupun menjalankan service langsung di komputer.
+A multi-tenant rental application with a Spring Boot backend, Nuxt frontend, PostgreSQL, and a WhatsApp Web gateway. This guide covers local development with Docker and with services running directly on your computer.
 
-## Struktur project
+## Project structure
 
-| Folder/file | Isi |
+| Folder/file | Contents |
 | --- | --- |
-| `backend/` | Spring Boot, Java 21, Gradle Wrapper, Flyway, business logic dan API |
-| `web/` | Nuxt/Vue dan dashboard merchant/storefront |
-| `whatsapp-api/` | Gateway Node.js berbasis whatsapp-web.js dan Chromium |
-| `compose.yaml` | Stack Docker utama untuk semua service |
-| `.env.example` | Template konfigurasi stack lokal |
-| `web/e2e/` | Test Playwright terpisah dari dependency aplikasi web |
-| `scripts/` | Script data dummy dan utilitas |
-| `docs/` | Dokumentasi fitur dan pengujian |
+| `backend/` | Spring Boot, Java 21, Gradle Wrapper, Flyway, business logic, and APIs |
+| `web/` | Nuxt/Vue merchant dashboard and storefront |
+| `whatsapp-api/` | Node.js gateway using whatsapp-web.js and Chromium |
+| `compose.yaml` | Main Docker stack for all services |
+| `.env.example` | Local stack configuration template |
+| `web/e2e/` | Playwright tests with dependencies isolated from the web application |
+| `scripts/` | Dummy data scripts and utilities |
+| `docs/` | Feature documentation and testing guides |
 
-## Persiapan environment
+## Environment setup
 
-Jalankan dari root repository. Salin template **hanya untuk setup pertama**; kalau `.env` sudah ada, edit file tersebut tanpa menimpanya.
+Run from the repository root. Copy the template **only on the first setup**. If `.env` already exists, edit it instead of overwriting it.
 
 ```sh
 cp .env.example .env
 ```
 
-Isi tiga secret berikut di `.env`. Jalankan generator masing-masing lalu salin hasilnya ke field yang sesuai, tanpa memasukkan output contoh ke repository:
+Fill in these three secrets in `.env`. Run each generator and copy its output into the corresponding field. Do not commit the generated values:
 
 ```sh
 # POSTGRES_PASSWORD
@@ -36,30 +36,30 @@ openssl rand -hex 32
 openssl rand -base64 32
 ```
 
-| Variable | Fungsi |
+| Variable | Purpose |
 | --- | --- |
-| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Database Docker; default nama DB/user `sewain` |
-| `INTEGRATIONS_ENCRYPTION_KEY` | Kunci base64 dari 32 byte untuk credential integrasi Email; simpan tetap antar restart/deployment |
-| `WHATSAPP_API_KEY` | Akses privat gateway; Compose juga memakainya sebagai secret tanda tangan webhook |
-| `PUBLIC_API_URL` | URL API/media yang bisa diakses browser; default `http://localhost:8080` |
-| `APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` | Origin browser yang diizinkan untuk koneksi STOMP; template sudah memuat domain lokal Sewain |
-| `MIGRATE_TENANTS` | Jalankan migrasi schema merchant lama saat backend startup; default `true` di root Compose |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Docker database credentials; database/user default to `sewain` |
+| `INTEGRATIONS_ENCRYPTION_KEY` | Base64-encoded 32-byte key for Email integration credentials; preserve it across restarts/deployments |
+| `WHATSAPP_API_KEY` | Private gateway access; Compose also uses it as the webhook signing secret |
+| `PUBLIC_API_URL` | Browser-accessible API/media URL; defaults to `http://localhost:8080` |
+| `APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` | Browser origins allowed for STOMP; the template includes Sewain local domains |
+| `MIGRATE_TENANTS` | Run migrations for existing merchant schemas at backend startup; defaults to `true` in root Compose |
 
-Secret hanya untuk backend/gateway. Jangan taruh API key atau encryption key di konfigurasi `NUXT_PUBLIC_*`. Mengubah password di `.env` setelah volume PostgreSQL dibuat tidak otomatis mengubah password role database yang sudah ada.
+Secrets belong to the backend/gateway. Do not put API or encryption keys in `NUXT_PUBLIC_*` configuration. Changing the password in `.env` after the PostgreSQL volume is initialized does not automatically change the existing database role password.
 
-## Jalankan dengan Docker
+## Running with Docker
 
-### Kebutuhan
+### Requirements
 
-- Docker Engine/Desktop aktif dan Docker Compose v2 (`docker compose`).
-- Port host tersedia: web `3000`, backend `8080`, PostgreSQL `5433`, gateway `3001`.
-- Java, Node.js, dan Gradle tidak perlu diinstall di host untuk mode ini.
+- Running Docker Engine/Desktop and Docker Compose v2 (`docker compose`).
+- Available host ports: web `3000`, backend `8080`, PostgreSQL `5433`, gateway `3001`.
+- Java, Node.js, and Gradle do not need to be installed on the host in this mode.
 
-Gunakan **root `compose.yaml`**. Compose di subfolder adalah konfigurasi terpisah; jangan dinyalakan bersamaan pada port yang sama.
+Use **the root `compose.yaml`**. Compose files in subfolders are separate configurations; do not start them simultaneously on the same ports.
 
-### Build dan start pertama
+### First build and startup
 
-Dari root project, setelah `.env` diisi:
+From the project root, after filling in `.env`:
 
 ```sh
 docker compose config --quiet
@@ -68,99 +68,99 @@ docker compose up -d
 docker compose ps
 ```
 
-Dockerfile backend sudah menjalankan Gradle `bootJar -x test`. Jadi tidak perlu build JAR terlebih dahulu. Build image tidak menjalankan test backend. Build pertama membutuhkan download base image, dependency Java/npm, dan Gradle.
+The backend Dockerfile already runs Gradle `bootJar -x test`, so you do not need to build a JAR first. Image builds do not run backend tests. The first build downloads base images, Java/npm dependencies, and Gradle.
 
-Lihat startup/migrasi:
+Watch startup and migration logs:
 
 ```sh
 docker compose logs -f --tail=100 backend web whatsapp-api
 ```
 
-Pastikan backend selesai startup dan migrasi tidak error. Healthcheck backend saat ini hanya mengecek port TCP, bukan kesiapan seluruh tenant.
+Confirm that the backend starts successfully and migrations have no errors. The current backend healthcheck checks only its TCP port, not the readiness of every tenant.
 
-### Alamat lokal
+### Local addresses
 
-| Service | Alamat dari komputer/browser |
+| Service | Address from your computer/browser |
 | --- | --- |
 | Web | [sewain.app.localhost:3000](http://sewain.app.localhost:3000) |
 | API/media | [localhost:8080](http://localhost:8080) |
 | Gateway health | [localhost:3001/ping](http://localhost:3001/ping) |
-| PostgreSQL | `127.0.0.1:5433`, database/user mengikuti `.env` |
+| PostgreSQL | `127.0.0.1:5433`; database/user follow `.env` |
 
-Pakai `sewain.app.localhost` untuk web agar sesuai pola host tenant/CORS lokal. Host merchant dapat berupa `http://<slug-merchant>.sewain.app.localhost:3000`. Jika resolver/browser tidak mengenali hostname tersebut, arahkan hostname yang dipakai ke `127.0.0.1` melalui pengaturan hosts/resolver OS.
+Use `sewain.app.localhost` for the web application to match local tenant/CORS host conventions. Merchant hosts can use `http://<merchant-slug>.sewain.app.localhost:3000`. If your resolver/browser does not recognize a hostname, map that hostname to `127.0.0.1` through your OS hosts/resolver settings.
 
-Di jaringan Docker, alamat antar service berbeda dari alamat browser: `postgres:5432`, `backend:8080`, dan `whatsapp-api:3000`. Compose mengatur `NUXT_API_BASE_URL=http://backend:8080` untuk SSR; browser memakai `PUBLIC_API_URL`.
+Inside Docker, service addresses differ from browser addresses: `postgres:5432`, `backend:8080`, and `whatsapp-api:3000`. Compose sets `NUXT_API_BASE_URL=http://backend:8080` for SSR; browsers use `PUBLIC_API_URL`.
 
-### Update hanya service yang berubah
+### Update only the changed service
 
-Ubah frontend saja:
+Frontend only:
 
 ```sh
 docker compose build web
 docker compose up -d --no-deps web
 ```
 
-Ubah backend saja:
+Backend only:
 
 ```sh
 docker compose build backend
 docker compose up -d --no-deps backend
 ```
 
-Ubah gateway saja:
+Gateway only:
 
 ```sh
 docker compose build whatsapp-api
 docker compose up -d --no-deps whatsapp-api
 ```
 
-Kalau file Compose/environment turut berubah, recreate service terkait dengan `up -d`. `restart` saja tidak menerapkan environment atau image baru. `--no-deps` mencegah Compose ikut menjalankan dependency ketika update satu service; dependency tersebut harus sudah aktif.
+If Compose/environment configuration changes, recreate the affected service with `up -d`. `restart` alone does not apply new environment values or images. `--no-deps` prevents Compose from starting dependencies during a single-service update; those dependencies must already be running.
 
-### Stop dan data persisten
+### Stopping services and persistent data
 
 ```sh
-# Stop container tanpa menghapusnya
+# Stop containers without removing them
 docker compose stop
 
-# Hapus container/network; named volume tetap ada
+# Remove containers/network while preserving named volumes
 docker compose down
 ```
 
 | Named volume | Data |
 | --- | --- |
-| `postgres-data` | Database dan schema tenant |
-| `backend-data` | Key JWT dan file data backend |
-| `backend-upload` | File media di `/app/upload` |
-| `whatsapp-sessions` | Credential perangkat WhatsApp tertaut |
-| `whatsapp-cache` | Cache gateway |
+| `postgres-data` | Database and tenant schemas |
+| `backend-data` | JWT keys and backend data files |
+| `backend-upload` | Media files under `/app/upload` |
+| `whatsapp-sessions` | Linked WhatsApp device credentials |
+| `whatsapp-cache` | Gateway cache |
 
-**`docker compose down -v` menghapus volume dan data di atas.** Jangan gunakan untuk update biasa. Database/file native di komputer tidak otomatis masuk ke named volume Docker; migrasi data harus melalui backup/restore dan penyalinan file yang sesuai.
+**`docker compose down -v` deletes these volumes and their data.** Do not use it for routine updates. Native database/files on your computer do not automatically become part of Docker named volumes; migrating data requires backup/restore and copying the corresponding files.
 
-## Jalankan tanpa Docker
+## Running without Docker
 
-### Kebutuhan
+### Requirements
 
 - JDK **21**.
-- Node.js **22** dan npm (selaras dengan Dockerfile).
-- PostgreSQL lokal; versi **16** selaras dengan stack Docker. Extension `pgcrypto` harus tersedia.
-- Untuk gateway: Google Chrome/Chromium lokal, atau browser Puppeteer yang terinstall bersama dependency.
+- Node.js **22** and npm, matching the Dockerfile.
+- Local PostgreSQL; version **16** matches the Docker stack. The `pgcrypto` extension must be available.
+- For the gateway: local Google Chrome/Chromium, or the Puppeteer browser installed with its dependencies.
 
-Gradle global tidak diperlukan; gunakan `backend/gradlew`. Konfigurasi saat ini menonaktifkan auto-configuration vector store, jadi extension `vector` tidak diperlukan untuk startup biasa. Docker memakai image PostgreSQL dengan pgvector agar siap jika fitur tersebut diaktifkan.
+A global Gradle installation is not required; use `backend/gradlew`. The current configuration disables vector-store auto-configuration, so the `vector` extension is not required for normal startup. Docker uses a PostgreSQL image with pgvector available if that feature is enabled later.
 
-### 1. Siapkan PostgreSQL lokal
+### 1. Set up local PostgreSQL
 
-Untuk instalasi baru, masuk ke `psql` sebagai administrator PostgreSQL. Sesuaikan username admin dengan instalasi komputer:
+For a new installation, open `psql` as a PostgreSQL administrator. Adjust the administrator username to match your installation:
 
 ```sh
 psql -U postgres -d postgres
 ```
 
-Di dalam `psql`:
+Inside `psql`:
 
 ```sql
 CREATE ROLE sewain LOGIN;
 \password sewain
--- Isi password yang sama dengan POSTGRES_PASSWORD di .env.
+-- Enter the same password as POSTGRES_PASSWORD in .env.
 CREATE DATABASE sewain OWNER sewain;
 ALTER DATABASE sewain SET timezone TO 'UTC';
 \connect sewain
@@ -168,16 +168,16 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 \quit
 ```
 
-Lewati `CREATE ROLE`/`CREATE DATABASE` jika sudah ada. Contoh berikut memakai PostgreSQL native port **5432**, bukan port host Docker **5433**. Role aplikasi harus memiliki database/schema dan bisa membuat schema merchant serta menjalankan Flyway.
+Skip `CREATE ROLE`/`CREATE DATABASE` if they already exist. These examples use native PostgreSQL port **5432**, rather than Docker host port **5433**. The application role must own the database/schema and be able to create merchant schemas and run Flyway.
 
-### 2. Backend — terminal pertama
+### 2. Backend — first terminal
 
-Dari root project, buka terminal baru:
+Open a new terminal from the project root:
 
 ```sh
 cd backend
 
-# Spring tidak membaca .env root otomatis. Muat file milik project sendiri ke shell.
+# Spring does not load the root .env automatically. Load this project-owned file into the shell.
 set -a
 source ../.env
 set +a
@@ -198,13 +198,13 @@ export LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=INFO
 ./gradlew bootRun
 ```
 
-`SPRING_DOCKER_COMPOSE_ENABLED=false` penting: dependency development Spring bisa mencoba menyalakan `backend/compose.yaml` jika tidak dimatikan. Jangan mengandalkan credential bawaan `application.yaml`; contoh di atas mengoverride-nya dari environment.
+`SPRING_DOCKER_COMPOSE_ENABLED=false` is important: Spring's development dependency may otherwise start `backend/compose.yaml`. Do not rely on credentials in `application.yaml`; the example overrides them through environment variables.
 
-Dengan working directory `backend`, JWT/data tersimpan di `backend/data` dan media di `backend/upload`. JVM/JDBC memakai UTC. File tersebut perlu dipertahankan saat restart, sama seperti volume di mode Docker.
+With `backend` as the working directory, JWT/data files are stored under `backend/data` and media under `backend/upload`. JVM/JDBC use UTC. Preserve these files across restarts, just as you preserve volumes in Docker mode.
 
-### 3. Frontend — terminal kedua
+### 3. Frontend — second terminal
 
-Dari root project:
+From the project root:
 
 ```sh
 cd web
@@ -214,20 +214,20 @@ export NUXT_PUBLIC_API_BASE_URL=http://localhost:8080
 npm run dev -- --host 0.0.0.0
 ```
 
-Buka [http://sewain.app.localhost:3000](http://sewain.app.localhost:3000). Jika backend memakai port lain, sesuaikan kedua URL tersebut. Jika web memakai port lain, sesuaikan juga origin CORS/STOMP yang diizinkan.
+Open [http://sewain.app.localhost:3000](http://sewain.app.localhost:3000). If the backend uses a different port, update both API URLs. If the web port changes, also update the allowed CORS/STOMP origins.
 
-Untuk menjalankan hasil build Nuxt secara lokal:
+To run a local Nuxt production build:
 
 ```sh
 npm run build
 NUXT_API_BASE_URL=http://localhost:8080 NUXT_PUBLIC_API_BASE_URL=http://localhost:8080 node .output/server/index.mjs
 ```
 
-Hentikan dev server terlebih dahulu agar port tidak bentrok.
+Stop the development server first to avoid a port conflict.
 
-### 4. Gateway WhatsApp — terminal ketiga (opsional)
+### 4. WhatsApp gateway — third terminal (optional)
 
-Backend/frontend bisa digunakan tanpa gateway; integrasi WhatsApp baru berfungsi setelah gateway tersedia. Contoh memakai Chrome yang sudah terinstall di macOS:
+The backend/frontend can run without the gateway; WhatsApp integration works once the gateway is available. This example uses Chrome already installed on macOS:
 
 ```sh
 cd whatsapp-api
@@ -247,59 +247,59 @@ export ENABLE_LOCAL_CALLBACK_EXAMPLE=false
 export ENABLE_SWAGGER_ENDPOINT=false
 export CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 
-# Browser lokal sudah tersedia, jadi tidak perlu download browser Puppeteer.
+# A local browser is available, so skip the Puppeteer browser download.
 PUPPETEER_SKIP_DOWNLOAD=true npm ci
 npm start
 ```
 
-Linux/Windows: sesuaikan `CHROME_BIN` ke executable Chrome/Chromium. Jika menggunakan browser bawaan Puppeteer, install dependency tanpa `PUPPETEER_SKIP_DOWNLOAD` dan jangan set `CHROME_BIN`; proses install dapat mendownload browser.
+On Linux/Windows, point `CHROME_BIN` to your Chrome/Chromium executable. To use Puppeteer's bundled browser, install dependencies without `PUPPETEER_SKIP_DOWNLOAD` and leave `CHROME_BIN` unset; installation may download a browser.
 
-Pastikan `API_KEY` gateway sama dengan `WHATSAPP_API_KEY` backend, dan `WEBHOOK_SECRET` sama dengan secret webhook backend. Dengan contoh di atas, fallback backend menggunakan key yang sama. Jika memakai `WHATSAPP_WEBHOOK_SECRET` terpisah, samakan nilainya di `WEBHOOK_SECRET` gateway.
+The gateway's `API_KEY` must match the backend's `WHATSAPP_API_KEY`, and `WEBHOOK_SECRET` must match the backend webhook secret. The example uses the same key through the backend fallback. If you configure a separate `WHATSAPP_WEBHOOK_SECRET`, use that value for the gateway's `WEBHOOK_SECRET`.
 
-Cek [http://localhost:3001/ping](http://localhost:3001/ping). Setelah itu buka **Merchant → Integrasi → WhatsApp → Hubungkan WhatsApp**, lalu scan QR dari HP merchant. Sesi native disimpan di `whatsapp-api/sessions`, terpisah dari volume Docker.
+Check [http://localhost:3001/ping](http://localhost:3001/ping). Then open **Merchant → Integrations → WhatsApp → Connect WhatsApp** and scan the QR code from the merchant's phone. Native sessions are stored under `whatsapp-api/sessions`, separately from Docker volumes.
 
-### Alternatif development: hanya DB memakai Docker
+### Development alternative: Docker database only
 
-Untuk menjalankan Spring/Nuxt langsung di host tetapi menggunakan database root Compose:
+To run Spring/Nuxt directly on the host with the database from root Compose:
 
 ```sh
-# Dari root, .env harus sudah diisi.
+# Run from the root after filling in .env.
 docker compose up -d postgres
 ```
 
-Gunakan langkah backend native dengan URL berikut sebagai pengganti URL port 5432:
+Follow the native backend steps, replacing the port 5432 URL with:
 
 ```sh
 export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5433/${POSTGRES_DB:-sewain}"
 ./gradlew bootRun
 ```
 
-Lakukan override dan `bootRun` dari terminal/folder `backend` yang environment-nya sudah dimuat. Jika `POSTGRES_PORT` di `.env` diubah, gunakan port tersebut. Untuk gateway lokal tetap gunakan langkah native, supaya tidak tercampur callback hostname Docker dan host.
+Apply this override and run `bootRun` in the `backend` terminal with its environment already loaded. If `.env` overrides `POSTGRES_PORT`, use that port. Keep following the native gateway steps for a local gateway to avoid mixing Docker and host callback addresses.
 
-## Registrasi dan setup merchant
+## Registration and merchant setup
 
-1. Buka web, register akun, lalu login.
-2. Buat merchant dan tunggu proses penyiapan toko selesai. Schema tenant dan default settings dibuat lewat Flyway/provisioning.
-3. Lengkapi pengaturan toko, regional, rental dan pembayaran.
-4. Tambahkan produk/varian/inventaris, atau gunakan **Produk → Import CSV** dan download template dari halaman tersebut.
-5. Integrasi Email membutuhkan akun SMTP/IMAP merchant. Integrasi WhatsApp memakai nomor merchant yang ditautkan melalui QR.
+1. Open the web application, register an account, and log in.
+2. Create a merchant and wait for store setup to finish. Provisioning/Flyway creates the tenant schema and default settings.
+3. Complete store, regional, rental, and payment settings.
+4. Add products/variants/inventory, or open **Products → Import CSV** and download its template.
+5. Email integration requires the merchant's SMTP/IMAP account. WhatsApp integration uses the merchant's phone number linked through a QR code.
 
-Public Flyway berjalan saat backend startup. Untuk merchant lama, `APP_MAINTENANCE_MIGRATE_TENANTS=true` menjalankan migrasi tenant. Error settings/table setelah update perlu dicek bersama log migrasi. Tunggu status provisioning READY sebelum memakai halaman merchant.
+Public Flyway migrations run at backend startup. For existing merchants, `APP_MAINTENANCE_MIGRATE_TENANTS=true` runs tenant migrations. Investigate missing settings/tables after updates together with migration logs. Wait for provisioning status READY before using merchant pages.
 
-## Test
+## Tests
 
-Backend, dari root:
+Backend, from the repository root:
 
 ```sh
 cd backend
 ./gradlew test
 ```
 
-Unit test memakai mock/direct instance. Test arsitektur memverifikasi modul dan membuat dokumentasi tanpa menyalakan application context. Gradle tetap mengompilasi seluruh test source meskipun memakai `--tests` untuk satu kelas.
+Unit tests use mocks/direct instances. The architecture test verifies modules and generates documentation without starting an application context. Gradle compiles all test sources even when `--tests` selects only one class.
 
-Panduan suite business logic: [docs/backend-business-unit-tests.md](docs/backend-business-unit-tests.md).
+Business logic suite guide: [docs/backend-business-unit-tests.md](docs/backend-business-unit-tests.md).
 
-Test frontend yang tersedia, dari root:
+Available frontend tests, from the repository root:
 
 ```sh
 cd web
@@ -307,7 +307,7 @@ npm run test:storefront
 npm run test:product-tags
 ```
 
-E2E browser menggunakan stack yang sudah berjalan, dengan dependency terpisah:
+Browser E2E uses an already running stack and separate dependencies:
 
 ```sh
 cd web/e2e
@@ -315,28 +315,28 @@ npm install
 npx playwright install chromium
 ```
 
-Isi `E2E_BASE_URL`, `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_MERCHANT_NAME`, dan `E2E_REQUIRE_AUTH=true`, lalu jalankan `npm test` dari folder itu. Detail skenario dan report: [web/e2e/README.md](web/e2e/README.md).
+Set `E2E_BASE_URL`, `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_MERCHANT_NAME`, and `E2E_REQUIRE_AUTH=true`, then run `npm test` from that directory. Scenarios and reports: [web/e2e/README.md](web/e2e/README.md).
 
-## Troubleshooting singkat
+## Troubleshooting
 
-| Gejala | Yang dicek |
+| Symptom | What to check |
 | --- | --- |
-| Koneksi PostgreSQL ditolak | Service aktif, port native `5432` atau Docker `5433`, URL dan credential sesuai mode |
-| Register/login mengarah ke Nuxt `/api/auth/...` lalu 404 | `NUXT_PUBLIC_API_BASE_URL` harus menunjuk Spring; SSR juga memerlukan `NUXT_API_BASE_URL` yang benar |
-| STOMP ditolak | `APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` mencakup origin lengkap web (scheme, hostname, port) |
-| Settings/table tenant belum ada | Log provisioning/Flyway, `MIGRATE_TENANTS` di Compose atau `APP_MAINTENANCE_MIGRATE_TENANTS` untuk native |
-| WhatsApp gateway unavailable | Gateway aktif, backend memakai URL internal Docker atau `localhost:3001` sesuai mode, API key cocok |
-| Pesan inbound tidak masuk | Callback URL bisa dijangkau gateway, secret webhook cocok, session aktif; mode saat ini hanya pesan teks langsung |
-| Build web ikut menjalankan backend | Build service eksplisit; recreate web dengan `docker compose up -d --no-deps web` |
-| Gradle download lagi | Wrapper mengunduh versi yang dikonfigurasi jika cache hilang/versi berubah; pruning build cache juga dapat membuang cache Gradle Docker |
+| PostgreSQL connection refused | Service running, native port `5432` or Docker port `5433`, URL/credentials matching the selected mode |
+| Register/login calls Nuxt `/api/auth/...` and returns 404 | `NUXT_PUBLIC_API_BASE_URL` must point to Spring; SSR also needs the correct `NUXT_API_BASE_URL` |
+| STOMP rejected | `APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` includes the complete web origin: scheme, hostname, and port |
+| Tenant settings/table missing | Provisioning/Flyway logs, `MIGRATE_TENANTS` in Compose or native `APP_MAINTENANCE_MIGRATE_TENANTS` |
+| WhatsApp gateway unavailable | Gateway running, backend using the correct internal Docker URL or `localhost:3001`, matching API keys |
+| Inbound messages missing | Callback URL reachable from gateway, matching webhook secret, active session; only direct text messages are supported |
+| Updating web also starts backend | Build the specific service and recreate web with `docker compose up -d --no-deps web` |
+| Gradle downloads again | The wrapper downloads its configured version when the cache is missing or the version changes; pruning build cache can also remove Docker's Gradle cache |
 
-Tidak perlu menghapus volume untuk memperbaiki frontend, mengupdate image, atau menjalankan test. Command di README ini adalah panduan; penulisannya tidak menjalankan build, container, migrasi, atau test.
+You do not need to delete volumes to fix the frontend, update images, or run tests. These commands are instructions; writing this README did not run builds, containers, migrations, or tests.
 
-## Dokumentasi lanjutan
+## Further documentation
 
-- [Docker dan storage](DOCKER.md)
+- [Docker and storage](DOCKER.md)
 - [WhatsApp integration](docs/whatsapp-integration.md)
 - [Product CSV import](docs/product-csv-import.md)
-- [Standar HTTP keluar backend](docs/backend-http-clients.md)
+- [Backend outbound HTTP standard](docs/backend-http-clients.md)
 - [Backend business unit tests](docs/backend-business-unit-tests.md)
 - [Frontend E2E](web/e2e/README.md)

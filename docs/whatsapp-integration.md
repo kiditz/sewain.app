@@ -1,6 +1,6 @@
 # WhatsApp integration
 
-Open **Merchant → Integrasi → WhatsApp** (`/merchant/integrations/whatsapp`). Connect, then scan the QR from the merchant phone's WhatsApp → Linked devices. Each tenant has a server-generated UUID session. Browsers never receive the global API key or choose a gateway URL/session ID. This uses the bundled WhatsApp Web gateway, not Meta Cloud API.
+Open **Merchant → Integrations → WhatsApp** (`/merchant/integrations/whatsapp`). Connect, then scan the QR from the merchant phone's WhatsApp → Linked devices. Each tenant has a server-generated UUID session. Browsers never receive the global API key or choose a gateway URL/session ID. This uses the bundled WhatsApp Web gateway, not Meta Cloud API.
 
 Implemented: connect/QR/status, unlink, outbound direct text, incoming direct text, paginated history, provider capability `OutboundWhatsAppProvider`, STOMP notifications with HTTP snapshots after reconnect. No polling. No groups, media sending/downloads, historic-chat sync, order automation, delivery/read receipts or guaranteed callback replay yet. The Node gateway retries callbacks three times; messages received during a longer backend outage may be missing from the inbox. Sending is only exposed via the explicit send action/provider call; connecting never sends a test message automatically.
 
