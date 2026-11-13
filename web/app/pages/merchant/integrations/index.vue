@@ -23,7 +23,7 @@ const { data: plugins, status, error, refresh } = await useAsyncData("merchant-i
     <v-progress-linear v-if="status === 'pending'" indeterminate />
     <v-row>
       <v-col v-for="plugin in plugins || []" :key="plugin.code" cols="12" md="6" lg="4">
-        <v-card variant="outlined" rounded="lg" class="pa-6 h-100">
+        <v-card variant="outlined" rounded="lg" class="pa-6 h-100 d-flex flex-column">
           <div class="d-flex align-center justify-space-between mb-4">
             <v-icon :icon="plugin.code === 'whatsapp' ? 'mdi-whatsapp' : 'mdi-email-outline'" size="32" color="primary" />
             <v-chip :color="plugin.enabled ? 'success' : undefined" size="small" variant="tonal">
@@ -32,12 +32,14 @@ const { data: plugins, status, error, refresh } = await useAsyncData("merchant-i
           </div>
           <h2 class="text-title-large mb-2">{{ plugin.name }}</h2>
           <p class="text-body-medium text-medium-emphasis mb-4">{{ plugin.code === 'email' ? t('integrations.emailDescription') : plugin.code === 'whatsapp' ? 'Hubungkan nomor WhatsApp toko untuk mengirim dan menerima pesan teks.' : plugin.description }}</p>
-          <v-chip v-for="capability in plugin.capabilities" :key="capability" size="small" variant="outlined" class="me-2 mb-4">
-            {{ capabilityLabels[capability] ? t(capabilityLabels[capability]) : capability }}
-          </v-chip>
-          <div>
-            <v-btn v-if="['email', 'whatsapp'].includes(plugin.code)" color="primary" :to="`/merchant/integrations/${plugin.code}`">
-              {{ t(plugin.installed ? "integrations.manage" : "integrations.connect") }}
+          <div class="d-flex flex-wrap ga-2 mb-4">
+            <v-chip v-for="capability in plugin.capabilities" :key="capability" size="small" variant="outlined">
+              {{ capabilityLabels[capability] ? t(capabilityLabels[capability]) : capability }}
+            </v-chip>
+          </div>
+          <div class="mt-auto pt-2">
+            <v-btn v-if="['email', 'whatsapp'].includes(plugin.code)" color="primary" block :height="40" :to="`/merchant/integrations/${plugin.code}`">
+              {{ t("integrations.connect") }}
             </v-btn>
           </div>
         </v-card>
