@@ -113,7 +113,9 @@ PostgreSQL integration tests use a temporary PostgreSQL 16 Testcontainer. With
 Docker running, execute `./gradlew integrationTest` from `backend/`. This task is
 separate from the default unit-test/build lifecycle and does not use the
 development database. See the [backend integration test guide](docs/backend-integration-tests.md)
-for coverage, isolation and reports.
+for coverage, isolation and reports. The suite includes concurrent reservation,
+transaction rollback, JPA queries, Batch CSV import, full application startup,
+catalog tenant authorization and STOMP status recovery.
 
 Frontend smoke tests, from `web/`:
 

@@ -52,7 +52,15 @@ public class TenantFilter extends OncePerRequestFilter {
 			if (!tenant.equals(PUBLIC)) {
 				UUID userId = getUserId();
 				if (userId != null) {
-					tenantAccessService.validateAccess(userId, tenant);
+					try {
+						tenantAccessService.validateAccess(userId, tenant);
+					} catch (org.springframework.security.access.AccessDeniedException denied) {
+						// This filter runs before ExceptionTranslationFilter in the security chain.
+						response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+						response.setContentType("application/json");
+						response.getWriter().write("{\"message\":\"" + app.sewain.exception.ErrorCode.MERCHANT_ACCESS_DENIED + "\"}");
+						return;
+					}
 				}
 			}
 			log.debug("Connected to tenant: {}", tenant);

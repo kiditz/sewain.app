@@ -2,8 +2,8 @@
 
 The `integrationTest` Gradle task runs a separate source set under
 `backend/src/integrationTest/java`. It uses Testcontainers with `postgres:16-alpine`,
-the real Flyway migration files, JDBC, Spring transactions and the application's
-tenant connection provider. Testcontainers dependency versions are managed by
+the real Flyway migration files, JDBC, Hibernate/JPA, Spring transactions and the
+application's tenant connection provider. Testcontainers dependency versions are managed by
 Spring Boot; the modules use the Testcontainers 2 artifact names.
 
 ## Requirements and commands
@@ -26,6 +26,19 @@ From `backend/`:
 # Run one integration test class.
 ./gradlew integrationTest --tests 'app.sewain.merchants.TenantMigrationIntegrationTest'
 ./gradlew integrationTest --tests 'app.sewain.tenant.TenantConnectionIntegrationTest'
+
+# Business transactions and concurrent stock reservation.
+./gradlew integrationTest --tests '*OrderReservationIntegrationTest'
+
+# JPA inventory queries and actual Spring Batch imports.
+./gradlew integrationTest --tests '*InventoryRepositoryIntegrationTest'
+./gradlew integrationTest --tests '*ProductImportJobIntegrationTest'
+
+# Full application startup, signed-JWT HTTP authorization and real STOMP connections.
+./gradlew integrationTest --tests '*BackendStartupIntegrationTest'
+
+# Small regression test for HTTP tenant-access denial; no Docker needed.
+./gradlew test --tests '*TenantFilterTest'
 ```
 
 The first integration run downloads the container image and any missing Gradle
@@ -40,40 +53,81 @@ JUnit XML reports are under `backend/build/test-results/integrationTest/`.
 
 - Each test class starts a temporary PostgreSQL container, shared by its methods
   and stopped by the JUnit Testcontainers extension after the class finishes.
-- Tests use generated host ports and container-only database credentials. They
-  never read `application.yaml`, `.env` or development database credentials.
+- Tests use generated host ports and container-only database credentials. The
+  lightweight suites do not load application configuration. The full Boot suite
+  loads `application.yaml`, overrides database credentials/URLs and media storage,
+  disables Compose startup, and replaces the JWT key-pair factory with an in-memory
+  key. It never reads or writes development JWT keys. Its media path is under
+  `backend/build/integration-test-media/`.
 - Each method uses distinct tenant schema names. All test data disappears when
   its container is removed; no development volumes are mounted.
-- Classes and methods run sequentially, with one Gradle test worker and a Hikari
-  pool limited to one connection. The connection initialization sets UTC as in
+- Classes and methods run sequentially, with one Gradle test worker. JDBC-only
+  tests use a one-connection pool to force connection reuse. JPA and full Boot
+  suites permit four connections for concurrent requests, migration connections,
+  and Batch metadata transactions. The connection initialization sets UTC as in
   the production datasource configuration.
 - Container reuse is not enabled. See the official [PostgreSQL module](https://java.testcontainers.org/modules/databases/postgres/)
   and [JUnit integration](https://java.testcontainers.org/test_framework_integration/junit_5/)
   documentation for runtime and lifecycle details.
 
-## Initial coverage
+## Coverage (31 integration tests)
 
 | Class | Checks |
 | --- | --- |
-| `TenantMigrationIntegrationTest` (5 tests) | All public migrations on an empty database, shared tables and seeded country; new tenant defaults for every `SettingKey`; upgrade from tenant V34 with missing settings; preservation of existing merchant preferences; repeat migration without duplicated settings or reset values |
+| `TenantMigrationIntegrationTest` (6 tests) | All public migrations on an empty database, shared tables and seeded country; new tenant defaults for every `SettingKey`; upgrade from tenant V34 with missing settings; preservation of existing merchant preferences; repeat migration without duplicated settings or reset values; relocation of a legacy tenant-owned `btree_gist` extension without invalidating its existing index |
 | `TenantConnectionIntegrationTest` (3 tests) | Identical IDs/slugs remain isolated across tenant switches on the same physical connection; released connections reset to the public schema; real Spring transaction rollback and commit against tenant tables, verified outside the transaction |
+| `InventoryRepositoryIntegrationTest` (4 tests) | Actual status and joined-product filters, entity graph usability after transaction closure, pagination, variant-aware lookup, JPA tenant switching, and insufficient stock rejection |
+| `OrderReservationIntegrationTest` (8 tests) | Two overlapping requests for the last unit; rollback after a later item fails; rollback after all order/payment/allocation writes flush; adjacent rentals and buffer windows; initial payment confirmation/cash allocation; payment rollback; refund rollback and successful retry |
+| `ProductImportJobIntegrationTest` (4 tests) | CSV multi-variant import into products/plans/physical inventory and Batch metadata; invalid rows and skipped existing slugs; image failure isolation with sanitized diagnostics; concurrent active-import prevention and recovery marking interrupted imports failed |
+| `BackendStartupIntegrationTest` (6 tests) | Full Spring Boot startup on an empty database; persisted READY/FAILED provisioning outcomes; real signed-JWT authentication and database-backed catalog tenant isolation; HTTP 503 while provisioning; STOMP status retrieval across reconnects and rejection of another owner's merchant |
 
-Tenant provisioning tests call the real `MerchantSchemaService` with the real
+The migration suite calls the real `MerchantSchemaService` with the real
 datasource and JDBC template. Only the unused merchant repository dependency is
 mocked. Provider tests use real migrated tenant tables and the real
 `TenantConnectionProvider`. No database results or transaction manager are mocked.
 
+Business suites start a focused Spring context with production repositories,
+generated mappers, selected production services and the real Hibernate tenant
+configuration. Production `@Transactional` proxies perform the writes and
+commit/rollback. A test-only synchronous event listener flushes the order's writes
+before injecting failures; assertions then read committed database state outside
+the failed transaction. The concurrency test uses latches to keep the winning
+transaction open while a second request competes for the same unit; it does not
+depend on arbitrary sleeps.
+
+The import suite uses the actual import worker, service, row service, product
+command service, JDBC job repository and job operator. Its test configuration uses
+the same Batch transaction-manager and table-prefix settings as the production
+configuration. It mocks download transport, STOMP notifications and membership
+authorization, which are outside the import-persistence checks. A notification
+latch waits for terminal status. An interrupted import is marked failed so the
+merchant can upload again; the test does not claim that a failed Batch job resumes.
+
+The full Boot suite starts an embedded server on a random port, loads production
+configuration and verifies JWT signatures with a real in-memory RSA key. HTTP
+requests use MockMvc with the actual filter chain, controllers, repositories and
+database membership. STOMP uses real local WebSocket connections to that server;
+the second connection requests the persisted status again, as a refreshed browser
+would. This tests backend recovery behavior, not frontend reconnect logic.
+
+## Related fixes
+
+- Public migration `V13__install_shared_btree_gist.sql` installs the shared GiST
+  extension in `public` and relocates earlier tenant-owned installations. Existing
+  tenant migration checksums are unchanged. The migration tests cover a real
+  public V12-to-V13 upgrade and existing index validity.
+- `TenantFilter` explicitly returns HTTP 403 on membership denial because it runs
+  before Spring Security's exception translation filter. The additional unit test
+  `TenantFilterTest` checks the response, controller suppression and context cleanup.
+
 ## Boundaries and verification status
 
-This suite does not start the full Spring Boot application or Hibernate. The
-transaction test exercises Spring's JDBC transaction manager with a connection
-obtained from the tenant provider; it does not establish that every application's
-`@Transactional` service boundary is correct. The schema service is instantiated
-directly, so its Spring transaction proxy is outside these migration tests.
-
-Follow-up coverage is still needed for JPA repository queries, concurrent stock
-reservation/overbooking, application startup, actual Spring Batch import jobs,
-STOMP recovery, and external email/WhatsApp behavior.
+This is baseline integration coverage, not exhaustive coverage of every feature.
+Follow-up scenarios include full pickup/return/late-fee lifecycle persistence,
+authorization for every non-catalog resource, actual remote image HTTP transport,
+SMTP/IMAP servers and WhatsApp gateway delivery/recovery. Existing unit tests cover
+parts of those rules, but do not establish real transport behavior. Browser refresh
+behavior still needs frontend E2E coverage.
 
 These tests were added without running Gradle, Docker or the test suite, at the
 user's request. Compilation and runtime results must be confirmed using the

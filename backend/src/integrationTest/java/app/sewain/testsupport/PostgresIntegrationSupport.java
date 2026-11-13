@@ -28,7 +28,7 @@ public abstract class PostgresIntegrationSupport {
 
     @BeforeAll
     static void migratePublicSchema() {
-        try (var source = newDataSource()) {
+        try (var source = newDataSource(1)) {
             Flyway.configure().dataSource(source).schemas("public")
                     .locations("classpath:db/migration").load().migrate();
         }
@@ -36,7 +36,7 @@ public abstract class PostgresIntegrationSupport {
 
     @BeforeEach
     void openPool() {
-        dataSource = newDataSource();
+        dataSource = newDataSource(poolSize());
         jdbc = new JdbcTemplate(dataSource);
     }
 
@@ -45,13 +45,15 @@ public abstract class PostgresIntegrationSupport {
         if (dataSource != null) dataSource.close();
     }
 
-    private static HikariDataSource newDataSource() {
+    protected int poolSize() { return 1; }
+
+    private static HikariDataSource newDataSource(int poolSize) {
         var config = new HikariConfig();
         config.setJdbcUrl(POSTGRES.getJdbcUrl());
         config.setUsername(POSTGRES.getUsername());
         config.setPassword(POSTGRES.getPassword());
         // Force the same physical connection to be reused across tenant switches.
-        config.setMaximumPoolSize(1);
+        config.setMaximumPoolSize(poolSize);
         config.setMinimumIdle(0);
         config.setConnectionTimeout(5_000);
         config.setConnectionInitSql("SET TIME ZONE 'UTC'");

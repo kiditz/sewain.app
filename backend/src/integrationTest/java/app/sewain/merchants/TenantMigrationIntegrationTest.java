@@ -3,6 +3,9 @@ package app.sewain.merchants;
 import app.sewain.settings.SettingKey;
 import app.sewain.testsupport.PostgresIntegrationSupport;
 import org.junit.jupiter.api.Test;
+import org.flywaydb.core.Flyway;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -20,8 +23,37 @@ class TenantMigrationIntegrationTest extends PostgresIntegrationSupport {
             assertNotNull(jdbc.queryForObject("SELECT to_regclass(?)::text", String.class, "public." + table), table);
         }
         assertEquals(1L, jdbc.queryForObject("SELECT count(*) FROM public.countries WHERE iso2 = 'ID'", Long.class));
+        assertEquals("public", jdbc.queryForObject("SELECT n.nspname FROM pg_extension e"
+                + " JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='btree_gist'", String.class));
         assertEquals(0L, jdbc.queryForObject(
                 "SELECT count(*) FROM public.flyway_schema_history WHERE NOT success", Long.class));
+    }
+
+    @Test
+    void sharedExtensionUpgradeRelocatesLegacyTenantExtensionAndAllowsAnotherTenant() {
+        // Use a separate empty database so the real public V12 -> V13 upgrade is exercised.
+        var database = schemaName();
+        jdbc.execute("CREATE DATABASE " + database);
+        var source = new DriverManagerDataSource(
+                POSTGRES.getJdbcUrl().replace("/" + POSTGRES.getDatabaseName(), "/" + database),
+                POSTGRES.getUsername(), POSTGRES.getPassword());
+        var migrated = new JdbcTemplate(source);
+        Flyway.configure().dataSource(source).schemas("public")
+                .locations("classpath:db/migration").target("12").load().migrate();
+        var legacyTenant = schemaName();
+        Flyway.configure().dataSource(source).schemas(legacyTenant).createSchemas(true)
+                .locations("classpath:db/tenant").target("12").load().migrate();
+        assertEquals(legacyTenant, migrated.queryForObject("SELECT n.nspname FROM pg_extension e"
+                + " JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='btree_gist'", String.class));
+
+        Flyway.configure().dataSource(source).schemas("public").locations("classpath:db/migration").load().migrate();
+
+        assertEquals("public", migrated.queryForObject("SELECT n.nspname FROM pg_extension e"
+                + " JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='btree_gist'", String.class));
+        assertTrue(migrated.queryForObject("SELECT i.indisvalid FROM pg_index i"
+                + " WHERE i.indexrelid = ?::regclass", Boolean.class, legacyTenant + ".ex_rental_allocations_no_overlap"));
+        Flyway.configure().dataSource(source).schemas(schemaName()).createSchemas(true)
+                .locations("classpath:db/tenant").target("12").load().migrate();
     }
 
     @Test
