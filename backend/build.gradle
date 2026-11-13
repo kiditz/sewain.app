@@ -19,6 +19,18 @@ repositories {
 	mavenCentral()
 }
 
+sourceSets {
+	integrationTest {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+configurations {
+	integrationTestImplementation.extendsFrom testImplementation
+	integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+
 ext {
 	set('springAiVersion', "2.0.1")
 	set('mapstructVersion', "1.6.3")
@@ -70,6 +82,9 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	integrationTestImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+	integrationTestImplementation 'org.testcontainers:testcontainers-postgresql'
 }
 
 dependencyManagement {
@@ -86,4 +101,15 @@ hibernate {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests against an isolated PostgreSQL 16 Testcontainer.'
+	group = 'verification'
+	testClassesDirs = sourceSets.integrationTest.output.classesDirs
+	classpath = sourceSets.integrationTest.runtimeClasspath
+	useJUnitPlatform()
+	maxParallelForks = 1
+	systemProperty 'junit.jupiter.execution.parallel.enabled', 'false'
+	shouldRunAfter tasks.named('test')
 }

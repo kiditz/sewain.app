@@ -109,6 +109,12 @@ Backend, from `backend/`:
 ./gradlew test
 ```
 
+PostgreSQL integration tests use a temporary PostgreSQL 16 Testcontainer. With
+Docker running, execute `./gradlew integrationTest` from `backend/`. This task is
+separate from the default unit-test/build lifecycle and does not use the
+development database. See the [backend integration test guide](docs/backend-integration-tests.md)
+for coverage, isolation and reports.
+
 Frontend smoke tests, from `web/`:
 
 ```sh
