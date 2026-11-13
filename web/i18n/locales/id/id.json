@@ -2425,6 +2425,8 @@
     "subtitle": "Hubungkan layanan yang digunakan toko. Setiap toko mengelola akun dan pengaturannya sendiri.",
     "emailTitle": "Integrasi Email",
     "whatsappTitle": "Integrasi WhatsApp",
+    "whatsappOutbound": "Pesan WhatsApp keluar",
+    "whatsappInbound": "Pesan WhatsApp masuk",
     "emailDescription": "Hubungkan akun email sendiri untuk mengirim pesan melalui SMTP dan menerima pesan melalui IMAP.",
     "active": "Aktif",
     "inactive": "Nonaktif",

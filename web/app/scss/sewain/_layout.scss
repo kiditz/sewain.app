@@ -1,0 +1,54 @@
+// Layout values are owned here; Vuetify continues to manage drawer/app-bar offsets.
+.page-wrapper {
+  min-inline-size: 0;
+  background: rgb(var(--v-theme-containerBg));
+}
+.page-wrapper .v-container { padding: 15px; }
+.page-wrapper > .v-container { min-inline-size: 0; max-inline-size: 100%; }
+.page-wrapper .v-row > [class*='v-col'] { min-inline-size: 0; }
+.page-wrapper .v-table { min-inline-size: 0; max-inline-size: 100%; }
+.page-wrapper .v-table__wrapper { overflow-x: auto; }
+.page-wrapper .v-data-table-footer { flex-wrap: wrap; gap: 8px; }
+.page-wrapper.no-padding { padding: 0 !important; padding-inline: 0 !important; }
+
+.dashboard-drawer { border: 0; box-shadow: none !important; top: 0 !important; height: 100% !important; border-inline-end: 1px solid rgba(var(--v-theme-borderLight), .8); }
+.v-navigation-drawer__scrim.fade-transition-leave-to { display: none; }
+.profileBtn { height: 44px !important; margin: 0 20px 0 10px !important; padding: 0 6px; }
+.profileBtn .v-avatar, .profileBtn .v-avatar img { width: 32px; height: 32px; }
+.v-footer { background: rgb(var(--v-theme-containerBg)); padding: 24px 16px 0; margin-block-start: auto; position: unset; }
+.v-footer a { text-decoration: none; }
+.v-footer a:hover { text-decoration: underline; }
+
+@media (max-width: 1550px) { .page-wrapper .v-container { max-inline-size: 100%; } }
+@media (min-width: 768px) { .page-wrapper .v-container { padding-inline: 40px; } }
+@media (max-width: 600px) {
+  .profileBtn { min-width: 42px; margin: 0 12px 0 0 !important; }
+  .profileBtn .v-avatar, .profileBtn .v-avatar img { width: 24px; height: 24px; }
+}
+@media (max-width: 599px) {
+  .page-wrapper > .v-container > .v-container { padding: 16px !important; }
+  .page-wrapper .v-data-table-footer { padding-inline: 8px; justify-content: center; }
+}
+@media (max-width: 475px) {
+  .footer { text-align: center; }
+  .footer .v-col-6 { flex: 0 0 100%; max-width: 100%; }
+  .footer .v-col-6.text-right { text-align: center !important; }
+}
+
+// Existing page classes remain supported during the stylesheet migration.
+.cursor-pointer { cursor: pointer; }
+.maxWidth { max-width: 1200px; margin-inline: auto; }
+.fixed-width { max-width: 1300px; }
+.ga-2 { gap: 8px; }
+.spacer { padding-block: 100px; }
+@media (max-width: 1264px) { .spacer { padding-block: 72px; } }
+@media (max-width: 800px) { .spacer { padding-block: 40px; } }
+.link { color: rgb(var(--v-theme-lightText)); text-decoration: none; }
+.link:hover { color: rgb(var(--v-theme-primary)); }
+@each $name, $size in (display-1: 44, display-2: 40, display-3: 30, h1: 36, h2: 30, h3: 21, h4: 18, h5: 16, h6: 14, text-8: 8, text-10: 10, text-13: 13, text-18: 18, text-20: 20, text-24: 24, body-text-1: 10) {
+  .#{$name} { font-size: #{$size}px; line-height: #{$size + 10}px; }
+}
+@each $name, $font in (Roboto: 'Roboto', Poppins: 'Poppins', Inter: 'Inter', Public: 'Public Sans') {
+  body .#{$name} { font-family: $font, sans-serif !important; }
+}
+@keyframes slideY { 0%, 50%, 100% { transform: translateY(0); } 25% { transform: translateY(-10px); } 75% { transform: translateY(10px); } }

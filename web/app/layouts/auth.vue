@@ -139,6 +139,17 @@ import LogoDark from "~/components/LogoDark.vue";
 <style scoped lang="scss">
 .auth-layout {
   min-height: 100vh;
+  width: 100%;
+  margin: 0;
+  overflow-x: clip;
+}
+
+.auth-layout > .v-col {
+  min-width: 0;
+}
+
+.auth-layout .blur-logo {
+  pointer-events: none;
 }
 .loginBox {
   max-width: 475px;

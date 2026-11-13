@@ -2,6 +2,12 @@
 definePageMeta({ layout: "merchant", middleware: ["merchant"] });
 const { t } = useI18n();
 useHead({ title: () => t("menu.integrations") });
+const capabilityLabels: Record<string, string> = {
+  EMAIL_OUTBOUND: 'integrations.outbound',
+  EMAIL_INBOUND: 'integrations.inbound',
+  WHATSAPP_OUTBOUND: 'integrations.whatsappOutbound',
+  WHATSAPP_INBOUND: 'integrations.whatsappInbound',
+};
 const integration = useEmailIntegration();
 const { data: plugins, status, error, refresh } = await useAsyncData("merchant-integrations", integration.plugins);
 </script>
@@ -27,7 +33,7 @@ const { data: plugins, status, error, refresh } = await useAsyncData("merchant-i
           <h2 class="text-title-large mb-2">{{ plugin.name }}</h2>
           <p class="text-body-medium text-medium-emphasis mb-4">{{ plugin.code === 'email' ? t('integrations.emailDescription') : plugin.code === 'whatsapp' ? 'Hubungkan nomor WhatsApp toko untuk mengirim dan menerima pesan teks.' : plugin.description }}</p>
           <v-chip v-for="capability in plugin.capabilities" :key="capability" size="small" variant="outlined" class="me-2 mb-4">
-            {{ ['EMAIL_OUTBOUND', 'WHATSAPP_OUTBOUND'].includes(capability) ? t('integrations.outbound') : ['EMAIL_INBOUND', 'WHATSAPP_INBOUND'].includes(capability) ? t('integrations.inbound') : capability }}
+            {{ capabilityLabels[capability] ? t(capabilityLabels[capability]) : capability }}
           </v-chip>
           <div>
             <v-btn v-if="['email', 'whatsapp'].includes(plugin.code)" color="primary" :to="`/merchant/integrations/${plugin.code}`">

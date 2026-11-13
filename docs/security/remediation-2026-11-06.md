@@ -1,6 +1,6 @@
 # Security review remediation — November 6, 2026
 
-All seven main findings in the [initial review](/Users/rifkyaditya/Playground/sewain/docs/security/review-2026-11-06.md) received patches and focused regression coverage. No database migrations or store data changes were executed as part of this work. This does not claim that all application/infrastructure risks have been eliminated.
+All seven main findings in the [initial review](review-2026-11-06.md) received patches and focused regression coverage. No database migrations or store data changes were executed as part of this work. This does not claim that all application/infrastructure risks have been eliminated.
 
 | Finding | Change | Regression evidence |
 |---|---|---|

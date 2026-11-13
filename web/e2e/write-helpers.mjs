@@ -55,8 +55,15 @@ export async function submitAndCapture(page, path, action) {
   const pending = page.waitForResponse(response => new URL(response.url()).pathname === path && response.request().method() === 'POST');
   await action();
   const response = await pending;
-  expect(response.ok(), `${path} returned HTTP ${response.status()}`).toBe(true);
-  return { result: await response.json(), command: response.request().postDataJSON() };
+  const responseText = await response.text();
+  let result;
+  try { result = JSON.parse(responseText); } catch { result = null; }
+  const reason = result?.message || result?.detail || result?.statusMessage || result?.error;
+  const detail = typeof reason === 'string' ? reason.slice(0, 500) : 'No JSON error message returned';
+  // Keep backend error codes visible without dumping credentials, headers or customer payloads.
+  expect(response.ok(), `${response.request().method()} ${response.url()} returned HTTP ${response.status()}: ${detail}`).toBe(true);
+  expect(result, `${path} must return a JSON response`).not.toBeNull();
+  return { result, command: response.request().postDataJSON() };
 }
 export async function selectFirst(page, key) {
   await (await input(page, key)).click();

@@ -22,11 +22,11 @@ import logo from "~/assets/images/logo.svg";
 
 const { t } = useI18n();
 const route = useRoute();
-const customizer = useCustomizerStore();
+const shell = useDashboardShellStore();
 const { mdAndDown } = useDisplay();
-watch(mdAndDown, mobile => { customizer.drawer = !mobile; }, { immediate: true });
+watch(mdAndDown, mobile => { shell.drawerOpen = !mobile; }, { immediate: true });
 watch(() => route.fullPath, () => {
-  if (mdAndDown.value) customizer.drawer = false;
+  if (mdAndDown.value) shell.drawerOpen = false;
 });
 
 const menuSections = computed(() => [
@@ -158,10 +158,10 @@ function isActive(to: string) {
 
 <template>
   <v-navigation-drawer
-    v-model="customizer.drawer"
+    v-model="shell.drawerOpen"
     id="dashboard-navigation"
-    class="leftSidebar"
-    :rail="!mdAndDown && customizer.miniSidebar"
+    class="dashboard-drawer"
+    :rail="!mdAndDown && shell.collapsed"
     :rail-width="62"
     :width="256"
     mobile-breakpoint="lg"
@@ -171,7 +171,7 @@ function isActive(to: string) {
     <div class="sidebar-brand">
       <NuxtLink to="/merchant" class="d-flex align-center">
         <img
-          v-if="!mdAndDown && customizer.miniSidebar"
+          v-if="!mdAndDown && shell.collapsed"
           :src="logoSm"
           width="28"
           height="32"
@@ -191,7 +191,7 @@ function isActive(to: string) {
 
     <v-list nav class="sidebar-menu">
       <template v-for="section in menuSections" :key="section.title">
-        <v-list-subheader v-if="mdAndDown || !customizer.miniSidebar">
+        <v-list-subheader v-if="mdAndDown || !shell.collapsed">
           {{ section.title }}
         </v-list-subheader>
 
@@ -214,7 +214,7 @@ function isActive(to: string) {
 </template>
 
 <style scoped>
-.leftSidebar {
+.dashboard-drawer {
   border-right: 1px solid rgba(0, 0, 0, 0.08);
 }
 

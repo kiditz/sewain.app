@@ -1,342 +1,154 @@
 # Sewain
 
-A multi-tenant rental application with a Spring Boot backend, Nuxt frontend, PostgreSQL, and a WhatsApp Web gateway. This guide covers local development with Docker and with services running directly on your computer.
+**A multi-tenant rental management application with a customizable storefront.**
 
-## Project structure
+Sewain connects the merchant's daily rental operations—products, physical inventory, bookings, returns and payments—with a customer-facing storefront. It is a full-stack portfolio project built with **Spring Boot, Nuxt, PostgreSQL and a Node.js WhatsApp gateway**.
 
-| Folder/file | Contents |
+[Local setup](docs/getting-started.md) · [Docker guide](DOCKER.md) · [Backend tests](docs/backend-business-unit-tests.md) · [Browser E2E](web/e2e/README.md) · [Third-party notices](web/THIRD_PARTY_NOTICES.md)
+
+## Preview
+
+Mobile storefront preview inside the theme editor, using demo content:
+
+<img src="docs/screenshots/theme-preview-mobile.png" alt="Sewain theme editor showing a mobile storefront preview with a product-focused hero section" width="640" />
+
+The screenshot shows the existing interface. Dashboard styling is maintained in the Sewain style layer; the current visual direction is retained.
+
+## What the project covers
+
+| Area | Capabilities |
 | --- | --- |
-| `backend/` | Spring Boot, Java 21, Gradle Wrapper, Flyway, business logic, and APIs |
-| `web/` | Nuxt/Vue merchant dashboard and storefront |
-| `whatsapp-api/` | Node.js gateway using whatsapp-web.js and Chromium |
-| `compose.yaml` | Main Docker stack for all services |
-| `.env.example` | Local stack configuration template |
-| `web/e2e/` | Playwright tests with dependencies isolated from the web application |
-| `scripts/` | Dummy data scripts and utilities |
-| `docs/` | Feature documentation and testing guides |
+| Merchant operations | Product variants, rental plans, physical inventory units, collections, customers and order management |
+| Rental workflow | Package-based rental pricing, date-based inventory allocation, pickup/delivery details, return handling and late fees |
+| Payments and finance | Manual payment records, deposit handling, refunds and financial summaries |
+| Storefront | Block/section editor, theme library, authenticated previews, published snapshots and revision rollback |
+| Bulk imports | CSV product imports through Spring Batch, multiple variants grouped by product slug, downloaded media and per-product failure reporting |
+| Media | Tenant-scoped local storage, raster/static SVG handling and optional browser-side background removal |
+| Integrations | Per-merchant SMTP/IMAP email and a separate WhatsApp Web session per merchant |
+| Provisioning | Asynchronous merchant setup with STOMP progress and refresh/reconnect recovery |
 
-## Environment setup
+## Engineering focus
 
-Run from the repository root. Copy the template **only on the first setup**. If `.env` already exists, edit it instead of overwriting it.
+### Tenant boundaries and asynchronous work
+
+Merchant business data lives in separate PostgreSQL schemas. Shared identity and provisioning data live in the public schema. HTTP requests resolve the tenant and validate membership; asynchronous workers carry or explicitly set tenant context and clear it afterward.
+
+New merchants receive tenant Flyway migrations and default settings before setup reaches READY. The browser follows provisioning through authenticated STOMP messages rather than polling.
+
+### Rental pricing and physical inventory
+
+Products describe the catalog; inventory units represent individual physical items. Availability and allocations operate on those units over rental periods. Pricing chooses a rental-plan combination and stores a snapshot, so later catalog changes do not rewrite the order's historical price.
+
+Payment, refund and return workflows distinguish rental charges from refundable deposits. Business unit tests cover pricing, grace periods, order transitions, payment guards and inventory restrictions.
+
+### Imports and integration boundaries
+
+CSV import is a background Spring Batch job. Rows sharing a product slug form one product with multiple variants. A product and all its variants are committed together; a failed variant rolls back that product while other products can continue. Existing slugs are skipped rather than overwritten.
+
+Outbound HTTP uses Spring RestClient. The media downloader retains dedicated public-address validation and download bounds. Email credentials are encrypted; gateway credentials remain server-side. WhatsApp callbacks are signed and incoming messages are deduplicated. Uncertain outbound delivery is recorded without automatic resend.
+
+### Storefront publishing
+
+The storefront editor works with a JSON component registry. Draft edits, authenticated previews and published snapshots have separate roles. Publishing and rollback preserve revision history; imported themes do not upload executable theme code.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser[Merchant dashboard / storefront] --> Nuxt[Nuxt 4 / Vue 3]
+    Nuxt --> Spring[Spring Boot modular monolith]
+    Browser <-->|Authenticated STOMP| Spring
+    Spring --> Shared[(PostgreSQL public schema)]
+    Spring --> Tenants[(PostgreSQL tenant schemas)]
+    Spring --> Media[Tenant media storage]
+    Spring --> Batch[Spring Batch import worker]
+    Spring <-->|SMTP / IMAP| Mail[Merchant mailbox]
+    Spring <-->|REST / signed callbacks| Gateway[Node.js WhatsApp gateway]
+    Gateway --> Sessions[Persistent linked-device sessions]
+```
+
+The backend remains a modular monolith. The WhatsApp gateway runs separately because it owns the Node.js/Chromium session lifecycle. Root Compose connects the services and preserves database, media, key and gateway-session data in named volumes.
+
+## Technology stack
+
+| Layer | Technology |
+| --- | --- |
+| Backend | Java 21, Spring Boot, Spring Data JPA, Spring Modulith, Spring Batch, Spring Security, STOMP |
+| Frontend | Nuxt 4, Vue 3, TypeScript, Pinia, Vuetify |
+| Database | PostgreSQL 16, schema-based tenancy, Flyway |
+| Integrations | SMTP/IMAP, REST, signed WhatsApp gateway callbacks |
+| Tests | JUnit, Mockito, MockMvc, Playwright |
+| Local deployment | Docker Compose and multi-stage images; native development is also supported |
+
+## Run locally
+
+### Docker
+
+From the repository root, copy `.env.example` to `.env` **only if `.env` does not already exist**. Fill in `POSTGRES_PASSWORD`, `WHATSAPP_API_KEY` and the base64 32-byte `INTEGRATIONS_ENCRYPTION_KEY`.
 
 ```sh
 cp .env.example .env
-```
-
-Fill in these three secrets in `.env`. Run each generator and copy its output into the corresponding field. Do not commit the generated values:
-
-```sh
-# POSTGRES_PASSWORD
-openssl rand -hex 32
-
-# WHATSAPP_API_KEY
-openssl rand -hex 32
-
-# INTEGRATIONS_ENCRYPTION_KEY
-openssl rand -base64 32
-```
-
-| Variable | Purpose |
-| --- | --- |
-| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Docker database credentials; database/user default to `sewain` |
-| `INTEGRATIONS_ENCRYPTION_KEY` | Base64-encoded 32-byte key for Email integration credentials; preserve it across restarts/deployments |
-| `WHATSAPP_API_KEY` | Private gateway access; Compose also uses it as the webhook signing secret |
-| `PUBLIC_API_URL` | Browser-accessible API/media URL; defaults to `http://localhost:8080` |
-| `APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` | Browser origins allowed for STOMP; the template includes Sewain local domains |
-| `MIGRATE_TENANTS` | Run migrations for existing merchant schemas at backend startup; defaults to `true` in root Compose |
-
-Secrets belong to the backend/gateway. Do not put API or encryption keys in `NUXT_PUBLIC_*` configuration. Changing the password in `.env` after the PostgreSQL volume is initialized does not automatically change the existing database role password.
-
-## Running with Docker
-
-### Requirements
-
-- Running Docker Engine/Desktop and Docker Compose v2 (`docker compose`).
-- Available host ports: web `3000`, backend `8080`, PostgreSQL `5433`, gateway `3001`.
-- Java, Node.js, and Gradle do not need to be installed on the host in this mode.
-
-Use **the root `compose.yaml`**. Compose files in subfolders are separate configurations; do not start them simultaneously on the same ports.
-
-### First build and startup
-
-From the project root, after filling in `.env`:
-
-```sh
 docker compose config --quiet
 docker compose build
 docker compose up -d
-docker compose ps
 ```
 
-The backend Dockerfile already runs Gradle `bootJar -x test`, so you do not need to build a JAR first. Image builds do not run backend tests. The first build downloads base images, Java/npm dependencies, and Gradle.
+Open [http://sewain.app.localhost:3000](http://sewain.app.localhost:3000). The API uses host port 8080; PostgreSQL uses host port 5433. Register an account, create a merchant, and wait for store setup to finish.
 
-Watch startup and migration logs:
+### Without Docker
+
+Use JDK 21, Node.js 22 and a local PostgreSQL installation. Run the backend with `./gradlew bootRun` and the frontend with `npm ci` followed by `npm run dev`. Native mode requires explicit database, API URL and origin configuration, and `SPRING_DOCKER_COMPOSE_ENABLED=false`.
+
+The complete [setup guide](docs/getting-started.md) includes secrets, database initialization, environment exports, native WhatsApp/Chromium setup, a Docker-database-only alternative and troubleshooting. It also explains persistent storage and updating one service without rebuilding dependencies.
+
+## Testing
+
+Backend, from `backend/`:
 
 ```sh
-docker compose logs -f --tail=100 backend web whatsapp-api
-```
-
-Confirm that the backend starts successfully and migrations have no errors. The current backend healthcheck checks only its TCP port, not the readiness of every tenant.
-
-### Local addresses
-
-| Service | Address from your computer/browser |
-| --- | --- |
-| Web | [sewain.app.localhost:3000](http://sewain.app.localhost:3000) |
-| API/media | [localhost:8080](http://localhost:8080) |
-| Gateway health | [localhost:3001/ping](http://localhost:3001/ping) |
-| PostgreSQL | `127.0.0.1:5433`; database/user follow `.env` |
-
-Use `sewain.app.localhost` for the web application to match local tenant/CORS host conventions. Merchant hosts can use `http://<merchant-slug>.sewain.app.localhost:3000`. If your resolver/browser does not recognize a hostname, map that hostname to `127.0.0.1` through your OS hosts/resolver settings.
-
-Inside Docker, service addresses differ from browser addresses: `postgres:5432`, `backend:8080`, and `whatsapp-api:3000`. Compose sets `NUXT_API_BASE_URL=http://backend:8080` for SSR; browsers use `PUBLIC_API_URL`.
-
-### Update only the changed service
-
-Frontend only:
-
-```sh
-docker compose build web
-docker compose up -d --no-deps web
-```
-
-Backend only:
-
-```sh
-docker compose build backend
-docker compose up -d --no-deps backend
-```
-
-Gateway only:
-
-```sh
-docker compose build whatsapp-api
-docker compose up -d --no-deps whatsapp-api
-```
-
-If Compose/environment configuration changes, recreate the affected service with `up -d`. `restart` alone does not apply new environment values or images. `--no-deps` prevents Compose from starting dependencies during a single-service update; those dependencies must already be running.
-
-### Stopping services and persistent data
-
-```sh
-# Stop containers without removing them
-docker compose stop
-
-# Remove containers/network while preserving named volumes
-docker compose down
-```
-
-| Named volume | Data |
-| --- | --- |
-| `postgres-data` | Database and tenant schemas |
-| `backend-data` | JWT keys and backend data files |
-| `backend-upload` | Media files under `/app/upload` |
-| `whatsapp-sessions` | Linked WhatsApp device credentials |
-| `whatsapp-cache` | Gateway cache |
-
-**`docker compose down -v` deletes these volumes and their data.** Do not use it for routine updates. Native database/files on your computer do not automatically become part of Docker named volumes; migrating data requires backup/restore and copying the corresponding files.
-
-## Running without Docker
-
-### Requirements
-
-- JDK **21**.
-- Node.js **22** and npm, matching the Dockerfile.
-- Local PostgreSQL; version **16** matches the Docker stack. The `pgcrypto` extension must be available.
-- For the gateway: local Google Chrome/Chromium, or the Puppeteer browser installed with its dependencies.
-
-A global Gradle installation is not required; use `backend/gradlew`. The current configuration disables vector-store auto-configuration, so the `vector` extension is not required for normal startup. Docker uses a PostgreSQL image with pgvector available if that feature is enabled later.
-
-### 1. Set up local PostgreSQL
-
-For a new installation, open `psql` as a PostgreSQL administrator. Adjust the administrator username to match your installation:
-
-```sh
-psql -U postgres -d postgres
-```
-
-Inside `psql`:
-
-```sql
-CREATE ROLE sewain LOGIN;
-\password sewain
--- Enter the same password as POSTGRES_PASSWORD in .env.
-CREATE DATABASE sewain OWNER sewain;
-ALTER DATABASE sewain SET timezone TO 'UTC';
-\connect sewain
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-\quit
-```
-
-Skip `CREATE ROLE`/`CREATE DATABASE` if they already exist. These examples use native PostgreSQL port **5432**, rather than Docker host port **5433**. The application role must own the database/schema and be able to create merchant schemas and run Flyway.
-
-### 2. Backend — first terminal
-
-Open a new terminal from the project root:
-
-```sh
-cd backend
-
-# Spring does not load the root .env automatically. Load this project-owned file into the shell.
-set -a
-source ../.env
-set +a
-
-export SPRING_DOCKER_COMPOSE_ENABLED=false
-export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/${POSTGRES_DB:-sewain}"
-export SPRING_DATASOURCE_USERNAME="${POSTGRES_USER:-sewain}"
-export SPRING_DATASOURCE_PASSWORD="$POSTGRES_PASSWORD"
-export APP_INTEGRATIONS_ENCRYPTION_KEY="$INTEGRATIONS_ENCRYPTION_KEY"
-export APP_MAINTENANCE_MIGRATE_TENANTS="${MIGRATE_TENANTS:-true}"
-export APP_MEDIA_STORAGE_PATH=upload
-export APP_MEDIA_BASE_URL="${PUBLIC_API_URL:-http://localhost:8080}"
-export WHATSAPP_BASE_URL=http://localhost:3001
-export SERVER_PORT="${BACKEND_PORT:-8080}"
-export SPRING_JPA_SHOW_SQL=false
-export LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=INFO
-
-./gradlew bootRun
-```
-
-`SPRING_DOCKER_COMPOSE_ENABLED=false` is important: Spring's development dependency may otherwise start `backend/compose.yaml`. Do not rely on credentials in `application.yaml`; the example overrides them through environment variables.
-
-With `backend` as the working directory, JWT/data files are stored under `backend/data` and media under `backend/upload`. JVM/JDBC use UTC. Preserve these files across restarts, just as you preserve volumes in Docker mode.
-
-### 3. Frontend — second terminal
-
-From the project root:
-
-```sh
-cd web
-npm ci
-export NUXT_API_BASE_URL=http://localhost:8080
-export NUXT_PUBLIC_API_BASE_URL=http://localhost:8080
-npm run dev -- --host 0.0.0.0
-```
-
-Open [http://sewain.app.localhost:3000](http://sewain.app.localhost:3000). If the backend uses a different port, update both API URLs. If the web port changes, also update the allowed CORS/STOMP origins.
-
-To run a local Nuxt production build:
-
-```sh
-npm run build
-NUXT_API_BASE_URL=http://localhost:8080 NUXT_PUBLIC_API_BASE_URL=http://localhost:8080 node .output/server/index.mjs
-```
-
-Stop the development server first to avoid a port conflict.
-
-### 4. WhatsApp gateway — third terminal (optional)
-
-The backend/frontend can run without the gateway; WhatsApp integration works once the gateway is available. This example uses Chrome already installed on macOS:
-
-```sh
-cd whatsapp-api
-set -a
-source ../.env
-set +a
-
-export PORT=3001
-export API_KEY="$WHATSAPP_API_KEY"
-export WEBHOOK_SECRET="$WHATSAPP_API_KEY"
-export WEBHOOK_TEXT_ONLY=true
-export BASE_WEBHOOK_URL=http://localhost:8080/api/integrations/whatsapp/webhook
-export SESSIONS_PATH=./sessions
-export RECOVER_SESSIONS=true
-export SET_MESSAGES_AS_SEEN=false
-export ENABLE_LOCAL_CALLBACK_EXAMPLE=false
-export ENABLE_SWAGGER_ENDPOINT=false
-export CHROME_BIN='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-
-# A local browser is available, so skip the Puppeteer browser download.
-PUPPETEER_SKIP_DOWNLOAD=true npm ci
-npm start
-```
-
-On Linux/Windows, point `CHROME_BIN` to your Chrome/Chromium executable. To use Puppeteer's bundled browser, install dependencies without `PUPPETEER_SKIP_DOWNLOAD` and leave `CHROME_BIN` unset; installation may download a browser.
-
-The gateway's `API_KEY` must match the backend's `WHATSAPP_API_KEY`, and `WEBHOOK_SECRET` must match the backend webhook secret. The example uses the same key through the backend fallback. If you configure a separate `WHATSAPP_WEBHOOK_SECRET`, use that value for the gateway's `WEBHOOK_SECRET`.
-
-Check [http://localhost:3001/ping](http://localhost:3001/ping). Then open **Merchant → Integrations → WhatsApp → Connect WhatsApp** and scan the QR code from the merchant's phone. Native sessions are stored under `whatsapp-api/sessions`, separately from Docker volumes.
-
-### Development alternative: Docker database only
-
-To run Spring/Nuxt directly on the host with the database from root Compose:
-
-```sh
-# Run from the root after filling in .env.
-docker compose up -d postgres
-```
-
-Follow the native backend steps, replacing the port 5432 URL with:
-
-```sh
-export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5433/${POSTGRES_DB:-sewain}"
-./gradlew bootRun
-```
-
-Apply this override and run `bootRun` in the `backend` terminal with its environment already loaded. If `.env` overrides `POSTGRES_PORT`, use that port. Keep following the native gateway steps for a local gateway to avoid mixing Docker and host callback addresses.
-
-## Registration and merchant setup
-
-1. Open the web application, register an account, and log in.
-2. Create a merchant and wait for store setup to finish. Provisioning/Flyway creates the tenant schema and default settings.
-3. Complete store, regional, rental, and payment settings.
-4. Add products/variants/inventory, or open **Products → Import CSV** and download its template.
-5. Email integration requires the merchant's SMTP/IMAP account. WhatsApp integration uses the merchant's phone number linked through a QR code.
-
-Public Flyway migrations run at backend startup. For existing merchants, `APP_MAINTENANCE_MIGRATE_TENANTS=true` runs tenant migrations. Investigate missing settings/tables after updates together with migration logs. Wait for provisioning status READY before using merchant pages.
-
-## Tests
-
-Backend, from the repository root:
-
-```sh
-cd backend
 ./gradlew test
 ```
 
-Unit tests use mocks/direct instances. The architecture test verifies modules and generates documentation without starting an application context. Gradle compiles all test sources even when `--tests` selects only one class.
-
-Business logic suite guide: [docs/backend-business-unit-tests.md](docs/backend-business-unit-tests.md).
-
-Available frontend tests, from the repository root:
+Frontend smoke tests, from `web/`:
 
 ```sh
-cd web
 npm run test:storefront
 npm run test:product-tags
 ```
 
-Browser E2E uses an already running stack and separate dependencies:
+Browser E2E, from `web/e2e/`, after installing its isolated dependencies and Chromium:
 
 ```sh
-cd web/e2e
-npm install
-npx playwright install chromium
+npm test -- --project=desktop
 ```
 
-Set `E2E_BASE_URL`, `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_MERCHANT_NAME`, and `E2E_REQUIRE_AUTH=true`, then run `npm test` from that directory. Scenarios and reports: [web/e2e/README.md](web/e2e/README.md).
+Authenticated tests require a READY test merchant and environment credentials. A separate opt-in write suite creates a product with inventory, a manual collection and a pickup order through the UI. See the [E2E guide](web/e2e/README.md) for setup, visible-browser mode, reports and write-test prerequisites.
 
-## Troubleshooting
+Tests are part of the project; this README does not claim that every suite passes on every environment. Database concurrency, external mailbox behavior and real WhatsApp delivery require additional integration verification.
 
-| Symptom | What to check |
-| --- | --- |
-| PostgreSQL connection refused | Service running, native port `5432` or Docker port `5433`, URL/credentials matching the selected mode |
-| Register/login calls Nuxt `/api/auth/...` and returns 404 | `NUXT_PUBLIC_API_BASE_URL` must point to Spring; SSR also needs the correct `NUXT_API_BASE_URL` |
-| STOMP rejected | `APP_WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` includes the complete web origin: scheme, hostname, and port |
-| Tenant settings/table missing | Provisioning/Flyway logs, `MIGRATE_TENANTS` in Compose or native `APP_MAINTENANCE_MIGRATE_TENANTS` |
-| WhatsApp gateway unavailable | Gateway running, backend using the correct internal Docker URL or `localhost:3001`, matching API keys |
-| Inbound messages missing | Callback URL reachable from gateway, matching webhook secret, active session; only direct text messages are supported |
-| Updating web also starts backend | Build the specific service and recreate web with `docker compose up -d --no-deps web` |
-| Gradle downloads again | The wrapper downloads its configured version when the cache is missing or the version changes; pruning build cache can also remove Docker's Gradle cache |
+## UI implementation and attribution
 
-You do not need to delete volumes to fix the frontend, update images, or run tests. These commands are instructions; writing this README did not run builds, containers, migrations, or tests.
+The dashboard uses Sewain's [style layer](web/app/scss/sewain/) and [navigation state](web/app/stores/dashboard-shell.ts) on top of Vuetify. Template-specific stylesheets, unused demo styles and the old customizer store have been replaced while retaining the existing layout, color palette and interface dimensions. Details and verification status are documented in the [dashboard style guide](docs/dashboard-style-system.md).
 
-## Further documentation
+The project originally started from **[Mantis Free Vuetify Vue.js Admin Template](https://github.com/codedthemes/mantis-free-vuetify-vuejs-admin-template)** by **CodedThemes**. The retained visual direction and inherited code have that provenance; a stylesheet refactor does not erase it. The [MIT notice](web/licenses/MANTIS-MIT.txt) remains with the [third-party notices](web/THIRD_PARTY_NOTICES.md), alongside the bundled gateway and other asset/library acknowledgements. Third-party components retain their respective licenses; the Mantis license is not a blanket license for all Sewain code.
 
-- [Docker and storage](DOCKER.md)
+## Current scope and limitations
+
+- Active development: this is a portfolio application, not a claim of production readiness.
+- Payments are recorded manually; there is no implemented payment-provider integration such as Xendit.
+- WhatsApp uses a WhatsApp Web gateway, not Meta Cloud API. The current connector supports direct text; groups, attachments and historical chat synchronization are outside its scope.
+- Background jobs and gateway sessions currently assume a single backend/gateway deployment. Durable replay and multi-replica coordination remain future work.
+- Docker configuration targets local use. Public deployment needs its own domains, HTTPS, infrastructure configuration and security review.
+
+## Documentation
+
+- [Setup with and without Docker](docs/getting-started.md)
+- [Docker operations and persistent data](DOCKER.md)
+- [Tenant setting initialization](docs/tenant-settings.md)
+- [Storefront themes and publishing](docs/storefront-themes.md)
+- [Product CSV imports](docs/product-csv-import.md)
 - [WhatsApp integration](docs/whatsapp-integration.md)
-- [Product CSV import](docs/product-csv-import.md)
+- [Email/plugin integration architecture](backend/INTEGRATIONS.md)
 - [Backend outbound HTTP standard](docs/backend-http-clients.md)
-- [Backend business unit tests](docs/backend-business-unit-tests.md)
+- [Business unit tests](docs/backend-business-unit-tests.md)
 - [Frontend E2E](web/e2e/README.md)

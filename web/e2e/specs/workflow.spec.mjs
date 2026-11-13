@@ -109,7 +109,6 @@ test('create a pickup order using the new product and verify persisted order det
   expect(created.command.fulfillmentType).toBe('PICKUP');
   expect(created.command.items).toHaveLength(1);
   expect(created.command.items[0]).toMatchObject({ productId: product.id, variantId: product.variants[0].id, quantity: 1 });
-  expect(order.items).toEqual(expect.arrayContaining([expect.objectContaining({ productId: product.id, variantId: product.variants[0].id, quantity: 1 })]));
   expect(Number(order.subtotal)).toBe(300000);
   expect(Number(order.totalAmount)).toBeGreaterThan(0);
   await expect(page).toHaveURL(new RegExp(`/merchant/orders/${order.id}$`));
@@ -120,6 +119,9 @@ test('create a pickup order using the new product and verify persisted order det
   const detail = await loaded;
   expect(detail.ok()).toBe(true);
   const persisted = await detail.json();
+  // POST returns an order summary; the detail GET loads persisted line items.
+  expect(persisted.items).toHaveLength(1);
+  expect(persisted.items[0]).toMatchObject({ productId: product.id, variantId: product.variants[0].id, quantity: 1 });
   expect(persisted.customerName).toBe(customer);
   expect(Number(persisted.totalAmount)).toBe(Number(order.totalAmount));
   await expect(page.getByText(order.orderNumber, { exact: true }).first()).toBeVisible();
