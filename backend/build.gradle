@@ -171,10 +171,10 @@ tasks.named('integrationTest') {
 	finalizedBy tasks.named('jacocoIntegrationTestReport')
 }
 
-// Explicit unit-coverage scope. Full reports above still include every production class.
-// Entity helpers remain visible in the full report; their Hibernate-generated methods
-// must not determine this service/business-logic gate.
-def businessCoverageClasses = sourceSets.main.output.classesDirs.asFileTree.matching {
+// Shared application coverage scope for unit, integration and combined reports.
+// Entities contain Hibernate-generated methods and are outside this measurement.
+// This is class-level scoping, not a method-level Hibernate filter.
+def coverageClasses = sourceSets.main.output.classesDirs.asFileTree.matching {
 	include 'app/sewain/**/*Service*.class'
 	include 'app/sewain/**/*Calculator*.class'
 	include 'app/sewain/**/*Validator*.class'
@@ -192,26 +192,17 @@ def businessCoverageClasses = sourceSets.main.output.classesDirs.asFileTree.matc
 	include 'app/sewain/finance/FinanceEventListener*.class'
 }
 
-tasks.register('jacocoBusinessReport', JacocoReport) {
-	description = 'Runs the default test suite and reports explicitly scoped business logic coverage.'
-	group = 'verification'
-	dependsOn tasks.named('test')
-	sourceSets(project.sourceSets.main)
-	classDirectories.setFrom(businessCoverageClasses)
-	executionData(tasks.named('test').get())
-	reports {
-		html.outputLocation = layout.buildDirectory.dir('reports/jacoco/business/html')
-		xml.outputLocation = layout.buildDirectory.file('reports/jacoco/business/jacoco.xml')
-	}
+tasks.withType(JacocoReport).configureEach {
+	classDirectories.setFrom(coverageClasses)
 }
 
 // Opt-in: the existing test/check/build lifecycle does not acquire a new coverage gate.
-tasks.register('jacocoBusinessCoverageVerification', JacocoCoverageVerification) {
-	description = 'Requires 100% line and branch coverage for the explicit business logic scope.'
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+	description = 'Requires 100% line and branch coverage from the default test suite.'
 	group = 'verification'
-	dependsOn tasks.named('jacocoBusinessReport')
+	dependsOn tasks.named('jacocoTestReport')
 	sourceSets(project.sourceSets.main)
-	classDirectories.setFrom(businessCoverageClasses)
+	classDirectories.setFrom(coverageClasses)
 	executionData(tasks.named('test').get())
 	violationRules {
 		rule {

@@ -98,5 +98,43 @@ class MerchantOrderCreationServiceTest {
         assertThrows(ValidationException.class,()->service.create(command(InitialPaymentChoice.FULL_PAYMENT,false,null)));
         verify(orders,never()).saveAndFlush(any());
     }
+    MerchantOrderCommand request(FulfillmentType type,Map<String,Object> address,OffsetDateTime pickup,OffsetDateTime delivery,
+            OffsetDateTime returned,PaymentMethod method,InitialPaymentChoice choice,BalanceDueAt balance,List<MerchantOrderItemCommand> inputs) {
+        return new MerchantOrderCommand("Customer","customer@example.invalid",null,type,address,pickup,delivery,returned,
+                method,choice,balance,BigDecimal.TEN,false,null,null,inputs);
+    }
+    @Test void pickupDeliveryAndRentalPeriodMustHaveRequiredDates() {
+        var inputs=List.of(new MerchantOrderItemCommand(product,variant,2,start,end));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.PICKUP,null,null,null,end,PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,inputs)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.DELIVERY,null,null,null,end,PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,inputs)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.DELIVERY,Map.of(),null,start,end,PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,inputs)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.PICKUP,null,start,null,end.minusDays(1),PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,inputs)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.PICKUP,null,start,null,end,PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,List.of(new MerchantOrderItemCommand(product,variant,1,start,start)))));
+        verify(orders,never()).saveAndFlush(any());
+    }
+    @Test void bankTransferRequiresEnabledSettingAndAtLeastOneAccount() {
+        var inputs=List.of(new MerchantOrderItemCommand(product,variant,2,start,end));
+        var request=request(FulfillmentType.PICKUP,null,start,null,end,PaymentMethod.BANK_TRANSFER,InitialPaymentChoice.FULL_PAYMENT,null,inputs);
+        setting(SettingKey.PAYMENT,"{\"fullPaymentEnabled\":true,\"bankTransfer\":false}");assertThrows(ValidationException.class,()->service.create(request));
+        setting(SettingKey.PAYMENT,"{\"fullPaymentEnabled\":true,\"bankTransfer\":true}");setting(SettingKey.PAYMENT_BANK_ACCOUNTS,"{\"accounts\":[]}");
+        assertThrows(ValidationException.class,()->service.create(request));
+        setting(SettingKey.PAYMENT_BANK_ACCOUNTS,"{\"accounts\":[{\"bank\":\"Test\"}]}");assertNotNull(service.create(request));
+    }
+    @Test void cashPickupCashReturnAndDownPaymentDueDateAreEnforced() {
+        setting(SettingKey.PAYMENT,"{\"fullPaymentEnabled\":true,\"downPaymentEnabled\":true}");
+        var inputs=List.of(new MerchantOrderItemCommand(product,variant,2,start,end));
+        assertThrows(ValidationException.class,()->service.create(command(InitialPaymentChoice.FULL_PAYMENT,false,null)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.DELIVERY,Map.of("address","Main Street"),null,start,end,PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,inputs)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.PICKUP,null,start,null,end,PaymentMethod.CASH,InitialPaymentChoice.DOWN_PAYMENT,null,inputs)));
+        assertThrows(ValidationException.class,()->service.create(request(FulfillmentType.PICKUP,null,start,null,end,PaymentMethod.CASH,InitialPaymentChoice.DOWN_PAYMENT,BalanceDueAt.RETURN,inputs)));
+    }
+    @Test void deliveryWithSeparateDepositCreatesIndependentPendingDepositReceipt() {
+        setting(SettingKey.PAYMENT,"{\"fullPaymentEnabled\":true,\"cashAtReturn\":true,\"separateDeposit\":true}");
+        var inputs=List.of(new MerchantOrderItemCommand(product,variant,2,start,end));
+        service.create(request(FulfillmentType.DELIVERY,Map.of("address","Main Street"),null,start,end,PaymentMethod.CASH,InitialPaymentChoice.FULL_PAYMENT,null,inputs));
+        var capture=org.mockito.ArgumentCaptor.forClass(Payment.class);verify(payments,times(2)).save(capture.capture());
+        var receipts=capture.getAllValues();assertEquals(PaymentStage.INITIAL,receipts.get(0).getPaymentStage());amount("410",receipts.get(0).getAmount());
+        assertEquals(PaymentStage.DEPOSIT,receipts.get(1).getPaymentStage());amount("100",receipts.get(1).getAmount());assertNull(receipts.get(1).getMethod());
+    }
     void amount(String expected,BigDecimal actual) { assertEquals(0,new BigDecimal(expected).compareTo(actual)); }
 }
