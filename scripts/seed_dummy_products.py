@@ -4,10 +4,19 @@ from pathlib import Path
 from uuid import UUID, uuid5
 from html import escape
 import re
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
 NAMESPACE = UUID('7ca044ae-f38b-44fa-84ec-995d60e325d1')
-SCHEMA = 'kiditz_outdoor'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--schema', default='kiditz_outdoor')
+parser.add_argument('--media-base-url', default='http://localhost:8080/media')
+parser.add_argument('--media-dir', type=Path)
+parser.add_argument('--output', type=Path, default=ROOT/'scripts/seed_dummy_products.sql')
+args = parser.parse_args()
+if not re.fullmatch(r'[a-z_][a-z0-9_]*', args.schema):
+ parser.error('--schema must be a lowercase PostgreSQL identifier')
+SCHEMA = args.schema
 GROUPS = [
  ('Tenda', 'tenda', 50000, ['Dome 2 Orang','Dome 4 Orang','Family 6 Orang','Ultralight 1 Orang','Double Layer 3 Orang']),
  ('Carrier', 'carrier', 35000, ['Hiking 40 Liter','Trekking 60 Liter','Expedition 80 Liter','Daypack 25 Liter','Women Fit 50 Liter']),
@@ -38,11 +47,11 @@ def sql(value): return "'" + str(value).replace("'", "''") + "'"
 def insert(table, columns, values):
  return f'INSERT INTO {table} ({columns}) VALUES ({values}) ON CONFLICT DO NOTHING;'
 
-statements = ['-- Local dummy data for kiditz_outdoor; additive and repeatable.',
- 'BEGIN;', 'SET LOCAL search_path TO kiditz_outdoor, public;',
- "SELECT pg_advisory_xact_lock(hashtext('sewain:dummy-products:kiditz_outdoor'));",
+statements = [f'-- Local dummy data for {SCHEMA}; additive and repeatable.',
+ 'BEGIN;', f'SET LOCAL search_path TO {SCHEMA}, public;',
+ f"SELECT pg_advisory_xact_lock(hashtext('sewain:dummy-products:{SCHEMA}'));",
  insert('tags', 'id,name,slug', ','.join(map(sql,[ident('tag'), 'Data Dummy', 'dummy-data-outdoor'])))]
-images = ROOT / 'backend/upload/media' / SCHEMA / 'dummy-products'
+images = args.media_dir or ROOT / 'backend/upload/media' / SCHEMA / 'dummy-products'
 images.mkdir(parents=True, exist_ok=True)
 for category_index,(category,key,fee,models) in enumerate(GROUPS):
  type_id=ident('type:'+key)
@@ -55,7 +64,7 @@ for category_index,(category,key,fee,models) in enumerate(GROUPS):
   slug='dummy-'+re.sub('[^a-z0-9]+','-',name.lower()).strip('-')
   product_id,variant_id=ident('product:'+slug),ident('variant:'+slug)
   price=fee+model_index*5000
-  url=f'http://localhost:8080/media/{SCHEMA}/dummy-products/{slug}.svg'
+  url=f'{args.media_base_url.rstrip("/")}/{SCHEMA}/dummy-products/{slug}.svg'
   image=f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 400"><rect width="480" height="400" fill="#f1f0e8"/><circle cx="240" cy="185" r="130" fill="#e2e7d8"/>{ART[key]}<text x="240" y="325" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#294c43">{escape(category)}</text><text x="240" y="355" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#607364">{escape(model)}</text><text x="455" y="30" text-anchor="end" font-family="sans-serif" font-size="11" fill="#607364">DEMO {number:02}</text></svg>'''
   (images/(slug+'.svg')).write_text(image+'\n')
   description=f'<p>{name}, perlengkapan untuk aktivitas outdoor dan camping. Paket sewa tersedia untuk 1 hari, 3 hari, dan 7 hari.</p><p>Data dummy untuk pengembangan storefront. Gambar merupakan ilustrasi, bukan foto produk.</p>'
@@ -68,6 +77,6 @@ for category_index,(category,key,fee,models) in enumerate(GROUPS):
    barcode=f'DUMMY-OUT-{number:03}-{unit:02}'
    statements.append(insert('inventory_units','id,variant_id,sku_barcode,serial_number,status,condition_notes',','.join(map(sql,[ident('unit:'+barcode),variant_id,barcode,'SN-'+barcode,'AVAILABLE','Data dummy; unit siap disewa untuk demo.']))))
 statements.append('COMMIT;')
-output=ROOT/'scripts/seed_dummy_products.sql'
+output=args.output
 output.write_text('\n'.join(statements)+'\n')
 print(f'Generated {output}: 50 products, 50 variants, 150 rental plans, 250 inventory units, 50 SVG illustrations.')
