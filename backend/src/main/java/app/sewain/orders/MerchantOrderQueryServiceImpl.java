@@ -63,7 +63,7 @@ class MerchantOrderQueryServiceImpl implements MerchantOrderQueryService {
 		var refundedRentalAmounts = successfulRentalRefundAmounts(order.getId());
 		var refundedDepositAmounts = successfulDepositRefundAmounts(order.getId());
 		var paymentResponses = payments.stream().map(payment -> mapper.toPaymentResponse(payment, refundedAmounts.getOrDefault(payment.getId(), BigDecimal.ZERO), refundedRentalAmounts.getOrDefault(payment.getId(), BigDecimal.ZERO), refundedDepositAmounts.getOrDefault(payment.getId(), BigDecimal.ZERO))).sorted(Comparator.comparing(MerchantOrderPaymentResponse::createdAt)).toList();
-		var paidTotals = paidTotals(payments);
+		var paidTotals = paidTotals(payments, refundedAmounts, refundedRentalAmounts, refundedDepositAmounts);
 		BigDecimal rentalDue = order.getTotalAmount().subtract(order.getDepositTotal());
 		Object initialAmount = order.getPaymentTermsSnapshot().get("initialAmount");
 		var summary = new MerchantOrderPaymentSummary(paymentResponses, paidTotals.total(), order.getTotalAmount().subtract(paidTotals.total()).max(BigDecimal.ZERO), rentalDue.subtract(paidTotals.rental()).max(BigDecimal.ZERO), order.getDepositTotal().subtract(paidTotals.deposit()).max(BigDecimal.ZERO), initialAmount == null ? BigDecimal.ZERO : new BigDecimal(initialAmount.toString()));
@@ -71,10 +71,16 @@ class MerchantOrderQueryServiceImpl implements MerchantOrderQueryService {
 		return mapper.toDetailResponse(order, items, summary, lateFeeService.response(order, items));
 	}
 
-	private PaymentTotals paidTotals(List<Payment> payments) {
+	private PaymentTotals paidTotals(List<Payment> payments, Map<UUID, BigDecimal> refunds,
+			Map<UUID, BigDecimal> rentalRefunds, Map<UUID, BigDecimal> depositRefunds) {
 		return payments.stream()
 				.filter(this::isPaid)
-				.map(payment -> new PaymentTotals(payment.getAmount(), payment.getRentalAmount(), payment.getDepositAmount()))
+				.map(payment -> payment.getStatus() == PaymentStatus.REFUNDED
+						? new PaymentTotals(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO)
+						: new PaymentTotals(
+								payment.getAmount().subtract(refunds.getOrDefault(payment.getId(), BigDecimal.ZERO)).max(BigDecimal.ZERO),
+								payment.getRentalAmount().subtract(rentalRefunds.getOrDefault(payment.getId(), BigDecimal.ZERO)).max(BigDecimal.ZERO),
+								payment.getDepositAmount().subtract(depositRefunds.getOrDefault(payment.getId(), BigDecimal.ZERO)).max(BigDecimal.ZERO)))
 				.reduce(new PaymentTotals(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO), PaymentTotals::add);
 	}
 

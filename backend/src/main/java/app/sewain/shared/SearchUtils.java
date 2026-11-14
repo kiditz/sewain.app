@@ -383,7 +383,7 @@ public final class SearchUtils {
 			Object value,
 			Comparison comparison
 	) {
-		if (!Comparable.class.isAssignableFrom(fieldType)) {
+		if (!Comparable.class.isAssignableFrom(wrapPrimitive(fieldType))) {
 			throw new IllegalArgumentException(
 					ErrorCode.MESSAGE_FIELD_IS_NOT_COMPARABLE
 							+ fieldType.getSimpleName()

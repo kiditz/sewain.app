@@ -16,6 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 class TenantMigrationIntegrationTest extends PostgresIntegrationSupport {
+    // The actual schema service passes this datasource to Flyway, which needs two connections.
+    @Override protected int poolSize() { return 2; }
+
     @Test
     void publicMigrationsCreateSharedTablesAndSeedIndonesia() {
         for (var table : Set.of("users", "merchants", "countries", "product_imports",

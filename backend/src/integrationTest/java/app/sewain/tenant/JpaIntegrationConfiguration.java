@@ -20,8 +20,9 @@ import java.util.HashMap;
 @EnableJpaRepositories(basePackages = {"app.sewain.catalogs", "app.sewain.orders", "app.sewain.settings"})
 @Import({HibernateTenantConfig.class, TenantConnectionProvider.class, TenantIdentifierResolver.class})
 @ComponentScan(basePackages = "app.sewain", useDefaultFilters = false, includeFilters = {
-        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\..*MapperImpl"),
-        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.(settings|countries)\\.JsonNodeMapper"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.(catalogs|settings)\\.[^.]*MapperImpl"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.orders\\.MerchantOrderMapperImpl"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.settings\\.JsonNodeMapper"),
         @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.settings\\.(SettingFacade|SettingQueryServiceImpl)"),
         @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.catalogs\\.(OrderCatalogService|InventoryUnitLockRepository|ProductCommandServiceImpl)"),
         @ComponentScan.Filter(type = FilterType.REGEX, pattern = "app\\.sewain\\.orders\\.MerchantOrder(CreationService|PaymentService|LifecycleService|QueryServiceImpl|LateFeeService)")
@@ -42,6 +43,8 @@ public class JpaIntegrationConfiguration {
         properties.put("hibernate.hbm2ddl.auto", "none");
         properties.put("hibernate.jdbc.time_zone", "UTC");
         properties.put("hibernate.type.json_format_mapper", "jackson3");
+        properties.put("hibernate.physical_naming_strategy",
+                "org.hibernate.boot.model.naming.PhysicalNamingStrategySnakeCaseImpl");
         tenantProperties.customize(properties);
         factory.setJpaPropertyMap(properties);
         return factory;

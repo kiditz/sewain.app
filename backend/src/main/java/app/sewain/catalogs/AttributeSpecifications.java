@@ -59,6 +59,6 @@ final class AttributeSpecifications {
 				))
 				.toList();
 
-		return SearchUtils.toSort(InventoryUnit.class, sortFields, RULES);
+		return SearchUtils.toSort(Attribute.class, sortFields, RULES);
 	}
 }

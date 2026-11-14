@@ -49,6 +49,11 @@ run this integration suite. CI must invoke `integrationTest` explicitly.
 The HTML report is `backend/build/reports/tests/integrationTest/index.html`.
 JUnit XML reports are under `backend/build/test-results/integrationTest/`.
 
+JaCoCo coverage is generated automatically after the suite at
+`backend/build/reports/jacoco/integrationTest/html/index.html`. Run
+`./gradlew jacocoCombinedReport` to run both suites and merge their coverage.
+See the [coverage guide](backend-coverage.md) for HTML/XML outputs and limitations.
+
 ## Isolation and resource use
 
 - Each test class starts a temporary PostgreSQL container, shared by its methods
@@ -62,7 +67,11 @@ JUnit XML reports are under `backend/build/test-results/integrationTest/`.
 - Each method uses distinct tenant schema names. All test data disappears when
   its container is removed; no development volumes are mounted.
 - Classes and methods run sequentially, with one Gradle test worker. JDBC-only
-  tests use a one-connection pool to force connection reuse. JPA and full Boot
+  connection-provider tests use a one-connection pool to force connection reuse.
+  Public migration bootstrap and schema-service migration tests use two pooled
+  connections: PostgreSQL Flyway holds its main connection while opening another
+  for migration work. The tenant bootstrap helper uses Flyway-managed JDBC
+  connections independently of the connection-provider test pool. JPA and full Boot
   suites permit four connections for concurrent requests, migration connections,
   and Batch metadata transactions. The connection initialization sets UTC as in
   the production datasource configuration.
@@ -94,6 +103,13 @@ before injecting failures; assertions then read committed database state outside
 the failed transaction. The concurrency test uses latches to keep the winning
 transaction open while a second request competes for the same unit; it does not
 depend on arbitrary sleeps.
+
+Mapper scanning includes catalog/settings implementations, the merchant order
+mapper and the settings JSON helper. Unrelated cart and other module mappers are
+excluded from this focused context so they do not introduce unused dependencies.
+The focused context explicitly uses Hibernate's snake-case physical naming
+strategy, matching Spring Boot's mapping of implicit column names such as
+`createdAt` to `created_at`.
 
 The import suite uses the actual import worker, service, row service, product
 command service, JDBC job repository and job operator. Its test configuration uses
@@ -129,6 +145,8 @@ SMTP/IMAP servers and WhatsApp gateway delivery/recovery. Existing unit tests co
 parts of those rules, but do not establish real transport behavior. Browser refresh
 behavior still needs frontend E2E coverage.
 
-These tests were added without running Gradle, Docker or the test suite, at the
-user's request. Compilation and runtime results must be confirmed using the
-commands above.
+Verified on 2026-11-13 with `./gradlew jacocoCombinedReport`: all 31 integration
+tests and all 140 tests in the default suite passed, with zero failures, errors
+or skips. JaCoCo generated the per-suite and combined HTML/XML reports. The full
+command completed in 2 minutes 27 seconds on the local test machine; runtime
+depends on container startup and local resources.

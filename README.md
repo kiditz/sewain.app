@@ -117,6 +117,11 @@ for coverage, isolation and reports. The suite includes concurrent reservation,
 transaction rollback, JPA queries, Batch CSV import, full application startup,
 catalog tenant authorization and STOMP status recovery.
 
+JaCoCo HTML/XML coverage reports are generated after each backend suite. Run
+`./gradlew jacocoCombinedReport` for combined unit/integration coverage (requires
+Docker). See the [coverage guide](docs/backend-coverage.md) for report locations
+and commands to open them.
+
 Frontend smoke tests, from `web/`:
 
 ```sh

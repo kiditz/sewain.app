@@ -28,7 +28,8 @@ public abstract class PostgresIntegrationSupport {
 
     @BeforeAll
     static void migratePublicSchema() {
-        try (var source = newDataSource(1)) {
+        // PostgreSQL Flyway keeps a main connection while acquiring a migration connection.
+        try (var source = newDataSource(2)) {
             Flyway.configure().dataSource(source).schemas("public")
                     .locations("classpath:db/migration").load().migrate();
         }
@@ -71,7 +72,10 @@ public abstract class PostgresIntegrationSupport {
     }
 
     protected Flyway tenantFlyway(String schema, String target) {
-        var configuration = Flyway.configure().dataSource(dataSource)
+        // Bootstrap migrations must not borrow from the one-connection pool used to
+        // verify tenant connection reuse. Flyway opens/closes its own JDBC connections.
+        var configuration = Flyway.configure()
+                .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .schemas(schema).createSchemas(true).locations("classpath:db/tenant");
         if (target != null) configuration.target(target);
         return configuration.load();
