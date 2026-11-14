@@ -120,7 +120,15 @@ catalog tenant authorization and STOMP status recovery.
 JaCoCo HTML/XML coverage reports are generated after each backend suite. Run
 `./gradlew jacocoCombinedReport` for combined unit/integration coverage (requires
 Docker). See the [coverage guide](docs/backend-coverage.md) for report locations
-and commands to open them.
+and commands to open them. All reports use the same explicit application-code
+scope; Hibernate-enhanced entities and generated mappers are outside that scope.
+The optional `./gradlew jacocoTestCoverageVerification` gate requires 100% line
+and branch coverage from the default suite and is not attached to `build`.
+
+Latest local backend verification (2026-11-14): **422 default tests and 43
+PostgreSQL integration tests passed**, with no failures, errors or skips.
+Combined scoped coverage was **98.74% lines / 85.48% branches**; the 100% target
+has not been reached. These are dated results, not a guarantee for later changes.
 
 Frontend smoke tests, from `web/`:
 
@@ -137,7 +145,7 @@ npm test -- --project=desktop
 
 Authenticated tests require a READY test merchant and environment credentials. A separate opt-in write suite creates a product with inventory, a manual collection and a pickup order through the UI. See the [E2E guide](web/e2e/README.md) for setup, visible-browser mode, reports and write-test prerequisites.
 
-Tests are part of the project; this README does not claim that every suite passes on every environment. Database concurrency, external mailbox behavior and real WhatsApp delivery require additional integration verification.
+Tests are part of the project; this README does not claim that every suite passes on every environment. Concurrent stock reservation is covered by the PostgreSQL suite; external mailbox behavior and real WhatsApp delivery still require additional integration verification.
 
 ## UI implementation and attribution
 

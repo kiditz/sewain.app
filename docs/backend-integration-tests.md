@@ -79,16 +79,17 @@ See the [coverage guide](backend-coverage.md) for HTML/XML outputs and limitatio
   and [JUnit integration](https://java.testcontainers.org/test_framework_integration/junit_5/)
   documentation for runtime and lifecycle details.
 
-## Coverage (31 integration tests)
+## Coverage (43 integration tests)
 
 | Class | Checks |
 | --- | --- |
-| `TenantMigrationIntegrationTest` (6 tests) | All public migrations on an empty database, shared tables and seeded country; new tenant defaults for every `SettingKey`; upgrade from tenant V34 with missing settings; preservation of existing merchant preferences; repeat migration without duplicated settings or reset values; relocation of a legacy tenant-owned `btree_gist` extension without invalidating its existing index |
+| `TenantMigrationIntegrationTest` (8 tests) | All public migrations on an empty database, shared tables and seeded country; new tenant defaults for every `SettingKey`; upgrade from tenant V34 with missing settings; preservation of existing merchant preferences; repeat migration without duplicated settings or reset values; relocation of a legacy tenant-owned `btree_gist` extension without invalidating its existing index; maintenance migration across tenants; fail-fast behavior on invalid migration history |
 | `TenantConnectionIntegrationTest` (3 tests) | Identical IDs/slugs remain isolated across tenant switches on the same physical connection; released connections reset to the public schema; real Spring transaction rollback and commit against tenant tables, verified outside the transaction |
 | `InventoryRepositoryIntegrationTest` (4 tests) | Actual status and joined-product filters, entity graph usability after transaction closure, pagination, variant-aware lookup, JPA tenant switching, and insufficient stock rejection |
 | `OrderReservationIntegrationTest` (8 tests) | Two overlapping requests for the last unit; rollback after a later item fails; rollback after all order/payment/allocation writes flush; adjacent rentals and buffer windows; initial payment confirmation/cash allocation; payment rollback; refund rollback and successful retry |
 | `ProductImportJobIntegrationTest` (4 tests) | CSV multi-variant import into products/plans/physical inventory and Batch metadata; invalid rows and skipped existing slugs; image failure isolation with sanitized diagnostics; concurrent active-import prevention and recovery marking interrupted imports failed |
 | `BackendStartupIntegrationTest` (6 tests) | Full Spring Boot startup on an empty database; persisted READY/FAILED provisioning outcomes; real signed-JWT authentication and database-backed catalog tenant isolation; HTTP 503 while provisioning; STOMP status retrieval across reconnects and rejection of another owner's merchant |
+| `CatalogFilterIntegrationTest` (10 tests) | Real SQL collection title/tag/type/variant/attribute rules; ALL/ANY composition; empty rules and snapshot stability; inventory text/status composition; ignored search/sort fields; literal percent/underscore handling |
 
 The migration suite calls the real `MerchantSchemaService` with the real
 datasource and JDBC template. Only the unused merchant repository dependency is
@@ -145,8 +146,13 @@ SMTP/IMAP servers and WhatsApp gateway delivery/recovery. Existing unit tests co
 parts of those rules, but do not establish real transport behavior. Browser refresh
 behavior still needs frontend E2E coverage.
 
-Verified on 2026-11-13 with `./gradlew jacocoCombinedReport`: all 31 integration
-tests and all 140 tests in the default suite passed, with zero failures, errors
-or skips. JaCoCo generated the per-suite and combined HTML/XML reports. The full
-command completed in 2 minutes 27 seconds on the local test machine; runtime
-depends on container startup and local resources.
+Verified locally on **2026-11-14**: all **43 integration tests** and **422
+default-suite tests** passed, with zero failures, errors or skips. The integration
+suite was explicitly rerun using
+`./gradlew integrationTest --rerun-tasks jacocoCombinedReport -x test` after the
+complete default suite had passed against the same production source. JaCoCo
+regenerated integration and combined reports. The fresh integration command took
+2 minutes 54 seconds locally; runtime depends on container startup and resources.
+For routine verification, use `./gradlew jacocoCombinedReport`; add
+`--rerun-tasks` to force both suites to execute again. The `-x test` shortcut is
+only appropriate when complete, compatible unit execution data already exists.

@@ -1,101 +1,128 @@
 # Backend code coverage
 
-The Gradle JaCoCo plugin records coverage for both backend test suites. It produces
-HTML reports for browsing and XML reports for CI tools. JaCoCo is pinned to 0.8.14,
-which supports the project's Java 21 bytecode. See the official
-[Gradle JaCoCo guide](https://docs.gradle.org/current/userguide/jacoco_plugin.html)
-and [JaCoCo release notes](https://www.jacoco.org/jacoco/trunk/doc/changes.html).
+JaCoCo 0.8.14 produces HTML and XML coverage reports for the default suite,
+PostgreSQL integration suite and both suites combined. All three reports use the
+same application-code scope defined by `coverageClasses` in `backend/build.gradle`.
 
 ## Run and open reports
 
-From `backend/`:
+Use JDK 21. From `backend/`:
 
 ```sh
-# Default suite: unit tests plus lightweight HTTP/filesystem/architecture tests.
-# Does not require Docker. Coverage HTML/XML are generated automatically.
+# Default suite; no Docker required. Also generates its coverage report.
 ./gradlew test
 open build/reports/jacoco/test/html/index.html
 
-# PostgreSQL integration coverage. Requires Docker to be running.
+# PostgreSQL integration suite; Docker must be running.
 ./gradlew integrationTest
 open build/reports/jacoco/integrationTest/html/index.html
 
-# Both suites and their combined coverage. Requires Docker.
+# Both suites and combined coverage; Docker required.
 ./gradlew jacocoCombinedReport
 open build/reports/jacoco/combined/html/index.html
+
+# Force fresh execution of both suites instead of accepting up-to-date results.
+./gradlew jacocoCombinedReport --rerun-tasks
 ```
 
-`open` is the macOS command. On other platforms, open the HTML file in a browser.
-No application container or development database needs to be started for these
-tasks. Integration tests create their own temporary PostgreSQL containers.
+`open` is the macOS command; on other platforms, open the HTML file in a browser.
+Integration tests create temporary PostgreSQL containers. Application containers
+and the development database do not need to be running.
 
-You can also request reports directly. Each report task depends on the appropriate
-test task, so a clean checkout does not require a separate test command first:
-
-```sh
-./gradlew jacocoTestReport
-./gradlew jacocoIntegrationTestReport
-```
+`jacocoTestReport` and `jacocoIntegrationTestReport` can also be invoked directly;
+each depends on its corresponding test task. `test` and `integrationTest` finalize
+with their own reports. The standard `test`, `check` and `build` lifecycle does not
+implicitly execute `integrationTest`.
 
 ## Outputs
 
+Paths below are relative to `backend/`.
+
 | Suite | HTML | XML |
 | --- | --- | --- |
-| Default `test` | `build/reports/jacoco/test/html/index.html` | `build/reports/jacoco/test/jacoco.xml` |
-| `integrationTest` | `build/reports/jacoco/integrationTest/html/index.html` | `build/reports/jacoco/integrationTest/jacoco.xml` |
+| Default | `build/reports/jacoco/test/html/index.html` | `build/reports/jacoco/test/jacoco.xml` |
+| Integration | `build/reports/jacoco/integrationTest/html/index.html` | `build/reports/jacoco/integrationTest/jacoco.xml` |
 | Combined | `build/reports/jacoco/combined/html/index.html` | `build/reports/jacoco/combined/jacoco.xml` |
 
+JUnit HTML results are under `build/reports/tests/test/` and
+`build/reports/tests/integrationTest/`. JUnit XML results are under
+`build/test-results/test/` and `build/test-results/integrationTest/`.
+
 Execution data is stored separately in `build/jacoco/test.exec` and
-`build/jacoco/integrationTest.exec`. The combined report merges those observations;
-it does not add or average the individual coverage percentages.
+`build/jacoco/integrationTest.exec`. Combined coverage merges observations of the
+same production code; it does not add or average coverage percentages. It remains
+useful for persistence and other paths exercised only by integration tests.
 
-## Interpreting coverage
+## Measured scope and generated code
 
-- Reports measure production code in the `main` source set. No project-specific
-  exclusions hide controllers, entities, mappers or other application classes.
-  JaCoCo's own generated-bytecode filters still apply.
-- Compare line coverage and branch coverage. A covered line does not prove every
-  decision on that line was tested.
-- The default-suite report is not strictly pure unit coverage: `test` also includes
-  existing lightweight integration and architecture checks.
-- Filtered commands such as `./gradlew test --tests '*TenantFilterTest'` produce
-  coverage for that selection only. Run the unfiltered suite before treating its
-  report as complete. Use `--rerun-tasks` when a fresh run is needed.
-- Test finalizers attempt to generate per-suite reports even when a test fails,
-  provided execution data was written. Such reports can be partial. Compilation
-  failures or JVM startup failures may prevent report generation; check the task
-  result and report timestamp instead of trusting an older HTML file.
-- Coverage reporting does not enforce a minimum percentage or introduce a new
-  build gate. Establish a measured baseline before choosing thresholds.
-- Unit coverage tasks never depend on the integration suite. The standard `check`
-  and `build` lifecycle still does not implicitly run `integrationTest`.
+The shared scope includes service, calculator, validator and specification class
+patterns, plus selected search, content-security, pagination, integration-access,
+secret, email-transport, WhatsApp-gateway, media-storage/download/upload and finance
+event-listener classes. The exact include patterns in `coverageClasses` are the
+source of truth; new application logic outside those patterns must be reviewed
+for inclusion.
 
-## Verification status
+Entities, generated mappers, DTOs, controllers, configuration and other classes
+outside that allowlist are not measured by these reports. They can still be used
+or verified by tests. These percentages therefore describe the configured scope,
+not every production class or every application behavior.
 
-The 81 additional tests listed in [the business test guide](backend-business-unit-tests.md)
-were added after the measured run below. They have not been compiled or run.
-The percentages below remain the previous baseline, and the 80% line/branch
-target has not been verified. Regenerate the combined report before assessing
-the effect of the new tests.
+Hibernate enhancement adds methods such as `$$_hibernate_write_*` to entity bytecode. Those methods are framework-generated, not business
+rules requiring dedicated unit tests. Entity classes are outside the measured
+scope; this is class-level scoping, not a method-level Hibernate filter. A missing
+debug-information warning on generated methods does not mean authored source must
+be tested through Hibernate internals.
 
-A subsequent local combined XML was inspected at 61.56% line and 39.76% branch
-coverage. The requested target is now 100%; it has not been achieved or verified.
-`SearchUtilsTest` was then added to exercise the public search/filter API's scalar
-conversion, comparison, wildcard escaping, collection membership, nested grouping,
-approved sorting, invalid configuration and collection joins. This additional
-suite has not been compiled or run. No production class exclusions were added.
+## Coverage verification
 
-Verified on 2026-11-13 with `./gradlew jacocoCombinedReport`: 140 tests in the
-default suite and 31 PostgreSQL integration tests passed, with zero failures,
-errors or skips. The command completed successfully and all three HTML/XML
-reports were generated. `git diff --check` also passed.
+There is one opt-in gate using the same scope:
 
-| Report | Line coverage | Branch coverage |
-| --- | ---: | ---: |
-| Default suite | 33.05% | 20.65% |
-| Integration suite | 28.04% | 19.05% |
-| Combined | 48.02% | 32.33% |
+```sh
+./gradlew jacocoTestCoverageVerification
+```
 
-These values are the measured baseline from that run, not a minimum requirement
-or a promise that every application behavior is covered. Regenerate reports
-after code or test changes.
+It requires **100% line and 100% branch coverage from the default suite only**.
+It is not attached to `test`, `check` or `build`, and it does not use integration
+execution data. A successful test run or combined report does not imply this gate
+passes. The previous separate business-report/verification tasks have been
+removed; business unit tests run under the standard `test` task.
+
+## Latest verified results
+
+Verified locally on **2026-11-14**: 422 default-suite tests and 43 PostgreSQL
+integration tests passed, with zero failures, errors or skips. The default suite
+ran unfiltered; integration tests were explicitly rerun. All three reports were
+regenerated. `git diff --check` passed.
+
+| Report | Covered / total lines | Line coverage | Covered / total branches | Branch coverage |
+| --- | ---: | ---: | ---: | ---: |
+| Default | 3,354 / 3,422 | 98.01% | 1,781 / 2,093 | 85.09% |
+| Integration | 946 / 3,422 | 27.64% | 380 / 2,093 | 18.16% |
+| Combined | 3,379 / 3,422 | 98.74% | 1,789 / 2,093 | 85.48% |
+
+The 100% target has not been reached: the combined report still contains 43 missed
+lines and 304 missed branches. These figures are a dated snapshot, not a guarantee
+for later commits or environments. No thresholds or scope patterns were relaxed
+for this run.
+
+## Reading reports correctly
+
+- A covered line does not prove all decisions or failure paths were tested. Review
+  branch coverage and assertions as well as the headline percentage.
+- The default suite includes unit tests and lightweight HTTP, filesystem and
+  architecture checks; it is not exclusively isolated unit tests.
+- A filtered command such as `./gradlew test --tests '*CountryQueryServiceTest'`
+  replaces that suite's execution data with coverage for the selection. Run the
+  full suite again before interpreting default or combined coverage as complete.
+- Avoid combining execution data from different production builds. Rerun both
+  suites after production-code or compiler changes.
+- Finalizers may generate partial reports after a failure. Compilation or JVM
+  startup failures can leave older reports in place. Check task outcomes and
+  timestamps before interpreting coverage.
+- Prefer behavior-focused tests. Unit tests cover decisions and edge cases;
+  integration tests verify real SQL, migrations, tenant isolation, transaction
+  rollback, concurrency and framework wiring. A mocked repository cannot establish
+  actual database ordering or locking behavior.
+
+See the [default test guide](backend-business-unit-tests.md) and
+[PostgreSQL integration guide](backend-integration-tests.md) for suite boundaries.
