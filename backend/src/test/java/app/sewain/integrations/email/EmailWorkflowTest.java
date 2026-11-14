@@ -113,4 +113,34 @@ class EmailWorkflowTest {
         when(transport.store(any())).thenThrow(new MessagingException("secret credentials"));
         var error=assertThrows(ValidationException.class,service::sync);assertFalse(error.toString().contains("secret credentials"));
     }
+    @Test void mixedBodyOmitsAttachmentsAndNonTextParts() throws Exception {
+        var text=new MimeBodyPart();text.setText("Visible message","UTF-8");
+        var attachment=new MimeBodyPart();attachment.setText("Hidden attachment","UTF-8");attachment.setDisposition(Part.ATTACHMENT);
+        var binary=new MimeBodyPart();binary.setContent(new byte[]{1,2},"application/octet-stream");
+        var multipart=new MimeMultipart("mixed");multipart.addBodyPart(text);multipart.addBodyPart(attachment);multipart.addBodyPart(binary);
+        var mime=message("",false);mime.setContent(multipart);mime.saveChanges();mailbox(List.of(mime));
+        service.sync();var capture=org.mockito.ArgumentCaptor.forClass(EmailMessage.class);verify(messages).save(capture.capture());
+        assertEquals("Visible message",capture.getValue().getBody());
+    }
+    @Test void unsupportedCharsetFallsBackToUtf8AndMissingEnvelopeIsSafe() throws Exception {
+        var mime=mock(MimeMessage.class);when(mime.getSize()).thenReturn(100);when(mime.isMimeType("text/plain")).thenReturn(true);
+        when(mime.getContentType()).thenReturn("text/plain; charset=x-invalid-charset");
+        when(mime.getInputStream()).thenReturn(new java.io.ByteArrayInputStream("Hello café".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        mailbox(List.of(mime));service.sync();var capture=org.mockito.ArgumentCaptor.forClass(EmailMessage.class);verify(messages).save(capture.capture());
+        assertEquals("Hello café",capture.getValue().getBody());assertEquals("",capture.getValue().getSender());assertEquals("",capture.getValue().getRecipient());assertEquals("",capture.getValue().getSubject());
+    }
+    @Test void largeMultipartBodyStopsAtLimitAndDoesNotAppendLaterParts() throws Exception {
+        var first=new MimeBodyPart();first.setText("x".repeat(100000),"UTF-8");
+        var later=new MimeBodyPart();later.setText("DO NOT APPEND","UTF-8");
+        var multipart=new MimeMultipart("mixed");multipart.addBodyPart(first);multipart.addBodyPart(later);
+        var mime=message("",false);mime.setContent(multipart);mime.saveChanges();mailbox(List.of(mime));service.sync();
+        var capture=org.mockito.ArgumentCaptor.forClass(EmailMessage.class);verify(messages).save(capture.capture());assertEquals("x".repeat(100000),capture.getValue().getBody());
+    }
+    @Test void requestIdentityCannotBeReusedForAnotherRecipientOrBodyAndInstallationMustExist() {
+        var id=UUID.randomUUID();service.send(new EmailService.SendCommand(id,"one@example.invalid","Subject","Body"));
+        assertThrows(ValidationException.class,()->service.send(new EmailService.SendCommand(id,"two@example.invalid","Subject","Body")));
+        assertThrows(ValidationException.class,()->service.send(new EmailService.SendCommand(id,"one@example.invalid","Subject","Changed")));
+        when(installations.findForUpdate("email")).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class,()->service.send(new EmailService.SendCommand(UUID.randomUUID(),"one@example.invalid","Subject","Body")));
+    }
 }

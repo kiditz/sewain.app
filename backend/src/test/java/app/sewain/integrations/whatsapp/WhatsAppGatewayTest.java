@@ -13,6 +13,17 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
 
 class WhatsAppGatewayTest {
+    @Test void successfulSessionSnapshotConnectAndDisconnectUseTheirOwnEndpoints() {
+        var id=UUID.randomUUID();
+        server.expect(requestTo("http://gateway.test/session/snapshot/"+id)).andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("{\"success\":true,\"state\":\"CONNECTED\"}",MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://gateway.test/session/connect/"+id)).andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("{\"success\":true}",MediaType.APPLICATION_JSON));
+        server.expect(requestTo("http://gateway.test/session/disconnect/"+id)).andExpect(method(HttpMethod.DELETE))
+                .andRespond(withSuccess("{\"success\":true}",MediaType.APPLICATION_JSON));
+        assertEquals("CONNECTED",gateway.snapshot(id).path("state").asString());
+        gateway.connect(id);gateway.disconnect(id);server.verify();
+    }
     private final RestClient.Builder builder=RestClient.builder();
     private final MockRestServiceServer server=MockRestServiceServer.bindTo(builder).build();
     private final WhatsAppGateway gateway=new WhatsAppGateway(JsonMapper.builder().build(),builder,"http://gateway.test/","private-test-key");

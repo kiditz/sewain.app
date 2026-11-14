@@ -11,6 +11,24 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class ThemeLibraryServiceTest {
+    @Test void renameUpdatesThemeNameWithoutChangingPublishedConfiguration() {
+        var published=service.live().deepCopy();
+        service.rename("original"," Renamed theme ");
+        assertEquals("Renamed theme",json.readTree(records.get("THM:original").getConfiguration()).path("name").asString());
+        assertEquals(published,service.live());
+    }
+    @Test void publishingMigratedSnapshotPreservesPreviousRevisionAndBoundsHistory() {
+        var instance=json.readTree(records.get("THM:original").getConfiguration()).asObject();
+        var previous=instance.path("revision").asInt();instance.set("history",json.createArrayNode());
+        records.get("THM:original").setConfiguration(instance.toString());
+        service.publish("original");
+        var history=json.readTree(records.get("THM:original").getConfiguration()).path("history");
+        assertEquals(2,history.size());assertEquals(previous,history.get(0).path("revision").asInt());
+        for(int i=0;i<12;i++)service.publish("original");
+        instance=json.readTree(records.get("THM:original").getConfiguration()).asObject();
+        assertEquals(10,instance.path("history").size());
+        assertEquals(instance.path("revision").asInt(),instance.path("history").get(9).path("revision").asInt());
+    }
     final Map<String, StorefrontConfiguration> records = new LinkedHashMap<>();
     final JsonMapper json = JsonMapper.builder().build();
     ThemeLibraryService service;

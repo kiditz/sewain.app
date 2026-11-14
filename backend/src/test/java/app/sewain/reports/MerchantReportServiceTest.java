@@ -59,4 +59,18 @@ class MerchantReportServiceTest {
         assertEquals(java.time.LocalTime.MIDNIGHT,from.toLocalTime()); assertEquals(from.plusDays(7),to);
     }
     void amount(String expected,BigDecimal actual) { assertEquals(0,new BigDecimal(expected).compareTo(actual)); }
+    @Test void databaseRowsPopulateDailyTrendStatusAndTopProductResponses() throws Exception {
+        var rs=mock(java.sql.ResultSet.class);var today=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jakarta"));var product=UUID.randomUUID();
+        when(rs.getObject("report_date",java.time.LocalDate.class)).thenReturn(today);
+        when(rs.getLong("order_count")).thenReturn(2L);when(rs.getLong("completed")).thenReturn(1L);when(rs.getLong("cancelled")).thenReturn(1L);
+        when(rs.getBigDecimal("net_revenue")).thenReturn(new BigDecimal("100"));when(rs.getString("status")).thenReturn("COMPLETED");when(rs.getLong("count")).thenReturn(2L);
+        when(rs.getObject("product_id",UUID.class)).thenReturn(product);when(rs.getString("name")).thenReturn("Tent");when(rs.getString("category")).thenReturn("Camping");
+        when(rs.getLong("rentals")).thenReturn(3L);when(rs.getBigDecimal("revenue")).thenReturn(new BigDecimal("200"));when(rs.getBigDecimal("utilization")).thenReturn(new BigDecimal("50"));
+        when(jdbc.query(anyString(),any(SqlParameterSource.class),any(org.springframework.jdbc.core.RowMapper.class)))
+                .thenAnswer(c->List.of(((org.springframework.jdbc.core.RowMapper<?>)c.getArgument(2)).mapRow(rs,0)));
+        var report=service.get(7);var daily=report.dailyReports().getLast();assertEquals(today,daily.date());assertEquals(2,daily.orders());assertEquals(1,daily.completed());
+        amount("100",daily.revenue());assertEquals("COMPLETED",report.orderStatuses().getFirst().status());
+        assertEquals(product,report.topProducts().getFirst().id());assertEquals("Camping",report.topProducts().getFirst().category());
+        amount("100",report.revenueTrend().stream().map(MerchantReportTrendPoint::revenue).reduce(BigDecimal.ZERO,BigDecimal::add));
+    }
 }

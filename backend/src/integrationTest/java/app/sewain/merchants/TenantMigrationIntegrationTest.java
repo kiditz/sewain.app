@@ -16,6 +16,25 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 class TenantMigrationIntegrationTest extends PostgresIntegrationSupport {
+    @Test
+    void maintenanceMigratesEveryRegisteredTenant() {
+        var repository=mock(MerchantRepository.class);
+        var first=new Merchant();first.setSchema(schemaName());var second=new Merchant();second.setSchema(schemaName());
+        org.mockito.Mockito.when(repository.findAll()).thenReturn(java.util.List.of(first,second));
+        new MerchantSchemaService(jdbc,dataSource,repository).migrateAllTenantSchemas();
+        assertAllSettingsPresent(first.getSchema());assertAllSettingsPresent(second.getSchema());
+    }
+
+    @Test
+    void maintenanceFailsFastOnCorruptMigrationHistory() {
+        var repository=mock(MerchantRepository.class);
+        var first=new Merchant();first.setSchema(migratedTenant());var second=new Merchant();second.setSchema(schemaName());
+        jdbc.update("UPDATE "+first.getSchema()+".flyway_schema_history SET checksum=checksum+1 WHERE version='37'");
+        org.mockito.Mockito.when(repository.findAll()).thenReturn(java.util.List.of(first,second));
+        assertThrows(org.flywaydb.core.api.exception.FlywayValidateException.class,
+                ()->new MerchantSchemaService(jdbc,dataSource,repository).migrateAllTenantSchemas());
+        assertNull(jdbc.queryForObject("SELECT to_regclass(?)::text",String.class,second.getSchema()+".settings"));
+    }
     // The actual schema service passes this datasource to Flyway, which needs two connections.
     @Override protected int poolSize() { return 2; }
 
